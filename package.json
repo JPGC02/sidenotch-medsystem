@@ -1,7 +1,7 @@
 {
   "name": "sidenotch-medsystem",
   "productName": "SideNotch Medsystem",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "SideNotch edição Medsystem: notch do Windows com notificações, tarefas e atalhos do Medsystem Hub, além de uso das IAs, aprovações do Claude Code, Maestri, música, sistema e calendário.",
   "main": "src/main.js",
   "author": "JP / Medsystem",

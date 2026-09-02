@@ -77,7 +77,8 @@
   .dk .cnt { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
   .dk .cnt.blue { background: #0a84ff; } .dk .cnt.green { background: #25d366; color: #05240f; } .dk .cnt.orange { background: #ff9f0a; color: #2a1800; }
   .card.chat { border-left-color: #25d366; cursor: pointer; } .card .chip.tr { background: rgba(255,159,10,.2); color: #ffb340; } .card .chip.me { background: rgba(37,211,102,.16); color: #4ade80; }
-  .dk svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; }
+  .dk svg { width: 21px; height: 21px; } .dk.form svg { color: #fff; }
+  .ibtn svg { fill: none; stroke: none; width: 20px; height: 20px; } .card .tka button svg { width: 14px; height: 14px; }
   .card.hubn { border-left-color: #0a84ff; cursor: pointer; } .card.hubn.read { opacity: .6; } .card.hubt { border-left-color: #30d158; }
   .card .chip { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(100,210,255,.16); color: #64d2ff; } .card .chip.late { background: rgba(255,69,58,.18); color: #ff6961; }
   .card .tka { display: flex; gap: 5px; } .card .tka button { flex: 0 0 auto; min-width: 0; width: 28px; height: 28px; border-radius: 50%; padding: 0; background: var(--bg2); color: var(--fg); } .card .tka button.ok { background: rgba(48,209,88,.2); color: #30d158; }
@@ -159,7 +160,9 @@
   <div id="panel"></div>
 </div>
 
+<script src="iconsax.js"></script>
 <script>
+const IX = window.IX || {};
 const ICONS = {
   claude: '<svg viewBox="0 0 24 24"><path d="M12 2l1.6 6.2L19 5.5l-3.7 5.1L21 12l-5.7 1.4 3.7 5.1-5.4-2.7L12 22l-1.6-6.2L5 18.5l3.7-5.1L3 12l5.7-1.4L5 5.5l5.4 2.7z"/></svg>',
   codex:  '<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 2.2a6.8 6.8 0 1 1 0 13.6 6.8 6.8 0 0 1 0-13.6zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>',
@@ -170,14 +173,7 @@ const ICONS = {
   nvidia: '<svg viewBox="0 0 24 24"><path d="M4 8v8h4v-3.2l6 3.2h6V8h-4v3.2L10 8H4zm2 2h3.5L16 13.8V10h2v4h-3.5L8 10.2V14H6v-4z"/></svg>',
   opencode: '<svg viewBox="0 0 24 24"><path d="M8 6l-6 6 6 6 1.5-1.5L5 12l4.5-4.5L8 6zm8 0l-1.5 1.5L19 12l-4.5 4.5L16 18l6-6-6-6z"/></svg>'
 };
-const SVG = {
-  gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
-  sessions: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>',
-  chat: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
-  check: '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-  bell: '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
-  bellOff: '<svg viewBox="0 0 24 24"><path d="M13.7 21a2 2 0 0 1-3.4 0M18.6 13A17 17 0 0 1 18 8a6 6 0 0 0-9.3-5M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14M1 1l22 22"/></svg>'
-};
+const SVG = { sessions: IX.Monitor, bell: IX.Notification, bellOff: IX.NotificationBing, gear: IX.Setting2, check: IX.TaskSquare, chat: IX.Whatsapp, play: IX.PlayBold, tick: IX.TickCircle };
 const R = 17, C = 2 * Math.PI * R;
 const api = window.sidenotch;
 const $ = (s) => document.querySelector(s);
@@ -223,12 +219,12 @@ function renderBar() {
     if (usage.length) { const sp = document.createElement('div'); sp.id = 'sep'; list.appendChild(sp); }
     const pins = new Set((settings.hub && settings.hub.pinned) || []);
     const scs = hub.shortcuts || []; const dock = [...scs.filter((x) => pins.has(x.id)), ...scs.filter((x) => !pins.has(x.id))].slice(0, Math.max(3, Math.min(6, Number(settings.hub && settings.hub.dockCount) || 5)));
-    for (const sc of dock) { const d = document.createElement('div'); d.className = 'dk ' + sc.kind; d.textContent = sc.icon; d.title = sc.name; d.onclick = () => api.hubOpen(sc.path); d.addEventListener('mouseenter', () => { if (view === 'pop') setView(null); }); list.appendChild(d); }
+    for (const sc of dock) { const d = document.createElement('div'); d.className = 'dk ' + sc.kind; d.innerHTML = IX[sc.ix] || sc.icon; d.title = sc.name; d.onclick = () => api.hubOpen(sc.path); d.addEventListener('mouseenter', () => { if (view === 'pop') setView(null); }); list.appendChild(d); }
     const nb = document.createElement('div'); nb.className = 'dk'; nb.innerHTML = SVG.bell + (hub.unread ? `<span class="cnt blue">${hub.unread}</span>` : ''); nb.title = 'Notificações do Hub'; nb.onclick = () => toggleView('hubnotif'); nb.addEventListener('mouseenter', () => { if (hub.unread) toggleView('hubnotif', true); }); list.appendChild(nb);
     if (hub.hasWhatsapp) { const cb = document.createElement('div'); cb.className = 'dk'; cb.innerHTML = SVG.chat + (hub.chatUnread ? `<span class="cnt green">${hub.chatUnread}</span>` : hub.chatTransfers ? `<span class="cnt orange">${hub.chatTransfers}</span>` : ''); cb.title = 'Conversas do WhatsApp'; cb.onclick = () => toggleView('hubchat'); cb.addEventListener('mouseenter', () => { if (hub.chatUnread || hub.chatTransfers) toggleView('hubchat', true); }); list.appendChild(cb); }
     const tb = document.createElement('div'); tb.className = 'dk'; tb.innerHTML = SVG.check + (hub.tasks.length ? `<span class="cnt ${hub.overdue ? '' : 'blue'}">${hub.overdue || hub.tasks.length}</span>` : ''); tb.title = 'Minhas tarefas'; tb.onclick = () => toggleView('hubtasks'); list.appendChild(tb);
   } else if (hub && !hub.linked) {
-    const lb = document.createElement('div'); lb.className = 'dk'; lb.textContent = '🏥'; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
+    const lb = document.createElement('div'); lb.className = 'dk'; lb.innerHTML = IX.Hospital; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
   }
   const sep = document.createElement('div'); sep.id = 'sep'; list.appendChild(sep);
   const mt = (approvals.maestri && approvals.maestri.terminals) || [];
@@ -393,7 +389,7 @@ function hubTaskCard(t) {
   const today = new Date(); today.setHours(0, 0, 0, 0); const due = t.due_date ? new Date(t.due_date + 'T12:00') : null; const late = due && due < today;
   card.innerHTML = `<div class="ttl"><span style="cursor:pointer" data-open="${esc(t.link || '/tarefas')}">${esc(t.title)}</span></div>${t.description ? `<div class="txt">${esc(t.description)}</div>` : ''}
     <div class="meta"><span>${t.label ? `<span class="chip">${esc(t.label)}</span> ` : ''}${due ? `<span class="chip ${late ? 'late' : ''}">${late ? 'atrasada · ' : ''}${due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}</span>` : ''}${t.status === 'in_progress' ? ' em andamento' : ''}</span>
-    <span class="tka">${t.status !== 'in_progress' ? `<button data-ts="${esc(t.id)}:in_progress" title="Iniciar">▶</button>` : ''}<button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">✓</button></span></div>`;
+    <span class="tka">${t.status !== 'in_progress' ? `<button data-ts="${esc(t.id)}:in_progress" title="Iniciar">${SVG.play}</button>` : ''}<button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">${SVG.tick}</button></span></div>`;
   card.querySelector('[data-open]').onclick = () => api.hubOpen(t.link || '/tarefas');
   card.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async () => { const [id, st] = b.dataset.ts.split(/:(?=[a-z_]+$)/); b.disabled = true; const r = await api.hubTask(id, st); if (r.state) { hub = r.state; renderBar(); renderPanel(); } });
   return card;

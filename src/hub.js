@@ -23,30 +23,30 @@ const SECTOR_MODULE_ACCESS = {
 };
 const ROLE_MODULE_ACCESS = { 'adm-rh': ['dashboard', 'tarefas', 'comunicacao', 'chamados', 'chat', 'onboarding', 'agenda-compartilhada', 'planos-acao', 'logistica', 'rh'] };
 
-// Atalhos do lançador: {id, name, path, module (null = sempre), icon, kind: 'form' | 'page'}
+// Atalhos do lançador: {id, name, path, module (null = sempre), icon (emoji, fallback), ix (nome do ícone Iconsax), kind: 'form' | 'page'}
 const SHORTCUTS = [
-  { id: 'chamado', name: 'Abrir chamado', path: '/chamados', module: 'chamados', icon: '🎧', kind: 'form' },
-  { id: 'reportar', name: 'Reportar problema', path: '/sistemas/ideias/reportar', module: null, icon: '🐞', kind: 'form' },
-  { id: 'tarefas', name: 'Minhas tarefas', path: '/tarefas', module: 'tarefas', icon: '✅', kind: 'page' },
-  { id: 'demanda', name: 'Nova demanda', path: '/demandas', module: 'demandas', icon: '📌', kind: 'form' },
-  { id: 'cotacao', name: 'Nova cotação', path: '/compras/cotacoes/nova', module: 'compras', icon: '🧾', kind: 'form' },
-  { id: 'pedido-internet', name: 'Pedido internet', path: '/compras/pedidos-internet/novo', module: 'compras', icon: '🛒', kind: 'form' },
-  { id: 'cotacao-item', name: 'Cotação de item', path: '/cotacao-item', module: 'cotacao-item', icon: '🔍', kind: 'form' },
-  { id: 'ideia', name: 'Nova ideia (PEM)', path: '/sistemas/ideias/nova', module: 'sistemas', icon: '💡', kind: 'form' },
-  { id: 'sistema', name: 'Novo sistema', path: '/sistemas/novo', module: 'sistemas', icon: '🧩', kind: 'form' },
-  { id: 'nf', name: 'Solicitar NF', path: '/financeiro/solicitacoes/nova-nf', module: 'financeiro-solicitacoes', icon: '📄', kind: 'form' },
-  { id: 'marketing', name: 'Produção marketing', path: '/marketing/nova', module: 'marketing', icon: '🎨', kind: 'form' },
-  { id: 'logistica', name: 'Logística', path: '/logistica', module: 'logistica', icon: '🚚', kind: 'page' },
-  { id: 'agenda', name: 'Agenda', path: '/agenda', module: 'agenda-compartilhada', icon: '📅', kind: 'page' },
-  { id: 'comunicacao', name: 'Comunicação', path: '/comunicacao', module: 'comunicacao', icon: '📣', kind: 'page' },
-  { id: 'onboarding', name: 'Documentação', path: '/onboarding', module: 'onboarding', icon: '📚', kind: 'page' },
-  { id: 'licitacao', name: 'Licitações', path: '/licitacao/filtros', module: 'licitacao', icon: '⚖️', kind: 'page' },
-  { id: 'eng', name: 'Engenharia clínica', path: '/engenharia-clinica', module: 'engenharia-clinica', icon: '🩺', kind: 'page' },
-  { id: 'rh', name: 'RH', path: '/rh', module: 'rh', icon: '👥', kind: 'page' },
-  { id: 'chat', name: 'Chat', path: '/chat', module: 'chat', icon: '💬', kind: 'page' },
-  { id: 'planos', name: 'Planos de ação', path: '/planos-acao', module: 'planos-acao', icon: '🎯', kind: 'page' },
-  { id: 'fluxos', name: 'Fluxos', path: '/fluxos', module: 'fluxos', icon: '🔁', kind: 'page' },
-  { id: 'dashboard', name: 'Dashboard', path: '/dashboard', module: null, icon: '🏠', kind: 'page' }
+  { id: 'chamado', name: 'Abrir chamado', path: '/chamados', module: 'chamados', icon: '🎧', ix: 'Headphone', kind: 'form' },
+  { id: 'reportar', name: 'Reportar problema', path: '/sistemas/ideias/reportar', module: null, icon: '🐞', ix: 'Danger', kind: 'form' },
+  { id: 'tarefas', name: 'Minhas tarefas', path: '/tarefas', module: 'tarefas', icon: '✅', ix: 'TaskSquare', kind: 'page' },
+  { id: 'demanda', name: 'Nova demanda', path: '/demandas', module: 'demandas', icon: '📌', ix: 'Flag', kind: 'form' },
+  { id: 'cotacao', name: 'Nova cotação', path: '/compras/cotacoes/nova', module: 'compras', icon: '🧾', ix: 'Receipt2', kind: 'form' },
+  { id: 'pedido-internet', name: 'Pedido internet', path: '/compras/pedidos-internet/novo', module: 'compras', icon: '🛒', ix: 'ShoppingCart', kind: 'form' },
+  { id: 'cotacao-item', name: 'Cotação de item', path: '/cotacao-item', module: 'cotacao-item', icon: '🔍', ix: 'SearchZoomIn', kind: 'form' },
+  { id: 'ideia', name: 'Nova ideia (PEM)', path: '/sistemas/ideias/nova', module: 'sistemas', icon: '💡', ix: 'Lamp', kind: 'form' },
+  { id: 'sistema', name: 'Novo sistema', path: '/sistemas/novo', module: 'sistemas', icon: '🧩', ix: 'Code', kind: 'form' },
+  { id: 'nf', name: 'Solicitar NF', path: '/financeiro/solicitacoes/nova-nf', module: 'financeiro-solicitacoes', icon: '📄', ix: 'DocumentText', kind: 'form' },
+  { id: 'marketing', name: 'Produção marketing', path: '/marketing/nova', module: 'marketing', icon: '🎨', ix: 'Brush2', kind: 'form' },
+  { id: 'logistica', name: 'Logística', path: '/logistica', module: 'logistica', icon: '🚚', ix: 'Truck', kind: 'page' },
+  { id: 'agenda', name: 'Agenda', path: '/agenda', module: 'agenda-compartilhada', icon: '📅', ix: 'Calendar1', kind: 'page' },
+  { id: 'comunicacao', name: 'Comunicação', path: '/comunicacao', module: 'comunicacao', icon: '📣', ix: 'VolumeHigh', kind: 'page' },
+  { id: 'onboarding', name: 'Documentação', path: '/onboarding', module: 'onboarding', icon: '📚', ix: 'Book1', kind: 'page' },
+  { id: 'licitacao', name: 'Licitações', path: '/licitacao/filtros', module: 'licitacao', icon: '⚖️', ix: 'Judge', kind: 'page' },
+  { id: 'eng', name: 'Engenharia clínica', path: '/engenharia-clinica', module: 'engenharia-clinica', icon: '🩺', ix: 'Health', kind: 'page' },
+  { id: 'rh', name: 'RH', path: '/rh', module: 'rh', icon: '👥', ix: 'People', kind: 'page' },
+  { id: 'chat', name: 'Chat', path: '/chat', module: 'chat', icon: '💬', ix: 'MessageText', kind: 'page' },
+  { id: 'planos', name: 'Planos de ação', path: '/planos-acao', module: 'planos-acao', icon: '🎯', ix: 'Flag', kind: 'page' },
+  { id: 'fluxos', name: 'Fluxos', path: '/fluxos', module: 'fluxos', icon: '🔁', ix: 'Repeat', kind: 'page' },
+  { id: 'dashboard', name: 'Dashboard', path: '/dashboard', module: null, icon: '🏠', ix: 'Element3', kind: 'page' }
 ];
 
 function decodeJwt(t) { try { return JSON.parse(Buffer.from(String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')); } catch { return {}; } }
