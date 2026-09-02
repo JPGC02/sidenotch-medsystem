@@ -221,16 +221,16 @@ class HubClient extends EventEmitter {
     ws.onopen = () => {
       this.realtime = 'joining';
       const uid = this.session.user.id;
-      send(`realtime:sidenotch-${uid}`, 'phx_join', { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [
-        { event: 'INSERT', schema: 'public', table: 'notificacoes', filter: `usuario_id=eq.${uid}` },
-        { event: '*', schema: 'public', table: 'tasks', filter: `assignee_id=eq.${uid}` }
-      ] }, access_token: this.session.access_token });
+      // canais separados: se `tasks` não estiver na publicação Realtime do Hub, só esse canal falha e as notificações seguem ao vivo
+      const cfg = (pc) => ({ config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: pc }, access_token: this.session.access_token });
+      send(`realtime:sidenotch-notif-${uid}`, 'phx_join', cfg([{ event: 'INSERT', schema: 'public', table: 'notificacoes', filter: `usuario_id=eq.${uid}` }]));
+      send(`realtime:sidenotch-tasks-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'tasks', filter: `assignee_id=eq.${uid}` }]));
       clearInterval(this.hb); this.hb = setInterval(() => send('phoenix', 'heartbeat', {}), 25000);
     };
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch { return; }
-      if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok' && /^realtime:/.test(m.topic) && this.realtime !== 'on') { this.realtime = 'on'; this._emitIfChanged(); }
-      if (m.event === 'phx_reply' && m.payload && m.payload.status === 'error') { this.realtime = 'error'; this._emitIfChanged(); }
+      if (m.event === 'phx_reply' && m.payload && /^realtime:sidenotch-notif-/.test(m.topic)) { const st = m.payload.status === 'ok' ? 'on' : 'error'; if (this.realtime !== st) { this.realtime = st; this._emitIfChanged(); } }
+      if (m.event === 'phx_error' && /^realtime:sidenotch-notif-/.test(m.topic)) { this.realtime = 'error'; this._emitIfChanged(); }
       if (m.event === 'postgres_changes') {
         const d = m.payload && m.payload.data || {};
         if (d.table === 'notificacoes' && d.type === 'INSERT' && d.record) {

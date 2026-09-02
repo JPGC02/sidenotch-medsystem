@@ -20,7 +20,7 @@ const db = {
     { id: 't2', title: 'Feita', status: 'completed', priority: 'low', due_date: null, assignee_id: UID, created_at: '2026-09-01T00:00:00Z' }
   ]
 };
-let refreshCount = 0, sockets = [];
+let refreshCount = 0, sockets = [], joins = [];
 
 const server = http.createServer((req, res) => {
   let body = ''; req.on('data', (c) => body += c);
@@ -64,8 +64,9 @@ wss.on('connection', (ws, req) => {
     const m = JSON.parse(raw);
     if (m.event === 'phx_join') {
       assert.ok(m.payload.access_token.startsWith('h.'));
-      const pc = m.payload.config.postgres_changes; assert.strictEqual(pc[0].table, 'notificacoes'); assert.strictEqual(pc[0].filter, `usuario_id=eq.${UID}`);
-      ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: m.ref }));
+      const pc = m.payload.config.postgres_changes;
+      if (/notif/.test(m.topic)) { assert.strictEqual(pc[0].table, 'notificacoes'); assert.strictEqual(pc[0].filter, `usuario_id=eq.${UID}`); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: m.ref })); }
+      else { assert.strictEqual(pc[0].table, 'tasks'); joins.push(m.topic); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'error', response: { reason: 'Unable to subscribe to changes with given parameters' } }, ref: m.ref })); }
     }
     if (m.event === 'heartbeat') ws.send(JSON.stringify({ topic: 'phoenix', event: 'phx_reply', payload: { status: 'ok' }, ref: m.ref }));
   });
@@ -101,13 +102,14 @@ wss.on('connection', (ws, req) => {
   await new Promise((r) => { const t = setInterval(() => { if (hub.realtime === 'on') { clearInterval(t); r(); } }, 20); });
   const ws = sockets[sockets.length - 1];
   const changed = []; hub.on('change', () => changed.push(1));
-  ws.send(JSON.stringify({ topic: `realtime:sidenotch-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'notificacoes', type: 'INSERT', record: { id: 'n3', usuario_id: UID, tipo: 'x', titulo: 'Nova!', mensagem: 'chegou', link: '/chamados', lida: false, created_at: new Date().toISOString() } } }, ref: null }));
+  ws.send(JSON.stringify({ topic: `realtime:sidenotch-notif-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'notificacoes', type: 'INSERT', record: { id: 'n3', usuario_id: UID, tipo: 'x', titulo: 'Nova!', mensagem: 'chegou', link: '/chamados', lida: false, created_at: new Date().toISOString() } } }, ref: null }));
   await new Promise((r) => setTimeout(r, 80));
   assert.strictEqual(events.length, 1); assert.strictEqual(events[0].titulo, 'Nova!'); assert.strictEqual(hub.state().unread, 2); assert.strictEqual(hub.notifications[0].id, 'n3');
   db.tasks.push({ id: 't3', title: 'Nova tarefa', status: 'pending', priority: 'medium', due_date: null, assignee_id: UID, created_at: '2026-09-02T00:00:00Z' });
-  ws.send(JSON.stringify({ topic: `realtime:sidenotch-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'tasks', type: 'INSERT', record: { id: 't3' } } }, ref: null }));
+  ws.send(JSON.stringify({ topic: `realtime:sidenotch-tasks-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'tasks', type: 'INSERT', record: { id: 't3' } } }, ref: null }));
   await new Promise((r) => setTimeout(r, 120));
   assert.strictEqual(hub.tasks.length, 2);
+  assert.strictEqual(hub.realtime, 'on', 'canal de tasks com erro não derruba as notificações'); assert.strictEqual(joins.length, 1);
 
   // marcar lida (uma e todas) e concluir tarefa
   await hub.markRead('n3'); assert.strictEqual(hub.state().unread, 1); assert.strictEqual(db.notificacoes.find((n) => n.id === 'n3'), undefined); // n3 veio só pelo realtime, não está no "banco"
