@@ -55,6 +55,9 @@ contextBridge.exposeInMainWorld('sidenotch', {
   hubTask: (id, status) => ipcRenderer.invoke('hub:task', id, status),
   hubOpen: (link, notifId) => ipcRenderer.invoke('hub:open', link, notifId),
   hubCreateTask: (t) => ipcRenderer.invoke('hub:create-task', t),
+  soundTest: (preset, cfg) => ipcRenderer.invoke('sound:test', preset, cfg),
+  soundPick: () => ipcRenderer.invoke('sound:pick'),
+  onSound: (cb) => ipcRenderer.on('sound:play', (_e, d) => cb(d)),
   onHub: (cb) => ipcRenderer.on('hub', (_e, d) => cb(d)),
   onNotchOpen: (cb) => ipcRenderer.on('notch:open', (_e, t) => cb(t)),
   onBar: (cb) => { for (const ch of ['bar:open', 'bar:toggle', 'bar:blur']) ipcRenderer.on(ch, () => cb(ch.split(':')[1])); }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage, dialog } = require('electron');
 const path = require('path');
 const { Store } = require('./store');
 const { fetchAll, resetCache } = require('./providers');
@@ -20,6 +20,7 @@ const webappWins = new Map();
 let lastUsage = [];
 
 if (!app.requestSingleInstanceLock()) app.quit();
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');   // sons das notificações sem clique prévio
 
 app.whenReady().then(() => {
   store = new Store(app.getPath('userData'));
@@ -190,6 +191,14 @@ function startHub() {
   const h = store.get().hub || {};
   if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 60); else hub.stop();
 }
+// som das notificações do Hub: sintetizado no renderer do notch (Web Audio) ou arquivo do usuário; 'windows' = beep do sistema
+function playSound(preset, cfg = {}) {
+  if (!preset || preset === 'none') return;
+  if (preset === 'windows') { shell.beep(); return; }
+  const target = (notch && !notch.isDestroyed()) ? notch : (bar && !bar.isDestroyed()) ? bar : null;
+  if (!target) { shell.beep(); return; }
+  target.webContents.send('sound:play', { preset, volume: Math.max(0, Math.min(1, Number(cfg.volume ?? 0.6))), file: preset === 'file' ? (cfg.soundFile || '') : '' });
+}
 function openHubLink(link, notifId) {
   openWebApp({ id: 'medsystem-hub', name: 'Medsystem Hub', url: hub.urlFor(link) });
   if (notifId && store.get().hub.markReadOnOpen !== false) hub.markRead(notifId).catch(() => {});
@@ -221,7 +230,8 @@ function onNotify(n) {
   if (bar && !bar.isVisible()) bar.show();
   const hcfg = store.get().hub || {};
   const isHub = n.type === 'hub' || n.type === 'chat';
-  if (isHub ? hcfg.sound !== false : (n.type !== 'done' || cfg.done)) shell.beep();
+  if (isHub) { if (hcfg.sound !== false) playSound(n.type === 'chat' ? (hcfg.soundChat || hcfg.soundPreset || 'pop') : (hcfg.soundPreset || 'pop'), hcfg); }
+  else if (n.type !== 'done' || cfg.done) shell.beep();
   if ((isHub ? hcfg.toast !== false : cfg.toast) && Notification.isSupported()) {
     try { const t = new Notification({ title: n.title, body: n.text || '', silent: true }); t.on('click', () => { if (isHub) openHubLink(n.link, n.hubNotifId); else if (bar) { bar.show(); bar.webContents.send('bar:open'); } }); t.show(); } catch { /* ignore */ }
   }
@@ -466,6 +476,8 @@ ipcMain.handle('docs:get', () => docs.get());
 ipcMain.handle('docs:set', (_e, patch) => docs.set(patch || {}));
 ipcMain.on('notch:height', (_e, h) => { /* altura fixa; reservado */ });
 ipcMain.handle('hub:get', () => hub ? hub.state() : null);
+ipcMain.handle('sound:test', (_e, preset, cfg) => { playSound(preset, cfg || store.get().hub || {}); return true; });
+ipcMain.handle('sound:pick', async () => { const r = await dialog.showOpenDialog({ title: 'Escolher som', filters: [{ name: 'Áudio', extensions: ['wav', 'mp3', 'ogg', 'm4a'] }], properties: ['openFile'] }); return r.canceled ? null : r.filePaths[0]; });
 ipcMain.handle('hub:login', async (_e, email, password) => { try { return { ok: true, state: await hub.login(email, password) }; } catch (e) { return { ok: false, error: String(e && e.message || e), state: hub.state() }; } });
 ipcMain.handle('hub:logout', () => { hub.logout(); broadcast('hub', hub.state()); return hub.state(); });
 ipcMain.handle('hub:sync', async () => { await hub.sync(); return hub.state(); });

@@ -606,6 +606,31 @@ function showBanner(n) {
 }
 function hideBanner() { clearTimeout(bannerTimer); if (!document.body.classList.contains('banner')) return; document.body.classList.remove('banner'); $('#mini').onclick = null; $('#pill').style.height = ''; renderMini(); }
 
+// ---------- sons (Web Audio; sem arquivos) ----------
+let actx = null;
+function tone(ctx, t0, freq, dur, vol, type = 'sine', slide = 0) {
+  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t0); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function playPreset(preset, vol) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime + 0.02, v = Math.max(0.02, vol);
+    if (preset === 'pop') { tone(actx, t, 880, 0.12, v, 'sine'); tone(actx, t + 0.11, 1320, 0.16, v * 0.8, 'sine'); }
+    else if (preset === 'message') { tone(actx, t, 1567, 0.09, v * 0.9, 'triangle'); tone(actx, t + 0.09, 2093, 0.14, v * 0.7, 'triangle'); }   // dois toques agudos, tipo app de mensagens
+    else if (preset === 'bell') { tone(actx, t, 1760, 0.6, v, 'sine'); tone(actx, t, 3520, 0.35, v * 0.25, 'sine'); tone(actx, t + 0.004, 2637, 0.4, v * 0.15, 'sine'); }
+    else if (preset === 'soft') { tone(actx, t, 523, 0.35, v * 0.7, 'sine', 120); }
+    else if (preset === 'chime') { [523, 659, 784].forEach((f, i) => tone(actx, t + i * 0.12, f, 0.35, v * 0.8, 'sine')); }
+    else tone(actx, t, 880, 0.15, v, 'sine');
+  } catch { /* sem áudio */ }
+}
+function playSound(d) {
+  if (!d) return;
+  if (d.preset === 'file' && d.file) { try { const a = new Audio(d.file.startsWith('file:') ? d.file : 'file:///' + d.file.replace(/\\/g, '/')); a.volume = d.volume ?? 0.6; a.play().catch(() => playPreset('pop', d.volume ?? 0.6)); } catch { playPreset('pop', d.volume ?? 0.6); } return; }
+  playPreset(d.preset, d.volume ?? 0.6);
+}
+
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
 const SIZES = { hub: [760, 0], chat: [640, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
@@ -640,6 +665,7 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
+  api.onSound(playSound);
   api.onNotify((n) => { if ((n.type === 'hub' || n.type === 'chat') && !(settings.dnd)) showBanner(n); });
   api.onNotchOpen((t) => { tab = t || 'hub'; renderTabs(); setOpen(true); renderView(); setTimeout(() => { const q = $('#hbQ'); if (q) { api.setFocusable(true); q.focus(); q.select(); } }, 60); });
   api.onApprovals((a) => { approvals = a; renderMini(); });
