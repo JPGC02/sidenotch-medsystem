@@ -198,6 +198,11 @@ wss.on('connection', (ws, req) => {
   const hub4 = new HubClient({ dir, secret, url, anon: 'anon-test', site: 'https://hub.test', getCfg: () => ({ custom: [{ id: 'x1', name: 'Planilha', path: 'https://docs.google.com/x' }, { id: 'x2', name: 'Chamados AT', path: 'chamados?setor=at', ix: 'Headphone' }] }) });
   hub4.profile = { id: UID, role: { level: 30, slug: 'colaborador' }, modules: ['compras'] };
   const sc4 = hub4.shortcuts(); assert.strictEqual(sc4.find((s) => s.id === 'u:x1').url, 'https://docs.google.com/x'); assert.strictEqual(sc4.find((s) => s.id === 'u:x2').url, 'https://hub.test/chamados?setor=at');
+  assert.strictEqual(hub4.allowedPath('/sistemas/ideias/nova'), false, 'PEM sem o módulo sistemas'); assert.strictEqual(hub4.allowedPath('https://hub.test/sistemas/ideias/nova?x=1'), false, 'URL absoluta do Hub também');
+  assert.strictEqual(hub4.allowedPath('/compras/cotacoes/nova'), true); assert.strictEqual(hub4.allowedPath('https://docs.google.com/x'), true); assert.strictEqual(hub4.allowedPath('/rota-desconhecida'), true); assert.strictEqual(hub4.allowedPath('/dashboard'), true);
+  assert.strictEqual(hub4.moduleForPath('/financeiro/solicitacoes/nova-nf').module, 'financeiro-solicitacoes'); assert.strictEqual(hub4.moduleForPath('/compras/pedidos-internet/novo').match, 'pedido-internet', 'prefixo mais longo');
+  const hub5 = new HubClient({ dir, secret, url, anon: 'anon-test', site: 'https://hub.test', getCfg: () => ({ custom: [{ id: 'bad', name: 'PEM', path: '/sistemas/ideias/nova' }, { id: 'ok', name: 'Ext', path: 'https://x.y' }] }) });
+  hub5.profile = hub4.profile; assert.ok(!hub5.shortcuts().some((s) => s.id === 'u:bad') && hub5.shortcuts().some((s) => s.id === 'u:ok'), 'atalho personalizado para módulo sem acesso é descartado');
   const cat = hub4.catalog(); assert.ok(cat.find((c) => c.id === 'cotacao').allowed && !cat.find((c) => c.id === 'nf').allowed && cat.find((c) => c.id === 'dashboard').allowed);
   for (const s of sockets) s.terminate();
   wss.close(); server.close();

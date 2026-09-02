@@ -210,6 +210,8 @@ function playSound(preset, cfg = {}) {
   target.webContents.send('sound:play', { preset, volume: Math.max(0, Math.min(1, Number(cfg.volume ?? 0.6))), file: preset === 'file' ? (cfg.soundFile || '') : '' });
 }
 function openHubLink(link, notifId) {
+  // rotas de módulos que o usuário não tem no Hub não abrem pelo app (notificações vindas do próprio Hub passam)
+  if (!notifId && hub && !hub.allowedPath(link)) { server && server._notify({ type: 'hub', title: 'Sem acesso a esta página do Hub', text: `${link} pertence a um módulo que o seu perfil não tem.`, link: '' }); return; }
   openWebApp({ id: 'medsystem-hub', name: 'Medsystem Hub', url: hub.urlFor(link) });
   if (notifId && store.get().hub.markReadOnOpen !== false) hub.markRead(notifId).catch(() => {});
 }
@@ -510,6 +512,7 @@ ipcMain.handle('hub:sync', async () => { await hub.sync(); return hub.state(); }
 ipcMain.handle('hub:read', async (_e, id) => { try { await hub.markRead(id); } catch (e) { return { ok: false, error: String(e.message || e) }; } return { ok: true, state: hub.state() }; });
 ipcMain.handle('hub:task', async (_e, id, status) => { try { await hub.setTaskStatus(id, status); } catch (e) { return { ok: false, error: String(e.message || e) }; } return { ok: true, state: hub.state() }; });
 ipcMain.handle('hub:open', (_e, link, notifId) => { openHubLink(link, notifId); return true; });
+ipcMain.handle('hub:check-path', (_e, p) => ({ allowed: hub ? hub.allowedPath(p) : false, ...(hub ? hub.moduleForPath(p) : {}) }));
 ipcMain.handle('hub:create-task', async (_e, t) => { try { const r = await hub.createTask(t || {}); return { ok: true, task: r, state: hub.state() }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });

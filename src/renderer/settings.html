@@ -149,6 +149,7 @@
         <div class="row" style="display:flex;gap:8px;align-items:center;padding:6px 0"><input id="dkQ" type="text" placeholder="Filtrar…" style="flex:1"><span class="help" id="dkCount"></span></div>
         <div id="dockList" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 0 10px"></div>
         <h2>Atalho personalizado</h2>
+        <p class="help" style="padding:4px 0">Rotas do Hub só de módulos que o seu perfil tem; URLs externas (planilhas, outros sistemas) são livres.</p>
         <div class="srcrow" style="grid-template-columns:150px 1fr 120px 90px"><input id="cuName" type="text" placeholder="Nome"><input id="cuPath" type="text" placeholder="/rota/do/hub ou https://…"><select id="cuIx"><option value="Global">🌐 Link</option><option value="DocumentText">📄 Formulário</option><option value="Element3">▦ Página</option><option value="Headphone">🎧 Suporte</option><option value="Receipt2">🧾 Financeiro</option><option value="ShoppingCart">🛒 Compras</option><option value="People">👥 Pessoas</option><option value="Calendar1">📅 Agenda</option><option value="Monitor">🖥 Sistema</option><option value="Whatsapp">💬 WhatsApp</option><option value="Flag">🚩 Demanda</option><option value="Lamp">💡 Ideia</option></select><button id="cuAdd" class="pri">Adicionar</button></div>
         <div id="customList" class="help" style="padding-bottom:10px"></div>
       </section>
@@ -424,7 +425,7 @@ $('#mUnpair').addEventListener('click', async () => renderMaestri(await api.maes
 $('#hbLogin').addEventListener('click', async () => { await api.saveSettings(collect()); $('#hbStatus').textContent = 'Entrando…'; const r = await api.hubLogin($('#hbEmail').value.trim(), $('#hbPass').value); if (!r.ok) $('#hbStatus').innerHTML = `<span class="st err">Falha: ${r.error}</span>`; else { $('#hbPass').value = ''; renderHub(r.state); } });
 $('#hbOut').addEventListener('click', async () => renderHub(await api.hubLogout()));
 $('#dkQ').addEventListener('input', renderDock);
-$('#cuAdd').addEventListener('click', () => { const name = $('#cuName').value.trim(), path = $('#cuPath').value.trim(); if (!name || !path) return; const id = 'c' + Date.now().toString(36); customSc.push({ id, name, path, ix: $('#cuIx').value, kind: $('#cuIx').value === 'DocumentText' ? 'form' : 'page' }); dockSel.push('u:' + id); $('#cuName').value = ''; $('#cuPath').value = ''; renderDock(); });
+$('#cuAdd').addEventListener('click', async () => { const name = $('#cuName').value.trim(), path = $('#cuPath').value.trim(); if (!name || !path) return; const chk = await api.hubCheckPath(path); if (chk && chk.allowed === false) { $('#customList').innerHTML = `<span class="st err">Sem acesso: ${path} pertence ao módulo "${chk.module}" no Hub. Só é possível criar atalhos para páginas que o seu perfil tem.</span>`; return; } const id = 'c' + Date.now().toString(36); customSc.push({ id, name, path, ix: $('#cuIx').value, kind: $('#cuIx').value === 'DocumentText' ? 'form' : 'page' }); dockSel.push('u:' + id); $('#cuName').value = ''; $('#cuPath').value = ''; renderDock(); });
 const sndCfg = () => ({ volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim() });
 $('#hbSndT1').addEventListener('click', () => api.soundTest($('#hbSndP').value, sndCfg()));
 $('#hbSndT2').addEventListener('click', () => api.soundTest($('#hbSndC').value, sndCfg()));

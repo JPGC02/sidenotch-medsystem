@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   hubRead: (id) => ipcRenderer.invoke('hub:read', id),
   hubTask: (id, status) => ipcRenderer.invoke('hub:task', id, status),
   hubOpen: (link, notifId) => ipcRenderer.invoke('hub:open', link, notifId),
+  hubCheckPath: (p) => ipcRenderer.invoke('hub:check-path', p),
   hubCreateTask: (t) => ipcRenderer.invoke('hub:create-task', t),
   soundTest: (preset, cfg) => ipcRenderer.invoke('sound:test', preset, cfg),
   soundPick: () => ipcRenderer.invoke('sound:pick'),

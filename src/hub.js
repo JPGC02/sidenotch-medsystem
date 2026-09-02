@@ -416,8 +416,23 @@ class HubClient extends EventEmitter {
     const mods = new Set(this.profile ? this.profile.modules : []);
     const admin = this.profile && this.profile.role.level >= 100;
     const cfg = this.getCfg() || {};
-    const custom = (cfg.custom || []).filter((c) => c && c.path).map((c) => ({ id: 'u:' + (c.id || c.path), name: c.name || c.path, path: /^(https?:|\/)/.test(c.path) ? c.path : '/' + c.path, module: null, icon: c.icon || '🔗', ix: c.ix || 'Global', kind: c.kind || 'page', custom: true }));
+    const custom = (cfg.custom || []).filter((c) => c && c.path && this.allowedPath(c.path)).map((c) => ({ id: 'u:' + (c.id || c.path), name: c.name || c.path, path: /^(https?:|\/)/.test(c.path) ? c.path : '/' + c.path, module: null, icon: c.icon || '🔗', ix: c.ix || 'Global', kind: c.kind || 'page', custom: true }));
     return [...SHORTCUTS.filter((s) => !s.module || admin || mods.has(s.module)), ...custom].map((s) => ({ ...s, url: this.urlFor(s.path) }));
+  }
+  // módulo do Hub responsável por uma rota (prefixo mais longo do catálogo); null = rota livre/desconhecida
+  moduleForPath(p) {
+    let route = String(p || '');
+    if (/^https?:/i.test(route)) { if (!route.toLowerCase().startsWith(this.site.toLowerCase())) return { external: true }; route = route.slice(this.site.length) || '/'; }
+    route = route.split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+    let best = null;
+    for (const s of SHORTCUTS) { const sp = s.path.split(/[?#]/)[0].replace(/\/+$/, ''); if (route === sp || route.startsWith(sp + '/')) if (!best || sp.length > best.path.length) best = { path: sp, module: s.module, id: s.id }; }
+    return best ? { module: best.module, match: best.id } : { module: null, match: null };
+  }
+  // pode abrir/usar esta rota? (mesma regra do lançador: módulo permitido; URL externa sempre pode)
+  allowedPath(p) {
+    const m = this.moduleForPath(p); if (m.external || !m.module) return true;
+    const admin = this.profile && this.profile.role.level >= 100;
+    return admin || (this.profile ? this.profile.modules : []).includes(m.module);
   }
   // catálogo completo (para a tela de configurações), marcando o que o usuário tem acesso
   catalog() {
