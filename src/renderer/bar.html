@@ -75,7 +75,8 @@
   .dk { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; font-size: 19px; cursor: pointer; position: relative; background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.05)); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 3px 8px rgba(0,0,0,.35); margin: 2px 0; transition: transform .12s; }
   .dk:hover { transform: scale(1.08); } .dk.form { background: linear-gradient(160deg, #1f6feb, #0a84ff); }
   .dk .cnt { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
-  .dk .cnt.blue { background: #0a84ff; }
+  .dk .cnt.blue { background: #0a84ff; } .dk .cnt.green { background: #25d366; color: #05240f; } .dk .cnt.orange { background: #ff9f0a; color: #2a1800; }
+  .card.chat { border-left-color: #25d366; cursor: pointer; } .card .chip.tr { background: rgba(255,159,10,.2); color: #ffb340; } .card .chip.me { background: rgba(37,211,102,.16); color: #4ade80; }
   .dk svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; }
   .card.hubn { border-left-color: #0a84ff; cursor: pointer; } .card.hubn.read { opacity: .6; } .card.hubt { border-left-color: #30d158; }
   .card .chip { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(100,210,255,.16); color: #64d2ff; } .card .chip.late { background: rgba(255,69,58,.18); color: #ff6961; }
@@ -90,7 +91,7 @@
   @keyframes fade { from { opacity: 0; transform: translateX(var(--dx, 6px)); } }
   body.left .card { --dx: -6px; }
   .card.done { border-left-color: var(--ok); } .card.waiting { border-left-color: var(--warn); } .card.denied { border-left-color: var(--bad); }
-  .card.limit, .card.alert { border-left-color: var(--info); } .card.error { border-left-color: var(--bad); } .card.update { border-left-color: var(--info); } .card.hub { border-left-color: #2dd4bf; }
+  .card.limit, .card.alert { border-left-color: var(--info); } .card.error { border-left-color: var(--bad); } .card.update { border-left-color: var(--info); } .card.hub { border-left-color: #0a84ff; } .card.chat { border-left-color: #25d366; }
   .card.plain { border-left-color: var(--bg3); }
   .card .ttl { font-size: 12.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
   .card .ttl .tool { background: var(--bg2); border-radius: 6px; padding: 1px 6px; font-size: 10.5px; color: var(--warn); white-space: nowrap; }
@@ -172,6 +173,7 @@ const ICONS = {
 const SVG = {
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   sessions: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
   bell: '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
   bellOff: '<svg viewBox="0 0 24 24"><path d="M13.7 21a2 2 0 0 1-3.4 0M18.6 13A17 17 0 0 1 18 8a6 6 0 0 0-9.3-5M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14M1 1l22 22"/></svg>'
@@ -223,6 +225,7 @@ function renderBar() {
     const scs = hub.shortcuts || []; const dock = [...scs.filter((x) => pins.has(x.id)), ...scs.filter((x) => !pins.has(x.id))].slice(0, Math.max(3, Math.min(6, Number(settings.hub && settings.hub.dockCount) || 5)));
     for (const sc of dock) { const d = document.createElement('div'); d.className = 'dk ' + sc.kind; d.textContent = sc.icon; d.title = sc.name; d.onclick = () => api.hubOpen(sc.path); d.addEventListener('mouseenter', () => { if (view === 'pop') setView(null); }); list.appendChild(d); }
     const nb = document.createElement('div'); nb.className = 'dk'; nb.innerHTML = SVG.bell + (hub.unread ? `<span class="cnt blue">${hub.unread}</span>` : ''); nb.title = 'Notificações do Hub'; nb.onclick = () => toggleView('hubnotif'); nb.addEventListener('mouseenter', () => { if (hub.unread) toggleView('hubnotif', true); }); list.appendChild(nb);
+    if (hub.hasWhatsapp) { const cb = document.createElement('div'); cb.className = 'dk'; cb.innerHTML = SVG.chat + (hub.chatUnread ? `<span class="cnt green">${hub.chatUnread}</span>` : hub.chatTransfers ? `<span class="cnt orange">${hub.chatTransfers}</span>` : ''); cb.title = 'Conversas do WhatsApp'; cb.onclick = () => toggleView('hubchat'); cb.addEventListener('mouseenter', () => { if (hub.chatUnread || hub.chatTransfers) toggleView('hubchat', true); }); list.appendChild(cb); }
     const tb = document.createElement('div'); tb.className = 'dk'; tb.innerHTML = SVG.check + (hub.tasks.length ? `<span class="cnt ${hub.overdue ? '' : 'blue'}">${hub.overdue || hub.tasks.length}</span>` : ''); tb.title = 'Minhas tarefas'; tb.onclick = () => toggleView('hubtasks'); list.appendChild(tb);
   } else if (hub && !hub.linked) {
     const lb = document.createElement('div'); lb.className = 'dk'; lb.textContent = '🏥'; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
@@ -231,14 +234,17 @@ function renderBar() {
   const mt = (approvals.maestri && approvals.maestri.terminals) || [];
   const act = approvals.sessions.filter((s) => s.status !== 'ended').concat(mt.filter((t) => t.isRunning && !t.isUnloaded));
   const waiting = approvals.sessions.filter((s) => s.status === 'waiting').length + mt.filter((t) => t.needsAttention || t.hasPrompt).length;
-  const sb = btn('sessions', SVG.sessions, 'Sessões do Claude Code', () => toggleView('sessions'));
-  if (act.length) sb.insertAdjacentHTML('beforeend', `<span class="cnt ${waiting ? 'wait' : ''}">${waiting || act.length}</span>`);
-  list.appendChild(sb);
-  const db = btn('dnd', settings.dnd ? SVG.bellOff : SVG.bell, settings.dnd ? 'Não perturbe: ligado' : 'Não perturbe: desligado', () => api.setDnd(!settings.dnd));
-  if (settings.dnd) db.classList.add('on');
-  if (approvals.feed.length) db.insertAdjacentHTML('beforeend', `<span class="cnt">${approvals.feed.length}</span>`);
-  db.addEventListener('mouseenter', () => { if (approvals.feed.length) toggleView('feed', true); });
-  list.appendChild(db);
+  const aiTools = !!(settings.sidebar && settings.sidebar.aiTools) || act.length > 0;
+  if (aiTools) {
+    const sb = btn('sessions', SVG.sessions, 'Sessões do Claude Code', () => toggleView('sessions'));
+    if (act.length) sb.insertAdjacentHTML('beforeend', `<span class="cnt ${waiting ? 'wait' : ''}">${waiting || act.length}</span>`);
+    list.appendChild(sb);
+    const db = btn('dnd', settings.dnd ? SVG.bellOff : SVG.bell, settings.dnd ? 'Não perturbe: ligado' : 'Não perturbe: desligado', () => api.setDnd(!settings.dnd));
+    if (settings.dnd) db.classList.add('on');
+    if (approvals.feed.length) db.insertAdjacentHTML('beforeend', `<span class="cnt">${approvals.feed.length}</span>`);
+    db.addEventListener('mouseenter', () => { if (approvals.feed.length) toggleView('feed', true); });
+    list.appendChild(db);
+  }
   list.appendChild(btn('gear', SVG.gear, 'Configurações', () => api.openSettings()));
   barH = list.scrollHeight + 32;
   fitHeight();
@@ -286,6 +292,7 @@ function renderPanel() {
   if (view === 'feed' || (!view && feed.length)) for (const n of feed.slice(0, view === 'feed' ? 40 : 4)) panel.appendChild(feedCard(n));
   // 2b) Hub: notificações / tarefas
   if (view === 'hubnotif' && hub) { const nts = hub.notifications || []; if (!nts.length) panel.insertAdjacentHTML('beforeend', '<div class="card plain"><div class="txt">Nenhuma notificação do Hub.</div></div>'); for (const n of nts.slice(0, 20)) panel.appendChild(hubNotifCard(n)); }
+  if (view === 'hubchat' && hub) { const chs = hub.chats || []; if (!chs.length) panel.insertAdjacentHTML('beforeend', '<div class="card plain"><div class="txt">Nenhuma conversa aberta.</div></div>'); for (const c of chs.slice(0, 20)) panel.appendChild(hubChatCard(c)); }
   if (view === 'hubtasks' && hub) { const tks = hub.tasks || []; if (!tks.length) panel.insertAdjacentHTML('beforeend', '<div class="card plain"><div class="txt">Nada pendente 🎉</div></div>'); for (const t of tks.slice(0, 20)) panel.appendChild(hubTaskCard(t)); }
   // 3) sessões
   if (view === 'sessions') panel.appendChild(sessionsCard());
@@ -361,6 +368,7 @@ function feedCard(n) {
     card.querySelector('.mf').onclick = () => api.maestriAction(n.maestriTerminalId, 'focus');
     card.querySelector('.ms').onclick = () => { api.maestriAction(n.maestriTerminalId, 'seen'); api.dismiss(n.id); };
   }
+  if (n.type === 'chat') { const t = card.querySelector('.txt'); if (t) t.insertAdjacentHTML('afterend', `<div class="btns"><button class="allow" data-chopen style="background:#25d366;color:#05240f">Abrir conversa</button></div>`); card.querySelector('[data-chopen]').onclick = () => { api.hubOpen(n.link); api.dismiss(n.id); }; }
   if (n.type === 'hub') { const t = card.querySelector('.txt'); if (t) t.insertAdjacentHTML('afterend', `<div class="btns"><button class="allow" data-hubopen>Abrir no Hub</button></div>`); card.querySelector('[data-hubopen]').onclick = () => { api.hubOpen(n.link, n.hubNotifId); api.dismiss(n.id); }; }
   if (n.type === 'update') { card.querySelector('.txt') && card.querySelector('.txt').insertAdjacentHTML('afterend', `<div class="btns"><button class="allow" id="doUpdate">Instalar e reiniciar</button></div>`); card.querySelector('#doUpdate').onclick = () => api.installUpdate(); }
   return card;
@@ -371,6 +379,13 @@ function hubNotifCard(n) {
   const m = Math.round((Date.now() - new Date(n.created_at)) / 60000); const when = m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + ' d';
   card.innerHTML = `<div class="ttl"><span>${esc(n.titulo)}</span><span class="tool" style="color:var(--muted)">${when}</span></div>${n.mensagem ? `<div class="txt">${esc(n.mensagem)}</div>` : ''}`;
   card.onclick = async () => { if (n.link) api.hubOpen(n.link, n.id); else { const r = await api.hubRead(n.id); if (r.state) { hub = r.state; renderBar(); renderPanel(); } } };
+  return card;
+}
+function hubChatCard(c) {
+  const card = document.createElement('div'); card.className = 'card chat';
+  card.innerHTML = `<div class="ttl"><span>${esc(c.name)}${c.unread ? ` <span class="tool" style="background:#25d366;color:#05240f">${c.unread}</span>` : ''}</span><span class="tool" style="color:var(--muted)">${c.at ? ago(new Date(c.at).toISOString()) : ''}</span></div>
+    <div class="txt">${esc(c.preview || '')}</div><div class="meta"><span>${c.transferred ? `<span class="chip tr">↪ de ${esc(c.transferredFrom || 'outro setor')}</span> ` : ''}${c.mine ? '<span class="chip me">você</span>' : c.unassigned ? 'sem atendente' : ''}</span><span>${esc(c.sector || '')}</span></div>`;
+  card.onclick = () => api.hubOpen(c.link);
   return card;
 }
 function hubTaskCard(t) {
@@ -460,7 +475,7 @@ function showPop(id) { if (approvals.pending.length) return; hovered = id; setVi
 function setOpen(v) {
   if (!v && (pinned || approvals.pending.length || document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) return;
   document.body.classList.toggle('open', v);
-  if (!v) { hovered = null; if (view === 'pop' || view === 'sessions' || view === 'hubnotif' || view === 'hubtasks') setView(null); }
+  if (!v) { hovered = null; if (view === 'pop' || view === 'sessions' || view === 'hubnotif' || view === 'hubtasks' || view === 'hubchat') setView(null); }
 }
 const UI = '#bar, #panel, #hit';
 const root = $('#root');
@@ -499,7 +514,7 @@ function onNotify(n) {
   renderBar(); renderPanel();
   api.onUsage((d) => { usage = d; renderBar(); if (view === 'pop') renderPanel(); });
   api.onSettings(applySettings);
-  api.onHub((h) => { hub = h; renderBar(); if (view === 'hubnotif' || view === 'hubtasks') renderPanel(); });
+  api.onHub((h) => { hub = h; renderBar(); if (view === 'hubnotif' || view === 'hubtasks' || view === 'hubchat') renderPanel(); });
   let deferred = false;
   const typing = () => document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && $('#panel').contains(document.activeElement);
   api.onApprovals((a) => { approvals = a; renderBar(); if (typing()) { deferred = true; return; } renderPanel(); });

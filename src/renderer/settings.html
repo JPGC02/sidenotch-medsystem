@@ -97,6 +97,8 @@
         <div class="r"><div class="l"><b>Avisar novas notificações</b><small>cartão na barra + pastilha pisca</small></div><label class="sw"><input id="hbNotify" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Notificação do Windows também</b></div><label class="sw"><input id="hbToast" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Som</b></div><label class="sw"><input id="hbSound" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Avisar mensagens do WhatsApp</b><small>mensagens recebidas, transferências e atribuições das conversas do seu setor (Organizador de Contato)</small></div><label class="sw"><input id="hbChat" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Ferramentas de IA na barra</b><small>botões de sessões do Claude Code e não perturbe</small></div><label class="sw"><input id="sbAi" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Marcar como lida ao abrir</b></div><label class="sw"><input id="hbRead" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Contadores na pastilha fechada</b></div><label class="sw"><input id="ntHub" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Atalhos na barra lateral</b><small>quantos formulários aparecem no dock (3 a 6); clique direito num tile do notch fixa</small></div><input id="hbDock" type="number" min="3" max="6"></div>
@@ -116,7 +118,7 @@
         <div class="r"><div class="l"><b>Mostrar o notch</b></div><label class="sw"><input id="ntEnabled" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Monitor</b></div><select id="ntDisplay"></select></div>
         <div class="r"><div class="l"><b>Deslocamento horizontal</b><small>px, positivo para a direita</small></div><input id="ntOffset" type="number" step="10"></div>
-        <div class="r"><div class="l"><b>Aba inicial</b></div><select id="ntTab"><option value="hub">Medsystem Hub</option><option value="music">Música</option><option value="sys">Sistema</option><option value="apps">Apps</option><option value="notes">Tarefas e notas</option><option value="canvas">Canvas</option><option value="cal">Calendário</option></select></div>
+        <div class="r"><div class="l"><b>Aba inicial</b></div><select id="ntTab"><option value="hub">Medsystem Hub</option><option value="chat">Conversas</option><option value="music">Música</option><option value="sys">Sistema</option><option value="apps">Apps</option><option value="notes">Tarefas e notas</option><option value="canvas">Canvas</option><option value="cal">Calendário</option></select></div>
         <h2>Na pastilha fechada</h2>
         <div class="r"><div class="l"><b>Música tocando</b></div><label class="sw"><input id="ntMusic" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>CPU e memória</b></div><label class="sw"><input id="ntSys" type="checkbox"><span></span></label></div>
@@ -254,13 +256,13 @@ function collect() {
     displayId: $('#displayId').value || null, collapsedWidth: Number($('#collapsedWidth').value) || 6, compact: $('#compact').value,
     refreshSeconds: Number($('#refreshSeconds').value) || 180, autoLaunch: $('#autoLaunch').checked, dnd: $('#dnd').checked,
     order: settings.order, providers: {},
-    sidebar: { enabled: $('#sbEnabled').checked },
+    sidebar: { enabled: $('#sbEnabled').checked, aiTools: $('#sbAi').checked },
     notch: { enabled: $('#ntEnabled').checked, displayId: $('#ntDisplay').value || null, offsetX: Number($('#ntOffset').value) || 0, tab: $('#ntTab').value, show: { music: $('#ntMusic').checked, system: $('#ntSys').checked, calendar: $('#ntCal').checked, hub: $('#ntHub').checked } },
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
     shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim() },
-    hub: { enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
+    hub: { enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
     update: { auto: $('#upAuto').checked },
     maestri: { host: $('#mHost').value.trim() || '127.0.0.1', port: Number($('#mPort').value) || 7434, pollSeconds: Number($('#mPoll').value) || 4, notifyAttention: $('#mAttn').checked },
     calendar: { sources: calSources.filter((s) => s.url), refreshMinutes: Number($('#calMin').value) || 15 }
@@ -290,7 +292,7 @@ async function load() {
   $('#nDone').checked = !!n.done; $('#nWaiting').checked = !!n.waiting; $('#nDenied').checked = !!n.denied; $('#nToast').checked = !!n.toast; $('#nDismiss').value = n.autoDismissSec ?? 20;
   $('#alEnabled').checked = !!al.enabled; $('#alTh').value = (al.thresholds || [80, 95]).join(', '); $('#alReset').checked = !!al.onReset;
   $('#scToggle').value = sc.toggle || ''; $('#scApprove').value = sc.approve || ''; $('#scDeny').value = sc.deny || ''; $('#scHub').value = sc.hub || '';
-  const hb = settings.hub || {}; $('#hbEnabled').checked = hb.enabled !== false; $('#hbNotify').checked = hb.notify !== false; $('#hbToast').checked = hb.toast !== false; $('#hbSound').checked = hb.sound !== false; $('#hbRead').checked = hb.markReadOnOpen !== false; $('#hbPoll').value = hb.pollSeconds || 90; $('#hbDock').value = hb.dockCount || 5; $('#hbUrl').value = hb.url || ''; $('#hbSite').value = hb.site || '';
+  const hb = settings.hub || {}; $('#hbEnabled').checked = hb.enabled !== false; $('#hbNotify').checked = hb.notify !== false; $('#hbToast').checked = hb.toast !== false; $('#hbSound').checked = hb.sound !== false; $('#hbRead').checked = hb.markReadOnOpen !== false; $('#hbPoll').value = hb.pollSeconds || 90; $('#hbDock').value = hb.dockCount || 5; $('#hbChat').checked = hb.chatNotify !== false; $('#sbAi').checked = !!(settings.sidebar && settings.sidebar.aiTools); $('#hbUrl').value = hb.url || ''; $('#hbSite').value = hb.site || '';
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   renderHub(await api.hubGet());
   $('#upAuto').checked = !!(settings.update && settings.update.auto);

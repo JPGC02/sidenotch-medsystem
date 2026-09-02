@@ -64,7 +64,7 @@ class HubClient extends EventEmitter {
     this.session = null;           // { access_token, refresh_token, expires_at, user: {id,email} }
     this.web = null;               // 2ª sessão (família de refresh token própria) injetada na janela do Hub para não pedir login de novo
     this.profile = null;           // { name, email, sector:{slug,name}, role:{slug,level}, modules:[] }
-    this.notifications = []; this.tasks = []; this.error = null; this.connected = false; this.realtime = 'off';
+    this.notifications = []; this.tasks = []; this.agenda = []; this.chats = []; this.instances = []; this.error = null; this.connected = false; this.realtime = 'off';
     this.ws = null; this.hb = null; this.refreshTimer = null; this.pollTimer = null; this.ref = 0; this.lastSig = '';
     this.sessionFile = this.dir ? path.join(this.dir, 'hub-session.bin') : null;
   }
@@ -141,7 +141,7 @@ class HubClient extends EventEmitter {
   logout() {
     clearTimeout(this.refreshTimer); clearInterval(this.pollTimer); this._closeWs();
     if (this.session) { this.fetch(`${this.url}/auth/v1/logout`, { method: 'POST', headers: this._h() }).catch(() => {}); }
-    this.session = null; this.web = null; this.profile = null; this.notifications = []; this.tasks = []; this.connected = false;
+    this.session = null; this.web = null; this.profile = null; this.notifications = []; this.tasks = []; this.agenda = []; this.chats = []; this.instances = []; this.connected = false;
     this._saveSession();
   }
 
@@ -204,7 +204,7 @@ class HubClient extends EventEmitter {
   async loadTasks() {
     const uid = this.session.user.id;
     const [gerais, at] = await Promise.all([
-      this.rest('GET', `tasks?assignee_id=eq.${uid}&status=neq.completed&select=id,title,description,status,priority,due_date,created_at&order=due_date.asc.nullslast,created_at.desc&limit=60`).then((r) => (r || []).map((t) => ({ ...t, source: 'geral', label: null, link: `/tarefas?id=${t.id}` }))),
+      this.rest('GET', `tasks?or=(assignee_id.eq.${uid},created_by.eq.${uid})&status=neq.completed&select=id,title,description,status,priority,due_date,created_at,assignee_id,created_by&order=due_date.asc.nullslast,created_at.desc&limit=60`).then((r) => (r || []).map((t) => ({ ...t, source: 'geral', label: null, link: `/tarefas?id=${t.id}` }))),
       // OS que o Fluxo da AT encarregou ao usuário (mesma fonte da Central de Tarefas do Hub)
       this.rest('GET', `at_os_tarefa?responsavel=eq.${uid}&situacao=not.in.(concluida,cancelada)&select=id,codigo_os,cliente,equipamento,urgencia,situacao,prazo,observacao,criado_em&order=prazo.asc.nullslast,criado_em.desc&limit=80`).then((r) => (r || []).map((t) => ({
         id: 'at:' + t.id, title: `OS ${t.codigo_os}${t.cliente ? ' · ' + t.cliente : ''}`, description: [t.equipamento, t.observacao].filter(Boolean).join(' — '),
@@ -218,12 +218,12 @@ class HubClient extends EventEmitter {
     return all;
   }
   async sync() {
-    try { await Promise.all([this.loadNotifications(), this.loadTasks()]); this.error = null; this.connected = true; }
+    try { await Promise.all([this.loadNotifications(), this.loadTasks(), this.loadAgenda().catch(() => {}), this.loadChats().catch(() => {})]); this.error = null; this.connected = true; }
     catch (e) { this.error = String(e.message || e); this.connected = false; }
     this._emitIfChanged();
   }
   _emitIfChanged() {
-    const sig = JSON.stringify([this.notifications.map((n) => n.id + n.lida), this.tasks.map((t) => t.id + t.status), this.error, this.realtime]);
+    const sig = JSON.stringify([this.notifications.map((n) => n.id + n.lida), this.tasks.map((t) => t.id + t.status), this.agenda.map((e) => e.id + e.start), this.chats.map((c) => c.id + c.unread + c.at + (c.mine ? 1 : 0)), this.error, this.realtime]);
     if (sig !== this.lastSig) { this.lastSig = sig; this.emit('change'); }
   }
   async markRead(id) {
@@ -234,10 +234,63 @@ class HubClient extends EventEmitter {
   async setTaskStatus(id, status) {
     if (!['pending', 'in_progress', 'completed'].includes(status)) throw new Error('status inválido');
     if (String(id).startsWith('at:')) await this.rest('PATCH', `at_os_tarefa?id=eq.${id.slice(3)}&responsavel=eq.${this.session.user.id}`, { situacao: { pending: 'pendente', in_progress: 'em_andamento', completed: 'concluida' }[status] }, { Prefer: 'return=minimal' });
-    else await this.rest('PATCH', `tasks?id=eq.${id}&assignee_id=eq.${this.session.user.id}`, { status }, { Prefer: 'return=minimal' });
+    else await this.rest('PATCH', `tasks?id=eq.${id}&or=(assignee_id.eq.${this.session.user.id},created_by.eq.${this.session.user.id})`, { status }, { Prefer: 'return=minimal' });
     if (status === 'completed') this.tasks = this.tasks.filter((t) => t.id !== id); else { const t = this.tasks.find((x) => x.id === id); if (t) t.status = status; }
     this._emitIfChanged();
   }
+
+  // cria tarefa avulsa para si mesmo (mesmos campos da página /tarefas; a RLS exige created_by = eu e assignee = eu)
+  async createTask({ title, description, due_date, priority }) {
+    title = String(title || '').trim(); if (!title) throw new Error('título obrigatório');
+    const uid = this.session.user.id;
+    const row = { title: title.slice(0, 255), description: description ? String(description).slice(0, 4000) : null, priority: ['low', 'medium', 'high', 'urgent'].includes(priority) ? priority : 'medium', status: 'pending', due_date: due_date || null, assignee_id: uid, created_by: uid, sector_id: this.profile && this.profile.sector ? this.profile.sector.id : null };
+    const out = await this.rest('POST', 'tasks?select=id,title,description,status,priority,due_date,created_at', row, { Prefer: 'return=representation' });
+    const t = Array.isArray(out) ? out[0] : out;
+    if (t) { this.tasks.unshift({ ...t, source: 'geral', label: null, link: `/tarefas?id=${t.id}` }); this._emitIfChanged(); }
+    return t;
+  }
+
+  // agenda do Hub: eventos em que sou participante/criador + calendários pessoal, do setor e da empresa (mesma lógica de /agenda)
+  async loadAgenda() {
+    const uid = this.session.user.id; const sec = this.profile && this.profile.sector ? this.profile.sector.id : null;
+    const from = new Date(Date.now() - 86400000).toISOString(), to = new Date(Date.now() + 45 * 86400000).toISOString();
+    const cals = await this.rest('GET', `agenda_calendarios?ativo=eq.true&or=(and(tipo.eq.pessoal,dono_id.eq.${uid}),visivel_todos.eq.true${sec ? `,and(tipo.eq.setor,setor_id.eq.${sec})` : ''})&select=id,nome,cor,tipo`).catch(() => []);
+    const parts = await this.rest('GET', `agenda_evento_participantes?usuario_id=eq.${uid}&status=neq.recusado&select=evento_id`).catch(() => []);
+    const ids = [...new Set([...(parts || []).map((p) => p.evento_id)])];
+    const ors = [`criador_id.eq.${uid}`]; if (cals && cals.length) ors.push(`calendario_id.in.(${cals.map((c) => c.id).join(',')})`); if (ids.length) ors.push(`id.in.(${ids.slice(0, 200).join(',')})`);
+    const sel = 'id,titulo,descricao,inicio,fim,dia_inteiro,local,tipo,cor,calendario_id,meet_link,criador_id';
+    const evs = await this.rest('GET', `agenda_eventos?or=(${ors.join(',')})&fim=gte.${from}&inicio=lte.${to}&select=${sel}&order=inicio.asc&limit=200`).catch(() => []);
+    const calColor = Object.fromEntries((cals || []).map((c) => [c.id, c.cor]));
+    const calName = Object.fromEntries((cals || []).map((c) => [c.id, c.nome]));
+    this.agenda = (evs || []).map((e) => ({ id: 'hub-' + e.id, title: e.titulo, start: new Date(e.inicio).getTime(), end: new Date(e.fim).getTime(), allDay: !!e.dia_inteiro, location: e.local || (e.meet_link ? 'Meet' : ''), description: (e.descricao || '').slice(0, 300), color: e.cor || calColor[e.calendario_id] || '#0a84ff', source: calName[e.calendario_id] || 'Hub', link: `/agenda?evento=${e.id}`, hub: true }));
+    return this.agenda;
+  }
+
+  // conversas do WhatsApp (Organizador de Contato) no meu escopo: instâncias das quais sou membro, ou atribuídas a mim
+  async loadChats() {
+    const uid = this.session.user.id;
+    const mem = await this.rest('GET', `whatsapp_instance_members?user_id=eq.${uid}&select=instance_id`).catch(() => []);
+    this.instances = [...new Set((mem || []).map((m) => m.instance_id))];
+    const inst = this.instances.length ? `instance_id.in.(${this.instances.join(',')}),assigned_to_instance_id.in.(${this.instances.join(',')}),` : '';
+    const rows = await this.rest('GET', `whatsapp_conversations?or=(${inst}assigned_to.eq.${uid})&attendance_status=eq.open&select=id,instance_id,assigned_to,assigned_to_instance_id,transferred_from_instance_id,active_transfer_started_at,unread_count,last_message_at,last_message_preview,label,contact:whatsapp_contacts(name,phone_number,profile_picture_url,is_group)&order=last_message_at.desc.nullslast&limit=60`).catch((e) => { this.chatError = String(e.message || e); return []; });
+    const names = await this._instanceNames();
+    this.chats = (rows || []).map((c) => this._chatRow(c, names, uid));
+    return this.chats;
+  }
+  async _instanceNames() {
+    if (this._instNames) return this._instNames;
+    const list = await this.rest('GET', 'whatsapp_instances?select=id,name').catch(() => []);
+    this._instNames = Object.fromEntries((list || []).map((i) => [i.id, i.name]));
+    return this._instNames;
+  }
+  _chatRow(c, names, uid) {
+    const ct = c.contact || {};
+    const curInst = c.assigned_to_instance_id || c.instance_id;
+    const transferred = !!c.transferred_from_instance_id && this.instances.includes(curInst) && !this.instances.includes(c.transferred_from_instance_id);
+    return { id: c.id, name: ct.name || ct.phone_number || 'Contato', phone: ct.phone_number || '', avatar: ct.profile_picture_url || null, group: !!ct.is_group, preview: c.last_message_preview || '', at: c.last_message_at ? new Date(c.last_message_at).getTime() : 0, unread: Number(c.unread_count) || 0,
+      mine: c.assigned_to === uid, unassigned: !c.assigned_to, sector: names[curInst] || '', transferred, transferredFrom: names[c.transferred_from_instance_id] || '', transferAt: c.active_transfer_started_at ? new Date(c.active_transfer_started_at).getTime() : 0, label: c.label || '', link: `/contatos?conversa=${c.id}` };
+  }
+  inScope(conv) { if (!conv) return false; return conv.assigned_to === this.session.user.id || this.instances.includes(conv.instance_id) || this.instances.includes(conv.assigned_to_instance_id); }
 
   // ---------- Realtime (protocolo Phoenix do Supabase) ----------
   connect() {
@@ -256,6 +309,8 @@ class HubClient extends EventEmitter {
       send(`realtime:sidenotch-notif-${uid}`, 'phx_join', cfg([{ event: 'INSERT', schema: 'public', table: 'notificacoes', filter: `usuario_id=eq.${uid}` }]));
       send(`realtime:sidenotch-tasks-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'tasks', filter: `assignee_id=eq.${uid}` }]));
       send(`realtime:sidenotch-at-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'at_os_tarefa', filter: `responsavel=eq.${uid}` }]));
+      // WhatsApp: mensagens recebidas e mudanças de conversa (transferências/atribuições) — filtragem por escopo é feita aqui
+      send(`realtime:sidenotch-wa-${uid}`, 'phx_join', cfg([{ event: 'INSERT', schema: 'public', table: 'whatsapp_messages' }, { event: 'UPDATE', schema: 'public', table: 'whatsapp_conversations' }]));
       clearInterval(this.hb); this.hb = setInterval(() => send('phoenix', 'heartbeat', {}), 25000);
     };
     ws.onmessage = (ev) => {
@@ -268,10 +323,42 @@ class HubClient extends EventEmitter {
           const n = d.record;
           if (!this.notifications.some((x) => x.id === n.id)) { this.notifications.unshift(n); this.notifications = this.notifications.slice(0, 60); this.emit('notification', n); this._emitIfChanged(); }
         } else if (d.table === 'tasks' || d.table === 'at_os_tarefa') { this.loadTasks().then(() => this._emitIfChanged()).catch(() => {}); }
+        else if (d.table === 'whatsapp_messages' && d.type === 'INSERT' && d.record && !d.record.is_from_me) this._onWaMessage(d.record);
+        else if (d.table === 'whatsapp_conversations' && d.type === 'UPDATE' && d.record) this._onWaConversation(d.record, d.old_record || {});
       }
     };
     ws.onclose = () => { clearInterval(this.hb); if (this.ws === ws) { this.ws = null; this.realtime = 'off'; this._emitIfChanged(); this._reconnect = setTimeout(() => this.connect(), 15000); } };
     ws.onerror = () => { this.realtime = 'error'; };
+  }
+  async _onWaMessage(m) {
+    let conv = this.chats.find((c) => c.id === m.conversation_id);
+    if (!conv) {   // conversa fora da lista: confere no banco se está no meu escopo
+      const rows = await this.rest('GET', `whatsapp_conversations?id=eq.${m.conversation_id}&select=id,instance_id,assigned_to,assigned_to_instance_id,transferred_from_instance_id,active_transfer_started_at,unread_count,last_message_at,last_message_preview,label,attendance_status,contact:whatsapp_contacts(name,phone_number,profile_picture_url,is_group)`).catch(() => []);
+      const r = rows && rows[0]; if (!r || !this.inScope(r) || r.attendance_status !== 'open') return;
+      conv = this._chatRow(r, await this._instanceNames(), this.session.user.id); this.chats.unshift(conv);
+    }
+    conv.preview = m.message_type && m.message_type !== 'text' ? `[${m.message_type}]` : (m.content || ''); conv.at = m.timestamp ? new Date(m.timestamp).getTime() : Date.now(); conv.unread = (conv.unread || 0) + 1;
+    this.chats.sort((a, b) => b.at - a.at);
+    this.emit('chat', { conv, text: conv.preview, kind: 'message' });
+    this._emitIfChanged();
+  }
+  async _onWaConversation(rec, old) {
+    const uid = this.session.user.id;
+    const nowMine = this.inScope(rec) && rec.attendance_status === 'open';
+    const wasMine = this.chats.some((c) => c.id === rec.id);
+    const names = await this._instanceNames();
+    if (!nowMine) { if (wasMine) { this.chats = this.chats.filter((c) => c.id !== rec.id); this._emitIfChanged(); } return; }
+    const prev = this.chats.find((c) => c.id === rec.id);
+    let contact = prev ? { name: prev.name, phone_number: prev.phone, profile_picture_url: prev.avatar, is_group: prev.group } : null;
+    if (!contact) { const rows = await this.rest('GET', `whatsapp_conversations?id=eq.${rec.id}&select=contact:whatsapp_contacts(name,phone_number,profile_picture_url,is_group)`).catch(() => []); contact = rows && rows[0] && rows[0].contact || {}; }
+    const row = this._chatRow({ ...rec, contact }, names, uid);
+    if (prev) Object.assign(prev, row); else this.chats.unshift(row);
+    this.chats.sort((a, b) => b.at - a.at);
+    const transferredIn = rec.assigned_to_instance_id && rec.assigned_to_instance_id !== old.assigned_to_instance_id && this.instances.includes(rec.assigned_to_instance_id) && !this.instances.includes(old.assigned_to_instance_id || rec.instance_id);
+    const assignedToMe = rec.assigned_to === uid && old.assigned_to !== uid;
+    if (transferredIn) this.emit('chat', { conv: row, kind: 'transfer', text: `Conversa transferida de ${names[rec.transferred_from_instance_id] || 'outro setor'} para ${row.sector || 'seu setor'}` });
+    else if (assignedToMe) this.emit('chat', { conv: row, kind: 'assign', text: 'Conversa atribuída a você' });
+    this._emitIfChanged();
   }
   _closeWs() { clearTimeout(this._reconnect); clearInterval(this.hb); if (this.ws) { const w = this.ws; this.ws = null; try { w.close(); } catch { /* ignore */ } } }
 
@@ -302,6 +389,8 @@ class HubClient extends EventEmitter {
       profile: this.profile ? { name: this.profile.name, email: this.profile.email, sector: this.profile.sector && this.profile.sector.name, role: this.profile.role.name || this.profile.role.slug, modules: this.profile.modules } : null,
       notifications: this.notifications, unread: unread.length,
       tasks: this.tasks, overdue,
+      agenda: this.agenda,
+      chats: this.chats, chatUnread: this.chats.reduce((a, c) => a + (c.unread || 0), 0), chatTransfers: this.chats.filter((c) => c.transferred && c.unassigned).length, hasWhatsapp: this.instances.length > 0 || this.chats.length > 0,
       shortcuts: this.shortcuts()
     };
   }

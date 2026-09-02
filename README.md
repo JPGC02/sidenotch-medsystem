@@ -7,7 +7,11 @@ Edição separada do [SideNotch](https://github.com/JPGC02/sidenotch) para a equ
 - **Minhas tarefas** (aba *Tarefas e notas* e dock lateral): tarefas avulsas (`tasks`) **e** as OS que o Fluxo da AT encarregou a você (`at_os_tarefa`, selo "AT · OS nnn"), agrupadas em Atrasadas / Hoje / Próximas, com ▶ iniciar / ✓ concluir gravando na tabela de origem, como a Central de Tarefas do Hub.
 - **Banner na pastilha** (estilo Dynamic Island): a notificação aparece com título e mensagem por 9 s na notch fechada; clique abre no Hub.
 - **Login único**: ao vincular, o app guarda também uma sessão para o site e a injeta na janela do Hub — não pede senha de novo.
-- **Dock lateral**: a barra lateral mostra os atalhos de formulários (tiles), o sino com não lidas e as tarefas; os anéis de uso de IA ficam desligados por padrão (Configurações → Provedores religa).
+- **Criar tarefa** direto do notch (aba Tarefas → + Nova tarefa): título, prazo, prioridade, detalhes — grava em `tasks` para você mesmo, como a página /tarefas.
+- **Agenda do Hub** dentro do Calendário: eventos dos calendários pessoal, do setor e da empresa + os que você participa (`agenda_eventos`), com a cor do calendário; clique abre no Hub. Links .ics continuam funcionando junto.
+- **Conversas do WhatsApp** (Organizador de Contato): aba *Conversas* e botão no dock com as conversas abertas do seu setor/atribuídas a você, não lidas em verde e **transferências aguardando atendente** em laranja. Mensagens recebidas, transferências para o seu setor e atribuições a você chegam em tempo real (Realtime de `whatsapp_messages`/`whatsapp_conversations`) como banner estilo WhatsApp na pastilha, cartão na barra e toast; clique abre `/contatos?conversa=…`.
+- **Sincronização**: tempo real onde o Hub publica (notificações, WhatsApp) e consulta a cada 60 s no resto (tarefas, agenda); também sincroniza ao sair da janela do Hub.
+- **Dock lateral**: a barra lateral mostra os atalhos de formulários (tiles), o sino com não lidas e as tarefas; os anéis de uso de IA, os hooks do Claude Code e os botões de sessões/não perturbe ficam desligados por padrão (Configurações → Provedores / Claude Code / Medsystem Hub religam).
 - **Lançador de formulários**: atalhos (Abrir chamado, Nova cotação, Pedido internet, Nova ideia PEM, Solicitar NF, Nova demanda, Produção marketing…) filtrados pelos **módulos que o seu setor/cargo tem no Hub** (mesma regra do site: `sector_module_access` + overrides `user_module_access`, fallback do `authStore`). Busca ("cham" + Enter), clique direito fixa no topo, atalho global configurável (ex.: `Ctrl+Shift+H`) abre o notch já na busca.
 - Tudo abre na janela **Medsystem Hub** do próprio app (sessão persistente, sem precisar logar de novo no navegador). O app só escreve `notificacoes.lida` e `tasks.status` das suas próprias linhas; o resto continua no Hub, respeitando as RLS.
 
@@ -25,7 +29,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.1.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.2.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -33,7 +37,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.1.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.2.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -101,7 +105,7 @@ Fechada, a pastilha mostra a hora, capa/música, CPU/RAM, próximo compromisso e
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.1.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.2.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

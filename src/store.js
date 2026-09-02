@@ -25,7 +25,7 @@ const DEFAULTS = {
   },
   order: ['claude', 'codex', 'cursor', 'gemini', 'antigravity', 'openrouter', 'nvidia', 'opencode'],
   approvals: {
-    enabled: true,
+    enabled: false,            // edição Medsystem: hooks do Claude Code desligados por padrão
     port: 47322,               // porta diferente do SideNotch padrão para conviverem
     token: '',
     timeoutSec: 110,
@@ -54,14 +54,14 @@ const DEFAULTS = {
     show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true },
     tab: 'hub'
   },
-  sidebar: { enabled: true },
+  sidebar: { enabled: true, aiTools: false },   // aiTools: botões de sessões do Claude Code / não perturbe na barra
   webapps: null,              // null = lista padrão (apps.DEFAULT_WEBAPPS); [{id,name,url}]
   pinnedApps: [],             // ids de apps do Menu Iniciar fixados
   calendar: { sources: [], refreshMinutes: 15 },  // [{name, url, color}]
   weather: { lat: '', lon: '', label: '' },        // vazio = localização automática por IP
   hub: {                      // Medsystem Hub (Supabase). Sessão fica cifrada em hub-session.bin (DPAPI), nunca aqui.
     enabled: true, url: '', anon: '', site: '',     // vazios = padrão do Hub de produção
-    pollSeconds: 90, notify: true, toast: true, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5
+    pollSeconds: 60, notify: true, toast: true, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5, chatNotify: true
   }
 };
 

@@ -27,6 +27,7 @@ app.whenReady().then(() => {
   if (!store.get().approvals.token) store.set({ approvals: { token: approvals.newToken() } });
   // edição Medsystem: na 1ª execução (ou vindo da 1.0.x) desliga os provedores de IA e a faixa de % — quem quiser religa nas configurações
   if (!store.get().medsystemInit) store.set({ medsystemInit: 1, compact: 'off', providers: { claude: { enabled: false }, codex: { enabled: false }, cursor: { enabled: false }, gemini: { enabled: false } } });
+  if (store.get().medsystemInit < 2) store.set({ medsystemInit: 2, approvals: { enabled: false }, sidebar: { aiTools: false }, hub: { pollSeconds: 60 } });
   docs = new Docs(app.getPath('userData'));
   createBar();
   createNotch();
@@ -130,7 +131,8 @@ function openWebApp(w) {
   }
   win.loadURL(w.url);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) win.loadURL(url); return { action: 'deny' }; });
-  win.on('closed', () => webappWins.delete(w.id));
+  win.on('closed', () => { webappWins.delete(w.id); if (w.id === 'medsystem-hub' && hub) hub.sync(); });
+  if (w.id === 'medsystem-hub') win.on('blur', () => { if (hub) hub.sync(); });
   webappWins.set(w.id, win);
 }
 
@@ -169,14 +171,22 @@ function startHub() {
     let WS = null; try { WS = require('ws'); } catch { /* sem realtime: só polling */ }
     const h = store.get().hub || {};
     hub = new HubClient({ dir: app.getPath('userData'), secret, WebSocket: WS, url: h.url || undefined, anon: h.anon || undefined, site: h.site || undefined });
-    hub.on('change', () => { broadcast('hub', hub.state()); updateTrayTooltip(); });
+    hub.on('change', () => { const st = hub.state(); broadcast('hub', st); updateTrayTooltip(); if (calendar) { calendar.setExtra(st.agenda || []); broadcast('calendar', calendar.state()); } });
+    // WhatsApp: mensagem / transferência / atribuição → cartão + banner (estilo WhatsApp) + toast
+    hub.on('chat', (ev) => {
+      const cfg = store.get().hub || {};
+      if (cfg.chatNotify === false) return;
+      const c = ev.conv;
+      const title = ev.kind === 'message' ? `${c.name}${c.sector ? ' · ' + c.sector : ''}` : ev.kind === 'transfer' ? `↪ ${c.name}` : `👤 ${c.name}`;
+      server && server._notify({ type: 'chat', kind: ev.kind, title, text: (ev.text || '').slice(0, 300), link: c.link, chatId: c.id, avatar: c.avatar || null, project: 'WhatsApp' });
+    });
     hub.on('notification', (n) => {
       if ((store.get().hub || {}).notify === false) return;
       server && server._notify({ type: 'hub', title: n.titulo || 'Medsystem Hub', text: (n.mensagem || '').slice(0, 300), link: n.link || '', hubNotifId: n.id, project: 'Medsystem Hub' });
     });
   }
   const h = store.get().hub || {};
-  if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 90); else hub.stop();
+  if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 60); else hub.stop();
 }
 function openHubLink(link, notifId) {
   openWebApp({ id: 'medsystem-hub', name: 'Medsystem Hub', url: hub.urlFor(link) });
@@ -202,15 +212,16 @@ function broadcastApprovals() { broadcast('approvals', approvalsState()); update
 
 function onNotify(n) {
   const cfg = store.get().notifications;
-  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true }[n.type];
+  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true }[n.type];
   if (!want) { server.feed = server.feed.filter((x) => x.id !== n.id); return; }
   broadcast('notify', n);
   if (store.get().dnd) return;
   if (bar && !bar.isVisible()) bar.show();
   const hcfg = store.get().hub || {};
-  if (n.type === 'hub' ? hcfg.sound !== false : (n.type !== 'done' || cfg.done)) shell.beep();
-  if ((n.type === 'hub' ? hcfg.toast !== false : cfg.toast) && Notification.isSupported()) {
-    try { const t = new Notification({ title: n.title, body: n.text || '', silent: true }); t.on('click', () => { if (n.type === 'hub') openHubLink(n.link, n.hubNotifId); else if (bar) { bar.show(); bar.webContents.send('bar:open'); } }); t.show(); } catch { /* ignore */ }
+  const isHub = n.type === 'hub' || n.type === 'chat';
+  if (isHub ? hcfg.sound !== false : (n.type !== 'done' || cfg.done)) shell.beep();
+  if ((isHub ? hcfg.toast !== false : cfg.toast) && Notification.isSupported()) {
+    try { const t = new Notification({ title: n.title, body: n.text || '', silent: true }); t.on('click', () => { if (isHub) openHubLink(n.link, n.hubNotifId); else if (bar) { bar.show(); bar.webContents.send('bar:open'); } }); t.show(); } catch { /* ignore */ }
   }
 }
 
@@ -459,5 +470,6 @@ ipcMain.handle('hub:sync', async () => { await hub.sync(); return hub.state(); }
 ipcMain.handle('hub:read', async (_e, id) => { try { await hub.markRead(id); } catch (e) { return { ok: false, error: String(e.message || e) }; } return { ok: true, state: hub.state() }; });
 ipcMain.handle('hub:task', async (_e, id, status) => { try { await hub.setTaskStatus(id, status); } catch (e) { return { ok: false, error: String(e.message || e) }; } return { ok: true, state: hub.state() }; });
 ipcMain.handle('hub:open', (_e, link, notifId) => { openHubLink(link, notifId); return true; });
+ipcMain.handle('hub:create-task', async (_e, t) => { try { const r = await hub.createTask(t || {}); return { ok: true, task: r, state: hub.state() }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });

@@ -119,7 +119,8 @@
   .hubhead .av { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, #5e5ce6, #0a84ff); display: grid; place-items: center; font-weight: 700; color: #fff; font-size: 14px; box-shadow: 0 4px 12px rgba(10,132,255,.3); }
   .hubhead .nm { font-size: 15px; font-weight: 700; letter-spacing: -.2px; } .hubhead .sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
   .rt { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; } .rt.on { background: #30d158; box-shadow: 0 0 6px #30d158; } .rt.error { background: #ff453a; }
-  .pillbtn { border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; background: var(--fill); } .pillbtn:hover { background: var(--fill2); } .pillbtn.blue { background: var(--blue); color: #fff; }
+  .pillbtn { border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; background: var(--fill); display: inline-flex; align-items: center; gap: 6px; }
+  .pillbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; flex: 0 0 15px; } .pillbtn:hover { background: var(--fill2); } .pillbtn.blue { background: var(--blue); color: #fff; }
   .search { display: flex; align-items: center; gap: 8px; background: var(--fill); border-radius: 12px; padding: 0 12px; height: 36px; margin-bottom: 12px; }
   .search svg { width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; flex: 0 0 15px; }
   .search input { flex: 1; background: transparent; border: 0; padding: 0; font-size: 13.5px; } .search input:focus { outline: 0; } .search kbd { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.08); border-radius: 5px; padding: 1px 5px; }
@@ -147,6 +148,14 @@
   .lst { max-height: 320px; overflow: auto; scrollbar-width: none; } .lst::-webkit-scrollbar { display: none; }
   .login { max-width: 340px; margin: 14px auto; display: flex; flex-direction: column; gap: 10px; } .login input { width: 100%; border-radius: 12px; background: var(--fill); border: 0; padding: 10px 12px; font-size: 13.5px; }
   .login .logo { width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 6px; background: linear-gradient(145deg, #5e5ce6, #0a84ff); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 20px rgba(10,132,255,.35); }
+  /* conversas (WhatsApp) */
+  .ch-av { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, #25d366, #128c7e); display: grid; place-items: center; font-weight: 700; color: #fff; font-size: 13px; flex: 0 0 38px; overflow: hidden; } .ch-av img { width: 100%; height: 100%; object-fit: cover; }
+  .ch-un { min-width: 20px; height: 20px; border-radius: 10px; background: #25d366; color: #05240f; font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 6px; }
+  .chip.tr { background: rgba(255,159,10,.2); color: #ffb340; } .chip.me { background: rgba(37,211,102,.16); color: #4ade80; } .chip.free { background: rgba(255,255,255,.1); color: #d1d1d6; }
+  .tform { background: rgba(255,255,255,.055); border-radius: 16px; padding: 12px; display: grid; grid-template-columns: 1fr 140px 120px; gap: 8px; margin-bottom: 10px; }
+  .tform input, .tform select, .tform textarea { width: 100%; border-radius: 10px; background: var(--fill); border: 0; padding: 8px 10px; font-size: 13px; color: var(--fg); } .tform textarea { grid-column: 1 / -1; height: 54px; resize: none; }
+  .tform .acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+  .bn-ic.wa { background: linear-gradient(145deg, #25d366, #128c7e); }
   /* banner (Dynamic Island) de notificação na pastilha fechada */
   body.banner #mini { height: 62px; padding: 0 16px; gap: 12px; justify-content: flex-start; }
   body.banner #pill { border-radius: 0 0 24px 24px; }
@@ -181,6 +190,7 @@ const I = {
   canvas: '<svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.6 7.6"/><circle cx="11" cy="11" r="2"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
   hub: '<svg viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6M3 12h18"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
   bell: '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
   check: '<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
@@ -190,10 +200,12 @@ const I = {
   cpu: '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 1v5M15 1v5M9 18v5M15 18v5M1 9h5M1 15h5M18 9h5M18 15h5"/></svg>',
   calEmpty: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>'
 };
-const TABS = [['hub', 'Medsystem Hub'], ['notes', 'Tarefas e notas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];   // canvas desativado por enquanto
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+let TABS = TABS_ALL;
+const tabsForState = () => { TABS = TABS_ALL.filter(([id]) => id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)); if (!TABS.some((t) => t[0] === tab)) tab = 'hub'; };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
-let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks';
+let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false;
 
 const fmtB = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : b > 1e3 ? Math.round(b / 1e3) + ' KB' : Math.round(b) + ' B';
 const fmtRate = (b) => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB/s' : (b / 1e3).toFixed(0) + ' KB/s';
@@ -215,7 +227,7 @@ function renderMini() {
   if (sh.calendar !== false && cal && cal.next) { const min = Math.round((cal.next.start - Date.now()) / 60000); h += `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 18))}</span></div>`; }
   const n = (approvals.pending || []).length + ((approvals.maestri && approvals.maestri.prompts) || []).length;
   if (n) h += `<div class="seg" style="color:var(--warn)">⚠ ${n}</div>`;
-  if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; }
+  if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; if (hub.chatUnread) h += `<div class="seg" style="color:#4ade80">${I.chat}${hub.chatUnread}</div>`; }
   if (sh.clock !== false) h = `<div class="seg clock"><b>${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>` + h;
   if (sh.weather !== false && wx && wx.ok) h += `<div class="seg" title="${esc(wx.desc || '')}${wx.label ? ' · ' + esc(wx.label) : ''}"><span class="wi">${wx.icon}</span>${wx.temp}°</div>`;
   if (!h) h = `<div class="seg muted">SideNotch</div>`;
@@ -227,8 +239,9 @@ function renderMini() {
 
 // ---------- aberto ----------
 function renderTabs() {
+  tabsForState();
   const t = $('#tabs'); t.innerHTML = '';
-  for (const [id, name] of TABS) { const d = document.createElement('div'); d.className = 'tab' + (tab === id ? ' on' : ''); d.title = name; d.innerHTML = (id === 'notes' ? I.check : I[id]) + (id === 'notes' && hub && hub.linked && hub.overdue ? `<span class="cnt" style="background:#ff453a;color:#fff">${hub.overdue}</span>` : '') + (id === 'hub' && hub && hub.linked && hub.unread ? `<span class="cnt" style="background:#2dd4bf;color:#062a26">${hub.unread}</span>` : ''); d.onclick = () => { tab = id; renderTabs(); renderView(); }; t.appendChild(d); }
+  for (const [id, name] of TABS) { const d = document.createElement('div'); d.className = 'tab' + (tab === id ? ' on' : ''); d.title = name; d.innerHTML = (id === 'notes' ? I.check : I[id]) + (id === 'chat' && hub && hub.chatUnread ? `<span class="cnt" style="background:#25d366;color:#05240f">${hub.chatUnread}</span>` : '') + (id === 'notes' && hub && hub.linked && hub.overdue ? `<span class="cnt" style="background:#ff453a;color:#fff">${hub.overdue}</span>` : '') + (id === 'hub' && hub && hub.linked && hub.unread ? `<span class="cnt" style="background:#2dd4bf;color:#062a26">${hub.unread}</span>` : ''); d.onclick = () => { tab = id; renderTabs(); renderView(); }; t.appendChild(d); }
   t.insertAdjacentHTML('beforeend', `<div class="sp"></div><div class="clock">${new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })} · ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>`);
   const g = document.createElement('div'); g.className = 'tab'; g.innerHTML = I.gear; g.title = 'Configurações'; g.onclick = () => api.openSettings(); t.appendChild(g);
 }
@@ -236,6 +249,7 @@ function renderTabs() {
 function renderView() {
   const v = $('#view');
   if (tab === 'hub') { v.innerHTML = viewHub(); bindHub(); }
+  else if (tab === 'chat') { v.innerHTML = viewChat(); bindChat(); }
   else if (tab === 'music') v.innerHTML = viewMusic();
   else if (tab === 'sys') v.innerHTML = viewSys();
   else if (tab === 'apps') { v.innerHTML = viewApps(); bindApps(); }
@@ -457,9 +471,10 @@ function viewCal() {
   const src = (settings.calendar && settings.calendar.sources || []).length;
   let h = `<div class="row" style="justify-content:space-between;margin-bottom:-4px"><button id="cwPrev" class="icon" style="width:28px;height:28px">‹</button><span class="muted">${calWeek === 0 ? 'esta semana' : (calWeek > 0 ? '+' : '') + calWeek + ' semana(s)'} · <a id="cwToday" style="cursor:pointer;color:var(--info)">hoje</a></span><button id="cwNext" class="icon" style="width:28px;height:28px">›</button></div>`;
   h += `<div class="week"><div class="mon">${mon.charAt(0).toUpperCase() + mon.slice(1)}</div>${days.map((t) => { const d = new Date(t); const wd = d.getDay(); const cnt = onDay(t).length; return `<div class="d ${t === today ? 'today' : ''} ${t === calSel ? 'sel' : ''} ${wd === 0 || wd === 6 ? 'we' : ''}" data-day="${t}"><div class="wd">${t === calSel ? d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase() : WD[wd]}</div><div class="n">${String(d.getDate()).padStart(2, '0')}</div><div class="dots">${'<i></i>'.repeat(Math.min(3, cnt))}</div></div>`; }).join('')}</div>`;
-  if (!src) return h + `<div class="empty">${I.calEmpty}Nenhum calendário configurado.<div class="muted" style="margin-top:4px">Configurações → Calendário → cole o link .ics (Google: "endereço secreto no formato iCal").</div></div>`;
+  const hubCal = hub && hub.linked;
+  if (!src && !hubCal && !(cal.hubCount)) return h + `<div class="empty">${I.calEmpty}Nenhum calendário configurado.<div class="muted" style="margin-top:4px">Vincule o Medsystem Hub (a agenda do Hub entra aqui) ou Configurações → Calendário → link .ics.</div></div>`;
   const errs = Object.entries(cal.errors || {}); if (errs.length) h += `<div class="muted" style="color:var(--bad);margin-bottom:6px">${errs.map(([n, e]) => esc(n) + ': ' + esc(e)).join(' · ')}</div>`;
-  const ev = (e) => `<div class="ev"><div class="c" style="background:${e.color}"></div><div class="t">${e.allDay ? 'dia todo' : hhmm(e.start) + '–' + hhmm(e.end)}</div><div class="grow"><div class="s">${esc(e.title)}</div>${e.location ? `<div class="muted">${esc(e.location)}</div>` : ''}</div></div>`;
+  const ev = (e) => `<div class="ev" ${e.link ? `data-evl="${esc(e.link)}" style="cursor:pointer"` : ''}><div class="c" style="background:${e.color}"></div><div class="t">${e.allDay ? 'dia todo' : hhmm(e.start) + '–' + hhmm(e.end)}</div><div class="grow"><div class="s">${esc(e.title)}</div>${e.location || e.hub ? `<div class="muted">${esc([e.location, e.hub ? e.source : ''].filter(Boolean).join(' · '))}</div>` : ''}</div></div>`;
   const list = onDay(calSel); const shown = calShowAll ? list : list.slice(0, 6); const more = list.length - shown.length;
   const label = calSel === today ? 'Hoje' : calSel === today + DAYMS ? 'Amanhã' : calSel === today - DAYMS ? 'Ontem' : new Date(calSel).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' }).replace('.', '');
   h += `<h3>${label}${list.length ? ` <span class="muted" style="text-transform:none;letter-spacing:0">· ${list.length}</span>` : ''}</h3><div class="card">${shown.length ? shown.map(ev).join('') + (more > 0 ? `<div class="muted" id="calMore" style="padding-top:8px;cursor:pointer">+ ${more} mais</div>` : '') : `<div class="empty">${I.calEmpty}Nada neste dia</div>`}</div>`;
@@ -473,6 +488,7 @@ function bindCal() {
   if (p) p.onclick = () => { calWeek--; renderView(); }; if (n) n.onclick = () => { calWeek++; renderView(); };
   if (t) t.onclick = () => { calWeek = 0; calSel = day0(Date.now()); calShowAll = false; renderView(); };
   if (m) m.onclick = () => { calShowAll = true; renderView(); };
+  document.querySelectorAll('[data-evl]').forEach((el) => el.onclick = () => api.hubOpen(el.dataset.evl));
 }
 
 
@@ -497,7 +513,7 @@ function viewHub() {
   const ini = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
   const { shown, pins, q } = hubTiles();
   let h = `<div class="hubhead"><div class="av">${esc(ini)}</div><div class="grow"><div class="nm">${esc(p.name || '')}</div><div class="sub"><span class="rt ${hub.realtime}"></span>${hub.error ? '<span style="color:#ff6961">' + esc(hub.error) + '</span>' : esc([p.sector, p.role].filter(Boolean).join(' · '))}${hub.realtime === 'on' ? ' · ao vivo' : ''}</div></div>
-      <button class="pillbtn" id="hbTasks">${I.check}<span style="margin-left:6px">${(hub.tasks || []).length} tarefa(s)</span></button><button class="pillbtn blue" id="hbSite">Abrir Hub</button></div>`;
+      ${hub.hasWhatsapp ? `<button class="pillbtn" id="hbChat" style="${hub.chatUnread ? 'color:#4ade80' : ''}">${I.chat}<span>${hub.chatUnread ? hub.chatUnread + ' msg' : 'Conversas'}</span></button>` : ''}<button class="pillbtn" id="hbTasks">${I.check}<span>${(hub.tasks || []).length} tarefa(s)</span></button><button class="pillbtn blue" id="hbSite">Abrir Hub</button></div>`;
   h += `<div class="search">${SEARCH_SVG}<input id="hbQ" placeholder="Buscar formulário ou página… (ex.: chamado)" value="${esc(hubQ)}"><kbd>↵</kbd></div>`;
   h += `<div class="tiles">${shown.map((s, i) => `<div class="tile ${s.kind} ${q && i === 0 ? 'k' : ''} ${pins.has(s.id) ? 'pinned' : ''}" data-sc="${esc(s.id)}" title="${esc(s.path)} — clique direito fixa"><div class="ic">${s.icon}</div><div class="nm">${esc(s.name)}</div></div>`).join('') || '<div class="muted" style="grid-column:1/-1">Nada encontrado</div>'}</div>`;
   const nts = hub.notifications || [];
@@ -522,7 +538,8 @@ function viewTasks() {
   const todayT = tks.filter((t) => t.due_date && day0(new Date(t.due_date + 'T12:00')) === today);
   const rest = tks.filter((t) => !late.includes(t) && !todayT.includes(t));
   const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="glist">${arr.map(taskRow).join('')}</div>` : '';
-  return `<div class="lst" style="max-height:440px">${tks.length ? grp('Atrasadas', late) + grp('Hoje', todayT) + grp('Próximas / sem prazo', rest) : '<div class="empty">Nada pendente 🎉</div>'}</div>
+  const form = newTaskOpen ? `<div class="tform"><input id="ntTitle" placeholder="O que precisa ser feito?" maxlength="255"><input id="ntDue" type="date"><select id="ntPri"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option><option value="urgent">Crítica</option></select><textarea id="ntDesc" placeholder="Detalhes (opcional)"></textarea><div class="acts"><span class="muted" id="ntMsg"></span><button id="ntCancel">Cancelar</button><button class="pri" id="ntSave">Criar tarefa</button></div></div>` : '';
+  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Tarefas atribuídas a você e as OS do Fluxo da AT.</span><button class="pillbtn blue" id="ntNew">+ Nova tarefa</button></div>${form}<div class="lst" style="max-height:${newTaskOpen ? 300 : 420}px">${tks.length ? grp('Atrasadas', late) + grp('Hoje', todayT) + grp('Próximas / sem prazo', rest) : '<div class="empty">Nada pendente 🎉</div>'}</div>
     <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center"><a id="hbTasks2" style="cursor:pointer;color:var(--blue)">Abrir central de tarefas no Hub</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
 }
 function bindTasks() {
@@ -530,6 +547,29 @@ function bindTasks() {
   document.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); const [id, st] = b.dataset.ts.split(/:(?=[a-z_]+$)/); b.disabled = true; const r = await api.hubTask(id, st); if (!r.ok) { hubBusy = r.error; renderView(); } else setHub(r); });
   document.querySelectorAll('[data-tk]').forEach((el) => el.onclick = () => api.hubOpen(el.dataset.tk || '/tarefas'));
   const t2 = $('#hbTasks2'); if (t2) t2.onclick = () => api.hubOpen('/tarefas');
+  $('#ntNew').onclick = () => { newTaskOpen = !newTaskOpen; renderView(); if (newTaskOpen) setTimeout(() => { const f = $('#ntTitle'); if (f) { api.setFocusable(true); f.focus(); } }, 40); };
+  const cancel = $('#ntCancel'); if (cancel) cancel.onclick = () => { newTaskOpen = false; api.setFocusable(false); renderView(); };
+  const save = $('#ntSave');
+  if (save) {
+    const go = async () => { const title = $('#ntTitle').value.trim(); if (!title) { $('#ntMsg').textContent = 'Dê um título.'; return; } save.disabled = true; $('#ntMsg').textContent = 'Criando…'; const r = await api.hubCreateTask({ title, due_date: $('#ntDue').value || null, priority: $('#ntPri').value, description: $('#ntDesc').value.trim() }); if (!r.ok) { save.disabled = false; $('#ntMsg').textContent = r.error; return; } newTaskOpen = false; hub = r.state; api.setFocusable(false); renderTabs(); renderView(); };
+    save.onclick = go; $('#ntTitle').onkeydown = (e) => { if (e.key === 'Enter') go(); if (e.key === 'Escape') cancel.click(); };
+  }
+}
+// conversas do WhatsApp (Organizador de Contato)
+function viewChat() {
+  const list = (hub && hub.chats) || [];
+  const ini = (n) => String(n || '?').replace(/[^\p{L}\d ]/gu, '').split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase() || '#';
+  const row = (c) => `<div class="grow-item" data-ch="${esc(c.id)}"><div class="ch-av">${c.avatar ? `<img src="${esc(c.avatar)}" onerror="this.remove()">` : esc(ini(c.name))}</div>
+      <div class="grow" style="min-width:0"><div class="ti" style="display:flex;gap:6px;align-items:center"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>${c.transferred ? `<span class="chip tr">↪ de ${esc(c.transferredFrom || 'outro setor')}</span>` : ''}${c.mine ? '<span class="chip me">você</span>' : c.unassigned ? '<span class="chip free">sem atendente</span>' : ''}</div><div class="ms" style="-webkit-line-clamp:1">${esc(c.preview || '')}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="ag" style="margin:0;padding:0">${c.at ? ago(c.at) : ''}</span>${c.unread ? `<span class="ch-un">${c.unread}</span>` : ''}</div></div>`;
+  const transfers = list.filter((c) => c.transferred && c.unassigned), rest = list.filter((c) => !transfers.includes(c));
+  const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="glist">${arr.map(row).join('')}</div>` : '';
+  return `<div class="row" style="margin-bottom:6px"><span class="muted grow">${hub.chatUnread ? `<b style="color:#4ade80">${hub.chatUnread}</b> mensagem(ns) não lida(s)` : 'Conversas abertas do seu setor'}</span><button class="pillbtn" id="chOpen">Abrir Organizador</button></div>
+    <div class="lst" style="max-height:440px">${list.length ? grp('Transferidas para o setor — aguardando atendente', transfers) + grp('Conversas', rest) : '<div class="empty">Nenhuma conversa aberta</div>'}</div>`;
+}
+function bindChat() {
+  document.querySelectorAll('[data-ch]').forEach((el) => el.onclick = () => api.hubOpen('/contatos?conversa=' + el.dataset.ch));
+  $('#chOpen').onclick = () => api.hubOpen('/contatos');
 }
 function bindHub() {
   const setHub = (r) => { if (r && r.state) hub = r.state; else if (r && r.linked !== undefined) hub = r; renderTabs(); renderView(); };
@@ -550,6 +590,7 @@ function bindHub() {
   document.querySelectorAll('[data-nt]').forEach((el) => el.onclick = async () => { const id = el.dataset.nt; if (el.dataset.link) api.hubOpen(el.dataset.link, id); else { const r = await api.hubRead(id); setHub(r); } });
   const all = $('#hbAll'); if (all) all.onclick = async () => setHub(await api.hubRead('*'));
   $('#hbSite').onclick = () => api.hubOpen('/dashboard'); $('#hbTasks').onclick = () => { tab = 'notes'; notesMode = 'tasks'; renderTabs(); renderView(); };
+  const hc = $('#hbChat'); if (hc) hc.onclick = () => { tab = 'chat'; renderTabs(); renderView(); };
   $('#hbSync').onclick = async () => { hubBusy = 'atualizando…'; renderView(); hub = await api.hubSync(); hubBusy = ''; renderTabs(); renderView(); };
   $('#hbOut').onclick = async () => { hub = await api.hubLogout(); renderTabs(); renderView(); };
 }
@@ -559,7 +600,8 @@ function showBanner(n) {
   if (document.body.classList.contains('open')) return;
   clearTimeout(bannerTimer);
   const box = $('#mini');
-  box.innerHTML = `<div class="bn-ic">🔔</div><div class="bn"><div class="t">${esc(n.title)}</div><div class="m">${esc(n.text || '')}</div></div><span class="bn-x" id="bnX">×</span>`;
+  const wa = n.type === 'chat';
+  box.innerHTML = `<div class="bn-ic ${wa ? 'wa' : ''}">${wa ? (n.kind === 'transfer' ? '↪' : n.kind === 'assign' ? '👤' : '💬') : '🔔'}</div><div class="bn"><div class="t">${esc(n.title)}</div><div class="m">${esc(n.text || '')}</div></div><span class="bn-x" id="bnX">×</span>`;
   document.body.classList.add('banner');
   $('#pill').style.width = '460px'; $('#pill').style.height = '62px';
   box.onclick = (e) => { if (e.target.id === 'bnX') { hideBanner(); return; } api.hubOpen(n.link, n.hubNotifId); hideBanner(); };
@@ -569,7 +611,7 @@ function hideBanner() { clearTimeout(bannerTimer); if (!document.body.classList.
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], chat: [640, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -600,8 +642,8 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
-  api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes') && !typing()) renderView(); }  });
-  api.onNotify((n) => { if (n.type === 'hub' && !(settings.dnd)) showBanner(n); });
+  api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
+  api.onNotify((n) => { if ((n.type === 'hub' || n.type === 'chat') && !(settings.dnd)) showBanner(n); });
   api.onNotchOpen((t) => { tab = t || 'hub'; renderTabs(); setOpen(true); renderView(); setTimeout(() => { const q = $('#hbQ'); if (q) { api.setFocusable(true); q.focus(); q.select(); } }, 60); });
   api.onApprovals((a) => { approvals = a; renderMini(); });
   api.onBar((w) => { if (w === 'blur') { const a = document.activeElement; if (a && a.blur) a.blur(); } });

@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   hubRead: (id) => ipcRenderer.invoke('hub:read', id),
   hubTask: (id, status) => ipcRenderer.invoke('hub:task', id, status),
   hubOpen: (link, notifId) => ipcRenderer.invoke('hub:open', link, notifId),
+  hubCreateTask: (t) => ipcRenderer.invoke('hub:create-task', t),
   onHub: (cb) => ipcRenderer.on('hub', (_e, d) => cb(d)),
   onNotchOpen: (cb) => ipcRenderer.on('notch:open', (_e, t) => cb(t)),
   onBar: (cb) => { for (const ch of ['bar:open', 'bar:toggle', 'bar:blur']) ipcRenderer.on(ch, () => cb(ch.split(':')[1])); }

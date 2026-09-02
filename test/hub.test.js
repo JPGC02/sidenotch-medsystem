@@ -54,9 +54,24 @@ const server = http.createServer((req, res) => {
       if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('responsavel'), 'eq.' + UID); assert.strictEqual(u.searchParams.get('situacao'), 'not.in.(concluida,cancelada)'); return json(200, [{ id: 'a1', codigo_os: 83568, cliente: 'SLMANDIC', equipamento: 'MONITOR', urgencia: 'media', situacao: 'pendente', prazo: null, observacao: 'Solicitar devolução', criado_em: '2026-08-26T00:00:00Z' }]); }
       if (req.method === 'PATCH') { const b = JSON.parse(body); assert.strictEqual(u.searchParams.get('id'), 'eq.a1'); assert.strictEqual(u.searchParams.get('responsavel'), 'eq.' + UID); atPatch = b.situacao; return json(204, {}); }
     }
+    if (u.pathname === '/rest/v1/agenda_calendarios') return json(200, [{ id: 'cal1', nome: 'Assistência Técnica', cor: '#ff9f0a', tipo: 'setor' }]);
+    if (u.pathname === '/rest/v1/agenda_evento_participantes') { assert.strictEqual(u.searchParams.get('usuario_id'), 'eq.' + UID); return json(200, [{ evento_id: 'ev2' }]); }
+    if (u.pathname === '/rest/v1/agenda_eventos') { const or = u.searchParams.get('or'); assert.ok(or.includes(`criador_id.eq.${UID}`) && or.includes('calendario_id.in.(cal1)') && or.includes('id.in.(ev2)'), or); return json(200, [{ id: 'ev1', titulo: 'Reunião AT', inicio: '2026-09-02T14:00:00Z', fim: '2026-09-02T15:00:00Z', dia_inteiro: false, local: 'Sala 2', calendario_id: 'cal1', criador_id: 'x' }, { id: 'ev2', titulo: 'Treinamento', inicio: '2026-09-03T00:00:00', fim: '2026-09-04T00:00:00', dia_inteiro: true, cor: '#30d158', calendario_id: null, meet_link: 'https://meet' }]); }
+    if (u.pathname === '/rest/v1/whatsapp_instance_members') return json(200, [{ instance_id: 'inst-at' }]);
+    if (u.pathname === '/rest/v1/whatsapp_instances') return json(200, [{ id: 'inst-at', name: 'Assistência Técnica' }, { id: 'inst-com', name: 'Comercial' }]);
+    if (u.pathname === '/rest/v1/whatsapp_conversations') {
+      const id = (u.searchParams.get('id') || '').replace('eq.', '');
+      const all = [{ id: 'c1', instance_id: 'inst-at', assigned_to: UID, assigned_to_instance_id: null, transferred_from_instance_id: null, active_transfer_started_at: null, unread_count: 2, last_message_at: '2026-09-02T12:00:00Z', last_message_preview: 'oi, tudo bem?', label: null, attendance_status: 'open', contact: { name: 'Hospital X', phone_number: '5511', profile_picture_url: null, is_group: false } },
+        { id: 'c2', instance_id: 'inst-com', assigned_to: null, assigned_to_instance_id: 'inst-at', transferred_from_instance_id: 'inst-com', active_transfer_started_at: '2026-09-02T12:30:00Z', unread_count: 0, last_message_at: '2026-09-02T12:30:00Z', last_message_preview: 'preciso de orçamento', label: null, attendance_status: 'open', contact: { name: null, phone_number: '5519', profile_picture_url: null, is_group: false } },
+        { id: 'c9', instance_id: 'inst-com', assigned_to: null, assigned_to_instance_id: null, transferred_from_instance_id: null, unread_count: 5, last_message_at: '2026-09-02T12:40:00Z', last_message_preview: 'fora do escopo', attendance_status: 'open', contact: { name: 'Outro', phone_number: '5521' } }];
+      if (id) return json(200, all.filter((c) => c.id === id));
+      const or = u.searchParams.get('or'); assert.ok(or.includes('instance_id.in.(inst-at)') && or.includes(`assigned_to.eq.${UID}`), or); assert.strictEqual(u.searchParams.get('attendance_status'), 'eq.open');
+      return json(200, all.filter((c) => c.id !== 'c9'));
+    }
     if (u.pathname === '/rest/v1/tasks') {
-      if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('status'), 'neq.completed'); return json(200, db.tasks.filter((t) => t.status !== 'completed')); }
-      if (req.method === 'PATCH') { const b = JSON.parse(body); assert.strictEqual(u.searchParams.get('assignee_id'), 'eq.' + UID); const t = db.tasks.find((x) => x.id === u.searchParams.get('id').replace('eq.', '')); t.status = b.status; return json(204, {}); }
+      if (req.method === 'POST') { const b = JSON.parse(body); assert.strictEqual(b.created_by, UID); assert.strictEqual(b.assignee_id, UID); assert.strictEqual(b.sector_id, 'sec-ti'); assert.strictEqual(b.status, 'pending'); assert.strictEqual(req.headers.prefer, 'return=representation'); const t = { id: 'tnew', title: b.title, description: b.description, status: 'pending', priority: b.priority, due_date: b.due_date, created_at: new Date().toISOString(), assignee_id: UID, created_by: UID }; db.tasks.push(t); return json(201, [t]); }
+      if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('status'), 'neq.completed'); assert.ok(u.searchParams.get('or').includes(`created_by.eq.${UID}`)); return json(200, db.tasks.filter((t) => t.status !== 'completed')); }
+      if (req.method === 'PATCH') { const b = JSON.parse(body); assert.ok(u.searchParams.get('or').includes('assignee_id.eq.' + UID)); const t = db.tasks.find((x) => x.id === u.searchParams.get('id').replace('eq.', '')); t.status = b.status; return json(204, {}); }
     }
     json(404, { message: 'not found ' + u.pathname });
   });
@@ -71,6 +86,7 @@ wss.on('connection', (ws, req) => {
       assert.ok(m.payload.access_token.startsWith('h.'));
       const pc = m.payload.config.postgres_changes;
       if (/notif/.test(m.topic)) { assert.strictEqual(pc[0].table, 'notificacoes'); assert.strictEqual(pc[0].filter, `usuario_id=eq.${UID}`); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: m.ref })); }
+      else if (/wa-/.test(m.topic)) { assert.strictEqual(pc[0].table, 'whatsapp_messages'); assert.strictEqual(pc[1].table, 'whatsapp_conversations'); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: m.ref })); }
       else { assert.ok(['tasks', 'at_os_tarefa'].includes(pc[0].table)); joins.push(m.topic); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'error', response: { reason: 'Unable to subscribe to changes with given parameters' } }, ref: m.ref })); }
     }
     if (m.event === 'heartbeat') ws.send(JSON.stringify({ topic: 'phoenix', event: 'phx_reply', payload: { status: 'ok' }, ref: m.ref }));
@@ -96,6 +112,15 @@ wss.on('connection', (ws, req) => {
   assert.strictEqual(st.unread, 1); assert.strictEqual(st.tasks.length, 2); assert.strictEqual(st.overdue, 1);
   const atT = st.tasks.find((t) => t.source === 'at'); assert.strictEqual(atT.id, 'at:a1'); assert.strictEqual(atT.label, 'AT · OS 83568'); assert.strictEqual(atT.title, 'OS 83568 · SLMANDIC'); assert.strictEqual(atT.priority, 'medium');
   assert.strictEqual(st.tasks[0].id, 't1', 'atrasada primeiro');
+  // agenda do Hub: cor do calendário, dia inteiro, link
+  assert.strictEqual(st.agenda.length, 2); assert.strictEqual(st.agenda[0].title, 'Reunião AT'); assert.strictEqual(st.agenda[0].color, '#ff9f0a'); assert.strictEqual(st.agenda[0].source, 'Assistência Técnica'); assert.strictEqual(st.agenda[1].allDay, true); assert.strictEqual(st.agenda[1].color, '#30d158'); assert.strictEqual(st.agenda[1].link, '/agenda?evento=ev2');
+  // conversas do WhatsApp no escopo (c9 fora)
+  assert.strictEqual(st.chats.length, 2); assert.strictEqual(st.chatUnread, 2); assert.strictEqual(st.chats[0].name, 'Hospital X'); assert.strictEqual(st.chats[0].mine, true);
+  const c2 = st.chats.find((c) => c.id === 'c2'); assert.strictEqual(c2.transferred, true); assert.strictEqual(c2.transferredFrom, 'Comercial'); assert.strictEqual(c2.sector, 'Assistência Técnica'); assert.strictEqual(c2.name, '5519'); assert.strictEqual(st.chatTransfers, 1); assert.strictEqual(st.hasWhatsapp, true);
+  // criar tarefa para mim
+  const created = await hub.createTask({ title: 'Ligar para o cliente', priority: 'high', due_date: '2026-09-05' });
+  assert.strictEqual(created.id, 'tnew'); assert.strictEqual(hub.tasks[0].id, 'tnew'); assert.strictEqual(hub.tasks[0].link, '/tarefas?id=tnew');
+  await assert.rejects(hub.createTask({ title: '  ' }), /título/);
   // sessão web separada (2º login) pronta para o localStorage do site
   assert.strictEqual(logins, 3); const wsess = hub.webSession(); assert.strictEqual(wsess.key, 'sb-127-auth-token'); assert.strictEqual(JSON.parse(wsess.value).refresh_token, 'rt-web'); assert.ok(JSON.parse(wsess.value).user.id === UID);
   const ids = st.shortcuts.map((s) => s.id);
@@ -117,15 +142,32 @@ wss.on('connection', (ws, req) => {
   db.tasks.push({ id: 't3', title: 'Nova tarefa', status: 'pending', priority: 'medium', due_date: null, assignee_id: UID, created_at: '2026-09-02T00:00:00Z' });
   ws.send(JSON.stringify({ topic: `realtime:sidenotch-tasks-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'tasks', type: 'INSERT', record: { id: 't3' } } }, ref: null }));
   await new Promise((r) => setTimeout(r, 120));
-  assert.strictEqual(hub.tasks.length, 3);
+  assert.strictEqual(hub.tasks.length, 4);
   assert.strictEqual(hub.realtime, 'on', 'canal de tasks com erro não derruba as notificações'); assert.strictEqual(joins.length, 2);
+  // WhatsApp: mensagem recebida em conversa minha → evento 'chat' + unread; mensagem nossa (is_from_me) ignorada; conversa fora do escopo ignorada
+  const chats = []; hub.on('chat', (c) => chats.push(c));
+  const waTopic = `realtime:sidenotch-wa-${UID}`;
+  ws.send(JSON.stringify({ topic: waTopic, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'whatsapp_messages', type: 'INSERT', record: { id: 'm1', conversation_id: 'c1', content: 'chegou o equipamento?', is_from_me: false, message_type: 'text', timestamp: new Date().toISOString() } } }, ref: null }));
+  ws.send(JSON.stringify({ topic: waTopic, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'whatsapp_messages', type: 'INSERT', record: { id: 'm2', conversation_id: 'c1', content: 'sim', is_from_me: true, message_type: 'text' } } }, ref: null }));
+  ws.send(JSON.stringify({ topic: waTopic, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'whatsapp_messages', type: 'INSERT', record: { id: 'm3', conversation_id: 'c9', content: 'x', is_from_me: false, message_type: 'text' } } }, ref: null }));
+  await new Promise((r) => setTimeout(r, 150));
+  assert.strictEqual(chats.length, 1); assert.strictEqual(chats[0].kind, 'message'); assert.strictEqual(chats[0].conv.name, 'Hospital X'); assert.strictEqual(chats[0].text, 'chegou o equipamento?');
+  assert.strictEqual(hub.chats.find((c) => c.id === 'c1').unread, 3); assert.strictEqual(hub.chats[0].id, 'c1', 'reordenada pela última mensagem'); assert.ok(!hub.chats.some((c) => c.id === 'c9'));
+  // transferência de outro setor para o meu → evento 'transfer'
+  ws.send(JSON.stringify({ topic: waTopic, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'whatsapp_conversations', type: 'UPDATE', record: { id: 'c9', instance_id: 'inst-com', assigned_to: null, assigned_to_instance_id: 'inst-at', transferred_from_instance_id: 'inst-com', active_transfer_started_at: new Date().toISOString(), unread_count: 5, last_message_at: new Date().toISOString(), last_message_preview: 'fora do escopo', attendance_status: 'open' }, old_record: { id: 'c9', assigned_to_instance_id: null, assigned_to: null } } }, ref: null }));
+  await new Promise((r) => setTimeout(r, 150));
+  assert.strictEqual(chats.length, 2); assert.strictEqual(chats[1].kind, 'transfer'); assert.match(chats[1].text, /Comercial.*Assistência Técnica/); assert.strictEqual(hub.chats.find((c) => c.id === 'c9').name, 'Outro'); assert.strictEqual(hub.state().chatTransfers, 2);
+  // conversa concluída → sai da lista
+  ws.send(JSON.stringify({ topic: waTopic, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'whatsapp_conversations', type: 'UPDATE', record: { id: 'c9', instance_id: 'inst-com', assigned_to_instance_id: 'inst-at', attendance_status: 'done' }, old_record: {} } }, ref: null }));
+  await new Promise((r) => setTimeout(r, 100));
+  assert.ok(!hub.chats.some((c) => c.id === 'c9'));
 
   // marcar lida (uma e todas) e concluir tarefa
   await hub.markRead('n3'); assert.strictEqual(hub.state().unread, 1); assert.strictEqual(db.notificacoes.find((n) => n.id === 'n3'), undefined); // n3 veio só pelo realtime, não está no "banco"
   await hub.markRead('*'); assert.strictEqual(hub.state().unread, 0); assert.ok(db.notificacoes.every((n) => n.lida));
   await hub.setTaskStatus('t1', 'in_progress'); assert.strictEqual(hub.tasks.find((t) => t.id === 't1').status, 'in_progress');
   await hub.setTaskStatus('at:a1', 'completed'); assert.strictEqual(atPatch, 'concluida'); assert.ok(!hub.tasks.some((t) => t.id === 'at:a1'));
-  await hub.setTaskStatus('t1', 'completed'); assert.strictEqual(hub.tasks.length, 1); assert.strictEqual(db.tasks.find((t) => t.id === 't1').status, 'completed');
+  await hub.setTaskStatus('t1', 'completed'); assert.strictEqual(hub.tasks.length, 2);   // tnew + t3 assert.strictEqual(db.tasks.find((t) => t.id === 't1').status, 'completed');
   await assert.rejects(hub.setTaskStatus('t3', 'weird'), /inválido/);
 
   // token quase vencendo → refresh automático antes da chamada

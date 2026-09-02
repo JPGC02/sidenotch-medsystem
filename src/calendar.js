@@ -69,7 +69,10 @@ function occurrences(ev, from, to) {
 }
 
 class Calendar {
-  constructor() { this.sources = []; this.events = []; this.errors = {}; this.updatedAt = null; }
+  constructor() { this.sources = []; this.events = []; this.extra = []; this.errors = {}; this.updatedAt = null; }
+  // eventos de outra origem (agenda do Hub) mesclados ao estado
+  setExtra(list) { this.extra = Array.isArray(list) ? list : []; if (!this.updatedAt && this.extra.length) this.updatedAt = Date.now(); }
+  get all() { const seen = new Set(this.events.map((e) => e.id)); return [...this.events, ...this.extra.filter((e) => !seen.has(e.id))].sort((a, b) => a.start - b.start); }
 
   async refresh(urls, { daysAhead = 45 } = {}) {
     const from = Date.now() - 14 * DAY, to = Date.now() + daysAhead * DAY;
@@ -95,14 +98,15 @@ class Calendar {
   state() {
     const now = Date.now();
     const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+    const events = this.all;
     const days = [];
     for (let i = -3; i <= 4; i++) {
       const d = new Date(today0.getTime() + i * DAY), d1 = d.getTime() + DAY;
-      days.push({ date: d.toISOString(), day: d.getDate(), wd: d.getDay(), isToday: i === 0, count: this.events.filter((e) => e.start < d1 && e.end > d.getTime()).length });
+      days.push({ date: d.toISOString(), day: d.getDate(), wd: d.getDay(), isToday: i === 0, count: events.filter((e) => e.start < d1 && e.end > d.getTime()).length });
     }
-    const todayEv = this.events.filter((e) => e.start < today0.getTime() + DAY && e.end > today0.getTime());
-    const next = this.events.find((e) => e.start > now && !e.allDay) || null;
-    return { updatedAt: this.updatedAt, errors: this.errors, days, today: todayEv, next, upcoming: this.events.filter((e) => e.end > now).slice(0, 30), events: this.events.slice(0, 600) };
+    const todayEv = events.filter((e) => e.start < today0.getTime() + DAY && e.end > today0.getTime());
+    const next = events.find((e) => e.start > now && !e.allDay) || null;
+    return { updatedAt: this.updatedAt, errors: this.errors, days, today: todayEv, next, upcoming: events.filter((e) => e.end > now).slice(0, 30), events: events.slice(0, 600), hubCount: this.extra.length };
   }
 }
 
