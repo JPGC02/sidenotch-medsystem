@@ -61,7 +61,7 @@ const DEFAULTS = {
   weather: { lat: '', lon: '', label: '' },        // vazio = localização automática por IP
   hub: {                      // Medsystem Hub (Supabase). Sessão fica cifrada em hub-session.bin (DPAPI), nunca aqui.
     enabled: true, url: '', anon: '', site: '',     // vazios = padrão do Hub de produção
-    pollSeconds: 60, notify: true, toast: true, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5, chatNotify: true
+    pollSeconds: 60, notify: true, toast: false, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5, chatNotify: true
   }
 };
 

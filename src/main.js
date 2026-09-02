@@ -28,6 +28,8 @@ app.whenReady().then(() => {
   // edição Medsystem: na 1ª execução (ou vindo da 1.0.x) desliga os provedores de IA e a faixa de % — quem quiser religa nas configurações
   if (!store.get().medsystemInit) store.set({ medsystemInit: 1, compact: 'off', providers: { claude: { enabled: false }, codex: { enabled: false }, cursor: { enabled: false }, gemini: { enabled: false } } });
   if (store.get().medsystemInit < 2) store.set({ medsystemInit: 2, approvals: { enabled: false }, sidebar: { aiTools: false }, hub: { pollSeconds: 60 } });
+  if (store.get().medsystemInit < 3) store.set({ medsystemInit: 3, hub: { toast: false } });   // só o banner do topo; sem toast do Windows
+  app.setAppUserModelId('com.medsystem.sidenotch.hub');
   docs = new Docs(app.getPath('userData'));
   createBar();
   createNotch();
