@@ -23,7 +23,12 @@
   body.open #pill::before, body.open #pill::after { width: 26px; height: 26px; }
   body.open #pill::before { left: -26px; background: radial-gradient(circle at 0 100%, transparent 25.5px, var(--bg) 26px); }
   body.open #pill::after  { right: -26px; background: radial-gradient(circle at 100% 100%, transparent 25.5px, var(--bg) 26px); }
-  body.alert #pill { box-shadow: 0 0 0 2px var(--warn), 0 8px 30px rgba(0,0,0,.55); }
+  /* alerta: contorno amarelo acompanhando a pastilha e as mordidas */
+  body.alert #pill { box-shadow: inset 0 -2px 0 var(--warn), 0 8px 30px rgba(0,0,0,.55), 0 2px 14px rgba(245,158,11,.35); }
+  body.alert #pill::before { background: radial-gradient(circle at 0 100%, transparent 17.5px, var(--warn) 18px, var(--warn) 20px, var(--bg) 20.5px); }
+  body.alert #pill::after  { background: radial-gradient(circle at 100% 100%, transparent 17.5px, var(--warn) 18px, var(--warn) 20px, var(--bg) 20.5px); }
+  body.alert.open #pill::before { background: radial-gradient(circle at 0 100%, transparent 25.5px, var(--warn) 26px, var(--warn) 28px, var(--bg) 28.5px); }
+  body.alert.open #pill::after  { background: radial-gradient(circle at 100% 100%, transparent 25.5px, var(--warn) 26px, var(--warn) 28px, var(--bg) 28.5px); }
 
   /* estado fechado */
   #mini { position: absolute; inset: 0; height: 30px; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 14px; font-size: 11.5px; white-space: nowrap; transition: opacity .15s; }
