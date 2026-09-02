@@ -68,13 +68,22 @@
   </aside>
   <main>
     <div class="page on" data-p="geral">
-      <h1>Geral</h1><p class="lead">Barra lateral: passe o mouse na borda da tela; arraste pelo <b>⋯</b> para mover.</p>
+      <h1>Geral</h1><p class="lead">Dois docks nas bordas da tela: um com o Medsystem Hub, outro com as IAs. Passe o mouse na borda para abrir; arraste pelo <b>⋯</b> para mover.</p>
       <section>
-        <div class="r"><div class="l"><b>Barra lateral</b><small>Uso das IAs, aprovações e sessões.</small></div><label class="sw"><input id="sbEnabled" type="checkbox"><span></span></label></div>
-        <div class="r"><div class="l"><b>Lado da tela</b></div><select id="side"><option value="right">Direita</option><option value="left">Esquerda</option></select></div>
-        <div class="r"><div class="l"><b>Posição vertical</b></div><select id="vertical"><option value="center">Centro</option><option value="top">Topo</option><option value="bottom">Base</option><option value="custom">Onde eu arrastei</option></select></div>
-        <div class="r"><div class="l"><b>Deslocamento</b><small>px, positivo desce</small></div><input id="offset" type="number" step="10"></div>
-        <div class="r"><div class="l"><b>Monitor</b></div><select id="displayId"></select></div>
+        <div class="r"><div class="l"><b>Docks laterais</b><small>desliga os dois de uma vez; cada dock tem lado, posição e monitor próprios abaixo (ou arraste pelo ⋯).</small></div><label class="sw"><input id="sbEnabled" type="checkbox"><span></span></label></div>
+        <h2>Dock do Hub — formulários, notificações, conversas e tarefas</h2>
+        <div class="r"><div class="l"><b>Ativar</b></div><label class="sw"><input id="dkHubOn" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Lado</b></div><select id="dkHubSide"><option value="right">Direita</option><option value="left">Esquerda</option></select></div>
+        <div class="r"><div class="l"><b>Posição vertical</b></div><select id="dkHubV"><option value="center">Centro</option><option value="top">Topo</option><option value="bottom">Base</option><option value="custom">Onde eu arrastei</option></select></div>
+        <div class="r"><div class="l"><b>Deslocamento</b><small>px, positivo desce</small></div><input id="dkHubOff" type="number" step="10"></div>
+        <div class="r"><div class="l"><b>Monitor</b></div><select id="dkHubDisp"></select></div>
+        <h2>Dock das IAs — uso do Claude, Codex, Cursor, Gemini, aprovações e sessões</h2>
+        <div class="r"><div class="l"><b>Ativar</b></div><label class="sw"><input id="dkAiOn" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Lado</b></div><select id="dkAiSide"><option value="right">Direita</option><option value="left">Esquerda</option></select></div>
+        <div class="r"><div class="l"><b>Posição vertical</b></div><select id="dkAiV"><option value="center">Centro</option><option value="top">Topo</option><option value="bottom">Base</option><option value="custom">Onde eu arrastei</option></select></div>
+        <div class="r"><div class="l"><b>Deslocamento</b><small>px, positivo desce</small></div><input id="dkAiOff" type="number" step="10"></div>
+        <div class="r"><div class="l"><b>Monitor</b></div><select id="dkAiDisp"></select></div>
+        <h2>Geral</h2>
         <div class="r"><div class="l"><b>Notch fechada mostra</b></div><select id="compact"><option value="dots">Pontinhos coloridos</option><option value="percent">Maior % usado</option><option value="off">Nada (só a borda)</option></select></div>
         <div class="r"><div class="l"><b>Largura mínima fechada</b><small>px</small></div><input id="collapsedWidth" type="number" min="2" max="24"></div>
         <div class="r"><div class="l"><b>Atualizar uso a cada</b><small>segundos — o endpoint do Claude limita chamadas frequentes</small></div><input id="refreshSeconds" type="number" min="30" step="30"></div>
@@ -258,8 +267,8 @@ function renderCalSources() {
 
 function collect() {
   const patch = {
-    side: $('#side').value, vertical: $('#vertical').value, offset: Number($('#offset').value) || 0,
-    displayId: $('#displayId').value || null, collapsedWidth: Number($('#collapsedWidth').value) || 6, compact: $('#compact').value,
+    docks: { hub: { enabled: $('#dkHubOn').checked, side: $('#dkHubSide').value, vertical: $('#dkHubV').value, offset: Number($('#dkHubOff').value) || 0, displayId: $('#dkHubDisp').value || null }, ai: { enabled: $('#dkAiOn').checked, side: $('#dkAiSide').value, vertical: $('#dkAiV').value, offset: Number($('#dkAiOff').value) || 0, displayId: $('#dkAiDisp').value || null } },
+    collapsedWidth: Number($('#collapsedWidth').value) || 6, compact: $('#compact').value,
     refreshSeconds: Number($('#refreshSeconds').value) || 180, autoLaunch: $('#autoLaunch').checked, dnd: $('#dnd').checked,
     order: settings.order, providers: {},
     sidebar: { enabled: $('#sbEnabled').checked, aiTools: $('#sbAi').checked },
@@ -286,9 +295,10 @@ async function load() {
   settings = await api.getSettings(); usage = await api.getUsage();
   const displays = await api.getDisplays();
   const opts = '<option value="">Automático (principal)</option>' + displays.map((d) => `<option value="${d.id}">${d.label}</option>`).join('');
-  $('#displayId').innerHTML = opts; $('#ntDisplay').innerHTML = opts;
-  $('#side').value = settings.side; $('#vertical').value = settings.vertical; $('#offset').value = settings.offset;
-  $('#displayId').value = settings.displayId || ''; $('#collapsedWidth').value = settings.collapsedWidth; $('#compact').value = settings.compact || 'dots';
+  $('#dkHubDisp').innerHTML = opts; $('#dkAiDisp').innerHTML = opts; $('#ntDisplay').innerHTML = opts;
+  const dk = settings.docks || {}; const fill = (k, d) => { d = d || {}; $(`#dk${k}On`).checked = d.enabled !== false; $(`#dk${k}Side`).value = d.side || 'right'; $(`#dk${k}V`).value = d.vertical || 'center'; $(`#dk${k}Off`).value = d.offset || 0; $(`#dk${k}Disp`).value = d.displayId || ''; };
+  fill('Hub', dk.hub); fill('Ai', dk.ai);
+  $('#collapsedWidth').value = settings.collapsedWidth; $('#compact').value = settings.compact || 'dots';
   $('#refreshSeconds').value = settings.refreshSeconds; $('#autoLaunch').checked = !!settings.autoLaunch; $('#dnd').checked = !!settings.dnd;
   $('#sbEnabled').checked = !settings.sidebar || settings.sidebar.enabled !== false;
   const nt = settings.notch || {}; $('#ntEnabled').checked = nt.enabled !== false; $('#ntDisplay').value = nt.displayId || ''; $('#ntOffset').value = nt.offsetX || 0; $('#ntTab').value = nt.tab || 'music';
@@ -368,7 +378,7 @@ $('#calAdd').addEventListener('click', () => { calSources.push({ name: '', url: 
 $('#calRefresh').addEventListener('click', async () => { await api.saveSettings(collect()); $('#calStatus').textContent = 'Atualizando…'; renderCal(await api.refreshCalendar()); });
 api.onApprovals(renderApprovals); api.onUpdate(renderUpdate); api.onCalendar(renderCal);
 api.onUsage((d) => { usage = d; renderProviders(); });
-api.onSettings((s) => { settings = s; $('#dnd').checked = !!s.dnd; $('#side').value = s.side; $('#vertical').value = s.vertical; });
+api.onSettings((s) => { settings = s; $('#dnd').checked = !!s.dnd; const d = s.docks || {}; for (const [k, v] of [['Hub', d.hub], ['Ai', d.ai]]) if (v) { $(`#dk${k}Side`).value = v.side || 'right'; $(`#dk${k}V`).value = v.vertical || 'center'; } });
 api.getUpdate().then(() => {}); load();
 </script>
 </body>

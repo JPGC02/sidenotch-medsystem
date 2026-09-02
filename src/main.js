@@ -15,7 +15,7 @@ const { HubClient } = require('./hub');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, bar, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub;
 const webappWins = new Map();
 let lastUsage = [];
 
@@ -30,9 +30,14 @@ app.whenReady().then(() => {
   if (!store.get().medsystemInit) store.set({ medsystemInit: 1, compact: 'off', providers: { claude: { enabled: false }, codex: { enabled: false }, cursor: { enabled: false }, gemini: { enabled: false } } });
   if (store.get().medsystemInit < 2) store.set({ medsystemInit: 2, approvals: { enabled: false }, sidebar: { aiTools: false }, hub: { pollSeconds: 60 } });
   if (store.get().medsystemInit < 3) store.set({ medsystemInit: 3, hub: { toast: false } });   // só o banner do topo; sem toast do Windows
+  if (store.get().medsystemInit < 4) {   // 1.5: dois docks — o do Hub herda a posição antiga; o das IAs nasce à esquerda com os provedores ligados
+    const o = store.get();
+    store.set({ medsystemInit: 4, docks: { hub: { enabled: true, side: o.side || 'right', vertical: o.vertical || 'center', offset: o.offset || 0, y: o.y ?? null, displayId: o.displayId || null }, ai: { enabled: true, side: 'left', vertical: 'center', offset: 0, y: null, displayId: null } },
+      providers: { claude: { enabled: true }, codex: { enabled: true }, cursor: { enabled: true }, gemini: { enabled: true } }, sidebar: { aiTools: true }, compact: 'dots' });
+  }
   app.setAppUserModelId('com.medsystem.sidenotch.hub');
   docs = new Docs(app.getPath('userData'));
-  createBar();
+  createBars();
   createNotch();
   createTray();
   startSystem();
@@ -88,7 +93,7 @@ function positionNotch() {
 
 function applyWindowVisibility() {
   const s = store.get();
-  if (bar) (s.sidebar.enabled ? bar.show() : bar.hide());
+  eachBar((w, role) => { const on = s.sidebar.enabled !== false && dockCfg(role).enabled; if (on) { positionBar(role); w.show(); } else w.hide(); });
   if (notch) (s.notch.enabled ? (positionNotch(), notch.show()) : notch.hide());
 }
 
@@ -227,7 +232,7 @@ function onNotify(n) {
   if (!want) { server.feed = server.feed.filter((x) => x.id !== n.id); return; }
   broadcast('notify', n);
   if (store.get().dnd) return;
-  if (bar && !bar.isVisible()) bar.show();
+  { const w = isHub ? bars.hub : bar; if (w && !w.isDestroyed() && !w.isVisible() && dockCfg(isHub ? 'hub' : 'ai').enabled) w.show(); }
   const hcfg = store.get().hub || {};
   const isHub = n.type === 'hub' || n.type === 'chat';
   if (isHub) { if (hcfg.sound !== false) playSound(n.type === 'chat' ? (hcfg.soundChat || hcfg.soundPreset || 'pop') : (hcfg.soundPreset || 'pop'), hcfg); }
@@ -237,80 +242,88 @@ function onNotify(n) {
   }
 }
 
-// ---------- Barra lateral ----------
-function createBar() {
-  bar = new BrowserWindow({
-    width: WIN_W, height: WIN_H,
+// ---------- Docks laterais (hub = formulários/notificações do Hub · ai = uso das IAs, aprovações e sessões) ----------
+const DOCKS = ['hub', 'ai'];
+const bars = {};            // role → BrowserWindow
+const barH = { hub: WIN_H, ai: WIN_H };
+function dockCfg(role) { const d = (store.get().docks || {})[role] || {}; return { enabled: d.enabled !== false, side: d.side || 'right', vertical: d.vertical || 'center', offset: Number(d.offset || 0), y: d.y, displayId: d.displayId }; }
+function createBars() { for (const role of DOCKS) createBar(role); }
+function createBar(role) {
+  const win = new BrowserWindow({
+    width: WIN_W, height: barH[role],
     frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true,
     resizable: false, movable: false, minimizable: false, maximizable: false,
     focusable: false, hasShadow: false, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
-  bar.setAlwaysOnTop(true, 'screen-saver');
-  bar.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  bar.setMenu(null);
-  bar.loadFile(path.join(__dirname, 'renderer', 'bar.html'));
-  bar.once('ready-to-show', () => { positionBar(); bar.show(); });
-  bar.setIgnoreMouseEvents(true, { forward: true });
+  bars[role] = win; win._role = role;
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setMenu(null);
+  win.loadFile(path.join(__dirname, 'renderer', 'bar.html'), { query: { role } });
+  win.once('ready-to-show', () => { positionBar(role); if (dockCfg(role).enabled) win.show(); });
+  win.setIgnoreMouseEvents(true, { forward: true });
   const keepOnTop = () => {
-    if (!bar || bar.isDestroyed() || !bar.isVisible() || dragging) return;
-    bar.setAlwaysOnTop(true, 'screen-saver', 1);
-    bar.moveTop();
+    if (win.isDestroyed() || !win.isVisible() || (dragging && dragging.role === role)) return;
+    win.setAlwaysOnTop(true, 'screen-saver', 1);
+    win.moveTop();
   };
   setInterval(keepOnTop, 1500);
-  bar.on('show', keepOnTop);
+  win.on('show', keepOnTop);
   app.on('browser-window-blur', keepOnTop);
   app.on('browser-window-focus', keepOnTop);
-  bar.on('blur', () => { if (bar && !bar.isDestroyed() && bar.isFocusable()) { bar.setFocusable(false); bar.webContents.send('bar:blur'); } });
-  screen.on('display-metrics-changed', positionBar);
-  screen.on('display-added', positionBar);
-  screen.on('display-removed', positionBar);
+  win.on('blur', () => { if (!win.isDestroyed() && win.isFocusable()) { win.setFocusable(false); win.webContents.send('bar:blur'); } });
+  if (role === DOCKS[0]) { screen.on('display-metrics-changed', positionBars); screen.on('display-added', positionBars); screen.on('display-removed', positionBars); }
 }
+function eachBar(fn) { for (const role of DOCKS) { const w = bars[role]; if (w && !w.isDestroyed()) fn(w, role); } }
+// compat: "bar" = dock que recebe aprovações/sessões do Claude Code (ai); cai no hub se o ai estiver desligado
+Object.defineProperty(globalThis, 'bar', { get() { const a = bars.ai, h = bars.hub; return (a && !a.isDestroyed() && dockCfg('ai').enabled) ? a : (h && !h.isDestroyed() ? h : a); } });
 
-function targetDisplay() {
-  const s = store.get();
+function targetDisplay(role = 'hub') {
+  const d = dockCfg(role);
   const all = screen.getAllDisplays();
-  return all.find((d) => String(d.id) === String(s.displayId)) || screen.getPrimaryDisplay();
+  return all.find((x) => String(x.id) === String(d.displayId)) || screen.getPrimaryDisplay();
 }
 
-function positionBar() {
-  if (!bar || dragging) return;
-  const s = store.get();
-  const { workArea } = targetDisplay();
+function positionBars() { for (const role of DOCKS) positionBar(role); }
+function positionBar(role = 'hub') {
+  const win = bars[role]; if (!win || win.isDestroyed() || (dragging && dragging.role === role)) return;
+  const s = dockCfg(role), H = barH[role];
+  const { workArea } = targetDisplay(role);
   const x = s.side === 'left' ? workArea.x : workArea.x + workArea.width - WIN_W;
   let y;
   if (s.vertical === 'custom' && s.y != null) y = Number(s.y);
-  else if (s.vertical === 'top') y = workArea.y + 16 + Number(s.offset || 0);
-  else if (s.vertical === 'bottom') y = workArea.y + workArea.height - WIN_H - 16 + Number(s.offset || 0);
-  else y = workArea.y + Math.round((workArea.height - WIN_H) / 2) + Number(s.offset || 0);
-  y = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - WIN_H));
-  bar.setBounds({ x, y, width: WIN_W, height: WIN_H });
+  else if (s.vertical === 'top') y = workArea.y + 16 + s.offset;
+  else if (s.vertical === 'bottom') y = workArea.y + workArea.height - H - 16 + s.offset;
+  else y = workArea.y + Math.round((workArea.height - H) / 2) + s.offset;
+  y = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - H));
+  win.setBounds({ x, y, width: WIN_W, height: H });
 }
 
-// ---------- Arrastar a barra ----------
+// ---------- Arrastar um dock ----------
 let dragging = null;
-function dragStart() {
-  if (!bar) return;
+function dragStart(role) {
+  const win = bars[role]; if (!win || dragging) return;
   const cur = screen.getCursorScreenPoint();
-  const b = bar.getBounds();
-  dragging = { grabDy: cur.y - b.y, timer: null, safety: setTimeout(dragEnd, 15000) };
+  const b = win.getBounds(); const H = barH[role];
+  dragging = { role, grabDy: cur.y - b.y, timer: null, safety: setTimeout(dragEnd, 15000) };
   dragging.timer = setInterval(() => {
     const c = screen.getCursorScreenPoint();
     const d = screen.getDisplayNearestPoint(c);
     const wa = d.workArea;
     const side = c.x < wa.x + wa.width / 2 ? 'left' : 'right';
     const x = side === 'left' ? wa.x : wa.x + wa.width - WIN_W;
-    const y = Math.max(wa.y, Math.min(c.y - dragging.grabDy, wa.y + wa.height - WIN_H));
-    bar.setBounds({ x, y, width: WIN_W, height: WIN_H });
+    const y = Math.max(wa.y, Math.min(c.y - dragging.grabDy, wa.y + wa.height - H));
+    win.setBounds({ x, y, width: WIN_W, height: H });
     dragging.last = { side, y, displayId: String(d.id) };
   }, 16);
 }
 function dragEnd() {
   if (!dragging) return;
   clearInterval(dragging.timer); clearTimeout(dragging.safety);
-  const last = dragging.last; dragging = null;
-  if (last) { store.set({ side: last.side, y: last.y, vertical: 'custom', displayId: last.displayId }); broadcast('settings', store.get()); }
-  positionBar();
+  const { last, role } = dragging; dragging = null;
+  if (last) { store.set({ docks: { [role]: { side: last.side, y: last.y, vertical: 'custom', displayId: last.displayId } } }); broadcast('settings', store.get()); }
+  positionBar(role);
 }
 
 // ---------- Atualização de uso ----------
@@ -335,7 +348,7 @@ function scheduleRefresh() {
 }
 
 function broadcast(ch, payload) {
-  for (const w of [bar, notch, settingsWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
+  for (const w of [bars.hub, bars.ai, notch, settingsWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
 }
 
 // ---------- Atalhos globais ----------
@@ -370,7 +383,8 @@ function buildTrayMenu() {
     { label: upLabel, enabled: st.status !== 'unsupported' && st.status !== 'downloading', click: () => { if (st.status === 'downloaded') updater.install(); else if (st.status === 'available') updater.download(); else updater.check(); } },
     { label: `Versão ${app.getVersion()}`, enabled: false },
     { type: 'separator' },
-    { label: 'Mostrar/ocultar barra lateral', click: () => { store.set({ sidebar: { enabled: !store.get().sidebar.enabled } }); applyWindowVisibility(); } },
+    { label: 'Mostrar/ocultar dock do Hub', click: () => { store.set({ docks: { hub: { enabled: !dockCfg('hub').enabled } } }); applyWindowVisibility(); broadcast('settings', store.get()); } },
+    { label: 'Mostrar/ocultar dock das IAs', click: () => { store.set({ docks: { ai: { enabled: !dockCfg('ai').enabled } } }); applyWindowVisibility(); broadcast('settings', store.get()); } },
     { label: 'Mostrar/ocultar notch', click: () => { store.set({ notch: { enabled: !store.get().notch.enabled } }); applyWindowVisibility(); } },
     { label: 'Sair', click: () => { app.exit(0); } }
   ]));
@@ -415,7 +429,7 @@ ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('settings:save', (_e, patch) => {
   const before = JSON.stringify(store.get().approvals);
   store.set(patch);
-  positionBar(); positionNotch(); applyWindowVisibility(); scheduleRefresh(); applyAutoLaunch(); registerShortcuts(); buildTrayMenu();
+  positionBars(); positionNotch(); applyWindowVisibility(); scheduleRefresh(); applyAutoLaunch(); registerShortcuts(); buildTrayMenu();
   if (JSON.stringify(store.get().approvals) !== before) startServer();
   startMaestri();
   if (patch && patch.calendar) startCalendar();
@@ -457,10 +471,10 @@ ipcMain.handle('update:check', () => { updater && updater.check(); return update
 ipcMain.handle('update:download', () => { updater && updater.download(); return updater && updater.state; });
 ipcMain.handle('update:install', () => { updater && updater.install(); return updater && updater.state; });
 ipcMain.handle('displays:get', () => screen.getAllDisplays().map((d, i) => ({ id: String(d.id), label: `Monitor ${i + 1} (${d.size.width}×${d.size.height})${d.id === screen.getPrimaryDisplay().id ? ' — principal' : ''}` })));
-ipcMain.on('bar:ignore-mouse', (e, ignore) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && !(w === bar && dragging)) w.setIgnoreMouseEvents(!!ignore, { forward: true }); });
-ipcMain.on('bar:height', (_e, h) => { const nh = Math.max(160, Math.min(1000, Math.round(h))); if (nh !== WIN_H) { WIN_H = nh; positionBar(); } });
+ipcMain.on('bar:ignore-mouse', (e, ignore) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && !(dragging && w._role === dragging.role)) w.setIgnoreMouseEvents(!!ignore, { forward: true }); });
+ipcMain.on('bar:height', (e, h) => { const w = BrowserWindow.fromWebContents(e.sender); const role = w && w._role; if (!role) return; const nh = Math.max(160, Math.min(1000, Math.round(h))); if (nh !== barH[role]) { barH[role] = nh; positionBar(role); } });
 ipcMain.on('bar:focusable', (e, v) => { const w = BrowserWindow.fromWebContents(e.sender); if (!w) return; w.setFocusable(!!v); if (v) w.focus(); });
-ipcMain.on('bar:drag', (_e, phase) => { if (phase === 'start') dragStart(); else dragEnd(); });
+ipcMain.on('bar:drag', (e, phase) => { const w = BrowserWindow.fromWebContents(e.sender); if (phase === 'start') dragStart(w && w._role || 'hub'); else dragEnd(); });
 ipcMain.on('app:open-settings', openSettings);
 ipcMain.handle('system:get', () => sysmon ? sysmon.snapshot() : null);
 ipcMain.handle('media:cmd', (_e, cmd) => sysmon ? sysmon.media(cmd) : false);

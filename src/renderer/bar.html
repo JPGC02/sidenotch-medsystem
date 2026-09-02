@@ -188,6 +188,8 @@
 <script src="iconsax.js"></script>
 <script>
 const IX = window.IX || {};
+const ROLE = new URLSearchParams(location.search).get('role') || 'hub';   // hub = dock do Medsystem Hub · ai = uso das IAs / Claude Code / Maestri
+const isHubDock = ROLE === 'hub', isAiDock = ROLE === 'ai';
 // oscilador amortecido → linear() (spring.js do dock/): gerado uma vez no boot
 function spring({ stiffness = 300, damping = 40, mass = 1 } = {}) {
   const w0 = Math.sqrt(stiffness / mass), zeta = damping / (2 * Math.sqrt(stiffness * mass));
@@ -240,7 +242,7 @@ function renderBar() {
   const grip = document.createElement('div'); grip.id = 'grip'; grip.textContent = '⋯'; grip.title = 'Arraste para mover';
   grip.addEventListener('mousedown', (e) => { e.preventDefault(); document.body.classList.add('dragging'); api.drag('start'); });
   list.appendChild(grip);
-  for (const u of usage) {
+  for (const u of (isAiDock ? usage : [])) {
     const p = u.ok && u.primary ? u.primary.usedPercent : null;
     const el = document.createElement('div');
     el.className = 'item' + (u.ok ? '' : ' err') + (u.stale ? ' stale' : '');
@@ -257,7 +259,7 @@ function renderBar() {
     list.appendChild(el);
   }
   // dock do Medsystem Hub: atalhos fixados + notificações + tarefas
-  if (hub && hub.linked) {
+  if (isHubDock && hub && hub.linked) {
     if (usage.length) { const sp = document.createElement('div'); sp.id = 'sep'; list.appendChild(sp); }
     const pins = new Set((settings.hub && settings.hub.pinned) || []);
     const scs = hub.shortcuts || []; const dock = [...scs.filter((x) => pins.has(x.id)), ...scs.filter((x) => !pins.has(x.id))].slice(0, Math.max(3, Math.min(6, Number(settings.hub && settings.hub.dockCount) || 5)));
@@ -266,15 +268,15 @@ function renderBar() {
     const nb = dial('', SVG.bell, 'Notificações do Hub', hub.unread ? `<span class="cnt blue">${hub.unread}</span>` : ''); nb.dataset.view = 'hubnotif'; nb.onclick = () => toggleView('hubnotif'); nb.addEventListener('mouseenter', () => { if (hub.unread) toggleView('hubnotif', true); }); list.appendChild(nb);
     if (hub.hasWhatsapp) { const cb = dial('', SVG.chat, 'Conversas do WhatsApp', hub.chatUnread ? `<span class="cnt green">${hub.chatUnread}</span>` : hub.chatTransfers ? `<span class="cnt orange">${hub.chatTransfers}</span>` : ''); cb.dataset.view = 'hubchat'; cb.onclick = () => toggleView('hubchat'); cb.addEventListener('mouseenter', () => { if (hub.chatUnread || hub.chatTransfers) toggleView('hubchat', true); }); list.appendChild(cb); }
     const tb = dial('', SVG.check, 'Minhas tarefas', hub.tasks.length ? `<span class="cnt ${hub.overdue ? '' : 'blue'}">${hub.overdue || hub.tasks.length}</span>` : ''); tb.dataset.view = 'hubtasks'; tb.onclick = () => toggleView('hubtasks'); list.appendChild(tb);
-  } else if (hub && !hub.linked) {
+  } else if (isHubDock && hub && !hub.linked) {
     const lb = document.createElement('div'); lb.className = 'dk'; lb.innerHTML = `<span class="dial">${IX.Hospital}</span>`; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
   }
   const mt = (approvals.maestri && approvals.maestri.terminals) || [];
   const act = approvals.sessions.filter((s) => s.status !== 'ended').concat(mt.filter((t) => t.isRunning && !t.isUnloaded));
   const waiting = approvals.sessions.filter((s) => s.status === 'waiting').length + mt.filter((t) => t.needsAttention || t.hasPrompt).length;
-  const aiTools = !!(settings.sidebar && settings.sidebar.aiTools) || act.length > 0;
+  const aiTools = isAiDock;
   if (aiTools) {
-    const sep = document.createElement('div'); sep.id = 'sep'; list.appendChild(sep);
+    if (usage.length) { const sep = document.createElement('div'); sep.id = 'sep'; list.appendChild(sep); }
     const sb = btn('sessions', SVG.sessions, 'Sessões do Claude Code', () => toggleView('sessions'));
     if (act.length) sb.insertAdjacentHTML('beforeend', `<span class="cnt ${waiting ? 'wait' : ''}">${waiting || act.length}</span>`);
     list.appendChild(sb);
@@ -295,8 +297,8 @@ function fitHeight() { api.setBarHeight(Math.max(barH, 640)); }   // altura fixa
 function renderCompact() {
   const c = $('#compact'); c.innerHTML = '';
   const mode = settings.compact || 'dots';
-  const ok = usage.filter((u) => u.ok && u.primary);
-  if (hub && hub.linked && hub.unread) { document.documentElement.style.setProperty('--collapsed-w', Math.max(settings.collapsedWidth || 6, 12) + 'px'); c.insertAdjacentHTML('beforeend', '<div class="hdot"></div>'); if (mode === 'off' || !ok.length) return; }
+  const ok = isAiDock ? usage.filter((u) => u.ok && u.primary) : [];
+  if (isHubDock && hub && hub.linked && hub.unread) { document.documentElement.style.setProperty('--collapsed-w', Math.max(settings.collapsedWidth || 6, 12) + 'px'); c.insertAdjacentHTML('beforeend', '<div class="hdot"></div>'); if (mode === 'off' || !ok.length) return; }
   else if (mode === 'off' || !ok.length) { document.documentElement.style.setProperty('--collapsed-w', (settings.collapsedWidth || 6) + 'px'); return; }
   if (mode === 'dots') {
     document.documentElement.style.setProperty('--collapsed-w', Math.max(settings.collapsedWidth || 6, 11) + 'px');
@@ -342,7 +344,8 @@ function renderPanel() {
 }
 function renderPanelInner() {
   const panel = $('#panel'); panel.innerHTML = '';
-  const pend = approvals.pending, feed = approvals.feed;
+  const isHubType = (n) => n.type === 'hub' || n.type === 'chat';
+  const pend = isAiDock ? approvals.pending : [], feed = approvals.feed.filter((n) => isHubDock ? isHubType(n) : !isHubType(n));
   // 1) aprovações agrupadas por sessão
   const groups = new Map();
   for (const p of pend) { const k = p.sessionId || '?'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
@@ -352,7 +355,7 @@ function renderPanelInner() {
     for (const p of items) panel.appendChild(approvalCard(p, s));
   }
   // 1b) prompts S/n do Maestri
-  const mp = (approvals.maestri && approvals.maestri.prompts) || [];
+  const mp = isAiDock ? ((approvals.maestri && approvals.maestri.prompts) || []) : [];
   for (const p of mp) panel.appendChild(maestriPromptCard(p));
   // 2) notificações
   if (view === 'feed' || (!view && feed.length)) for (const n of feed.slice(0, view === 'feed' ? 40 : 4)) panel.appendChild(feedCard(n));
@@ -575,14 +578,17 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
 
 function applySettings(s) {
   settings = s;
-  document.body.classList.toggle('left', s.side === 'left');
-  document.body.classList.toggle('right', s.side !== 'left');
+  const dk = (s.docks && s.docks[ROLE]) || { side: s.side };
+  document.body.classList.toggle('left', dk.side === 'left');
+  document.body.classList.toggle('right', dk.side !== 'left');
   document.body.classList.toggle('dnd', !!s.dnd);
   renderBar();
 }
 
 // toasts com auto-dismiss
 function onNotify(n) {
+  const mine = (n.type === 'hub' || n.type === 'chat') ? isHubDock : isAiDock;
+  if (!mine) return;
   if (!view) setView(null);
   const sec = Number(settings.notifications && settings.notifications.autoDismissSec) || 0;
   if (sec > 0 && n.type !== 'update') toastTimers[n.id] = setTimeout(() => api.dismiss(n.id), sec * 1000);
