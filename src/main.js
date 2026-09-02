@@ -25,6 +25,8 @@ app.whenReady().then(() => {
   store = new Store(app.getPath('userData'));
   history = new History(app.getPath('userData'));
   if (!store.get().approvals.token) store.set({ approvals: { token: approvals.newToken() } });
+  // edição Medsystem: na 1ª execução (ou vindo da 1.0.x) desliga os provedores de IA e a faixa de % — quem quiser religa nas configurações
+  if (!store.get().medsystemInit) store.set({ medsystemInit: 1, compact: 'off', providers: { claude: { enabled: false }, codex: { enabled: false }, cursor: { enabled: false }, gemini: { enabled: false } } });
   docs = new Docs(app.getPath('userData'));
   createBar();
   createNotch();
@@ -118,6 +120,14 @@ function openWebApp(w) {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { partition: 'persist:webapps', contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
+  // janela do Hub: entrega a sessão web guardada no vínculo (localStorage do supabase-js) para não pedir login de novo
+  if (w.id === 'medsystem-hub' && hub) {
+    win.webContents.on('did-finish-load', () => {
+      const ws = hub.webSession(); if (!ws || win._sessionInjected) return;
+      win.webContents.executeJavaScript(`(() => { try { if (localStorage.getItem(${JSON.stringify(ws.key)})) return 'has'; localStorage.setItem(${JSON.stringify(ws.key)}, ${JSON.stringify(ws.value)}); location.reload(); return 'set'; } catch (e) { return 'err ' + e; } })()`, true)
+        .then((r) => { if (r === 'set' || r === 'has') win._sessionInjected = true; }).catch(() => {});
+    });
+  }
   win.loadURL(w.url);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) win.loadURL(url); return { action: 'deny' }; });
   win.on('closed', () => webappWins.delete(w.id));

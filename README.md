@@ -4,7 +4,10 @@ Edição separada do [SideNotch](https://github.com/JPGC02/sidenotch) para a equ
 
 - **Vínculo com o Hub**: aba *Medsystem Hub* nas configurações ou no próprio notch → e-mail e senha do Hub. Só a sessão (refresh token) fica guardada, cifrada com o cofre do Windows (`hub-session.bin`); a senha nunca é salva. Se o admin desativar o usuário, o app desvincula sozinho.
 - **Notificações em tempo real**: assina a tabela `notificacoes` do usuário via Realtime (WebSocket) com consulta de segurança a cada 90 s. Nova notificação → cartão na barra, pastilha pisca, notificação do Windows opcional; clique abre o link na janela do Hub e marca como lida. "Marcar todas" na aba.
-- **Minhas tarefas**: tarefas atribuídas a você (`tasks`), ordenadas por vencimento, atrasadas em vermelho, com ▶ em andamento / ✓ concluir direto do notch; contador na pastilha fechada.
+- **Minhas tarefas** (aba *Tarefas e notas* e dock lateral): tarefas avulsas (`tasks`) **e** as OS que o Fluxo da AT encarregou a você (`at_os_tarefa`, selo "AT · OS nnn"), agrupadas em Atrasadas / Hoje / Próximas, com ▶ iniciar / ✓ concluir gravando na tabela de origem, como a Central de Tarefas do Hub.
+- **Banner na pastilha** (estilo Dynamic Island): a notificação aparece com título e mensagem por 9 s na notch fechada; clique abre no Hub.
+- **Login único**: ao vincular, o app guarda também uma sessão para o site e a injeta na janela do Hub — não pede senha de novo.
+- **Dock lateral**: a barra lateral mostra os atalhos de formulários (tiles), o sino com não lidas e as tarefas; os anéis de uso de IA ficam desligados por padrão (Configurações → Provedores religa).
 - **Lançador de formulários**: atalhos (Abrir chamado, Nova cotação, Pedido internet, Nova ideia PEM, Solicitar NF, Nova demanda, Produção marketing…) filtrados pelos **módulos que o seu setor/cargo tem no Hub** (mesma regra do site: `sector_module_access` + overrides `user_module_access`, fallback do `authStore`). Busca ("cham" + Enter), clique direito fixa no topo, atalho global configurável (ex.: `Ctrl+Shift+H`) abre o notch já na busca.
 - Tudo abre na janela **Medsystem Hub** do próprio app (sessão persistente, sem precisar logar de novo no navegador). O app só escreve `notificacoes.lida` e `tasks.status` das suas próprias linhas; o resto continua no Hub, respeitando as RLS.
 
@@ -22,7 +25,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.0.1.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.1.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -30,7 +33,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.0.1.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.1.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -98,7 +101,7 @@ Fechada, a pastilha mostra a hora, capa/música, CPU/RAM, próximo compromisso e
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.0.1 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.1.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

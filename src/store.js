@@ -10,14 +10,14 @@ const DEFAULTS = {
   displayId: null,            // monitor (null = primário)
   refreshSeconds: 180,        // intervalo de atualização
   collapsedWidth: 6,          // largura da "notch" fechada
-  compact: 'dots',            // 'off' | 'dots' | 'percent' — o que aparece na notch fechada
+  compact: 'off',            // 'off' | 'dots' | 'percent' — o que aparece na notch fechada
   autoLaunch: false,
   dnd: false,                 // não perturbe: sem som, sem toast, sem abrir sozinha
   providers: {
-    claude:      { enabled: true, token: '' },
-    codex:       { enabled: true },
-    cursor:      { enabled: true, cookie: '' },
-    gemini:      { enabled: true },
+    claude:      { enabled: false, token: '' },
+    codex:       { enabled: false },
+    cursor:      { enabled: false, cookie: '' },
+    gemini:      { enabled: false },
     antigravity: { enabled: false },
     openrouter:  { enabled: false, apiKey: '' },
     nvidia:      { enabled: false, apiKey: '' },
@@ -61,7 +61,7 @@ const DEFAULTS = {
   weather: { lat: '', lon: '', label: '' },        // vazio = localização automática por IP
   hub: {                      // Medsystem Hub (Supabase). Sessão fica cifrada em hub-session.bin (DPAPI), nunca aqui.
     enabled: true, url: '', anon: '', site: '',     // vazios = padrão do Hub de produção
-    pollSeconds: 90, notify: true, toast: true, sound: true, markReadOnOpen: true, showBadge: true, pinned: []
+    pollSeconds: 90, notify: true, toast: true, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5
   }
 };
 

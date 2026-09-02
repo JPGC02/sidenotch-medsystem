@@ -20,7 +20,7 @@ const db = {
     { id: 't2', title: 'Feita', status: 'completed', priority: 'low', due_date: null, assignee_id: UID, created_at: '2026-09-01T00:00:00Z' }
   ]
 };
-let refreshCount = 0, sockets = [], joins = [];
+let refreshCount = 0, sockets = [], joins = [], atPatch = null, logins = 0;
 
 const server = http.createServer((req, res) => {
   let body = ''; req.on('data', (c) => body += c);
@@ -32,8 +32,9 @@ const server = http.createServer((req, res) => {
     if (u.pathname === '/auth/v1/token') {
       const b = JSON.parse(body);
       if (u.searchParams.get('grant_type') === 'password') {
+        logins++;
         if (b.password !== 'segredo') return json(400, { error: 'invalid_grant', error_description: 'Invalid login credentials' });
-        return json(200, { access_token: jwt(Math.floor(Date.now() / 1000) + 3600), refresh_token: 'rt-1', user: { id: UID, email: b.email } });
+        return json(200, { access_token: jwt(Math.floor(Date.now() / 1000) + 3600), refresh_token: logins === 2 ? 'rt-1' : 'rt-web', expires_in: 3600, user: { id: UID, email: b.email } });
       }
       refreshCount++;
       if (b.refresh_token === 'rt-revoked') return json(400, { error: 'invalid_grant', error_description: 'Invalid Refresh Token: Already Used' });
@@ -48,6 +49,10 @@ const server = http.createServer((req, res) => {
     if (u.pathname === '/rest/v1/notificacoes') {
       if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('usuario_id'), 'eq.' + UID); return json(200, db.notificacoes); }
       if (req.method === 'PATCH') { const b = JSON.parse(body); const id = (u.searchParams.get('id') || '').replace('eq.', ''); for (const n of db.notificacoes) if (!id || n.id === id) n.lida = b.lida; return json(204, {}); }
+    }
+    if (u.pathname === '/rest/v1/at_os_tarefa') {
+      if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('responsavel'), 'eq.' + UID); assert.strictEqual(u.searchParams.get('situacao'), 'not.in.(concluida,cancelada)'); return json(200, [{ id: 'a1', codigo_os: 83568, cliente: 'SLMANDIC', equipamento: 'MONITOR', urgencia: 'media', situacao: 'pendente', prazo: null, observacao: 'Solicitar devolução', criado_em: '2026-08-26T00:00:00Z' }]); }
+      if (req.method === 'PATCH') { const b = JSON.parse(body); assert.strictEqual(u.searchParams.get('id'), 'eq.a1'); assert.strictEqual(u.searchParams.get('responsavel'), 'eq.' + UID); atPatch = b.situacao; return json(204, {}); }
     }
     if (u.pathname === '/rest/v1/tasks') {
       if (req.method === 'GET') { assert.strictEqual(u.searchParams.get('status'), 'neq.completed'); return json(200, db.tasks.filter((t) => t.status !== 'completed')); }
@@ -66,7 +71,7 @@ wss.on('connection', (ws, req) => {
       assert.ok(m.payload.access_token.startsWith('h.'));
       const pc = m.payload.config.postgres_changes;
       if (/notif/.test(m.topic)) { assert.strictEqual(pc[0].table, 'notificacoes'); assert.strictEqual(pc[0].filter, `usuario_id=eq.${UID}`); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'ok', response: {} }, ref: m.ref })); }
-      else { assert.strictEqual(pc[0].table, 'tasks'); joins.push(m.topic); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'error', response: { reason: 'Unable to subscribe to changes with given parameters' } }, ref: m.ref })); }
+      else { assert.ok(['tasks', 'at_os_tarefa'].includes(pc[0].table)); joins.push(m.topic); ws.send(JSON.stringify({ topic: m.topic, event: 'phx_reply', payload: { status: 'error', response: { reason: 'Unable to subscribe to changes with given parameters' } }, ref: m.ref })); }
     }
     if (m.event === 'heartbeat') ws.send(JSON.stringify({ topic: 'phoenix', event: 'phx_reply', payload: { status: 'ok' }, ref: m.ref }));
   });
@@ -88,7 +93,11 @@ wss.on('connection', (ws, req) => {
   const st = await hub.login('jp@medsystem.eng.br', 'segredo');
   assert.strictEqual(st.linked, true); assert.strictEqual(st.profile.name, 'JP Teste'); assert.strictEqual(st.profile.sector, 'TI e Sistemas');
   assert.deepStrictEqual([...st.profile.modules].sort(), ['compras', 'tarefas']);   // chamados desligado pelo override, compras ligado
-  assert.strictEqual(st.unread, 1); assert.strictEqual(st.tasks.length, 1); assert.strictEqual(st.overdue, 1);
+  assert.strictEqual(st.unread, 1); assert.strictEqual(st.tasks.length, 2); assert.strictEqual(st.overdue, 1);
+  const atT = st.tasks.find((t) => t.source === 'at'); assert.strictEqual(atT.id, 'at:a1'); assert.strictEqual(atT.label, 'AT · OS 83568'); assert.strictEqual(atT.title, 'OS 83568 · SLMANDIC'); assert.strictEqual(atT.priority, 'medium');
+  assert.strictEqual(st.tasks[0].id, 't1', 'atrasada primeiro');
+  // sessão web separada (2º login) pronta para o localStorage do site
+  assert.strictEqual(logins, 3); const wsess = hub.webSession(); assert.strictEqual(wsess.key, 'sb-127-auth-token'); assert.strictEqual(JSON.parse(wsess.value).refresh_token, 'rt-web'); assert.ok(JSON.parse(wsess.value).user.id === UID);
   const ids = st.shortcuts.map((s) => s.id);
   assert.ok(ids.includes('cotacao') && ids.includes('tarefas') && ids.includes('dashboard') && ids.includes('reportar') && !ids.includes('chamado') && !ids.includes('nf'));
   assert.strictEqual(st.shortcuts.find((s) => s.id === 'cotacao').url, 'https://hub.test/compras/cotacoes/nova');
@@ -108,13 +117,14 @@ wss.on('connection', (ws, req) => {
   db.tasks.push({ id: 't3', title: 'Nova tarefa', status: 'pending', priority: 'medium', due_date: null, assignee_id: UID, created_at: '2026-09-02T00:00:00Z' });
   ws.send(JSON.stringify({ topic: `realtime:sidenotch-tasks-${UID}`, event: 'postgres_changes', payload: { data: { schema: 'public', table: 'tasks', type: 'INSERT', record: { id: 't3' } } }, ref: null }));
   await new Promise((r) => setTimeout(r, 120));
-  assert.strictEqual(hub.tasks.length, 2);
-  assert.strictEqual(hub.realtime, 'on', 'canal de tasks com erro não derruba as notificações'); assert.strictEqual(joins.length, 1);
+  assert.strictEqual(hub.tasks.length, 3);
+  assert.strictEqual(hub.realtime, 'on', 'canal de tasks com erro não derruba as notificações'); assert.strictEqual(joins.length, 2);
 
   // marcar lida (uma e todas) e concluir tarefa
   await hub.markRead('n3'); assert.strictEqual(hub.state().unread, 1); assert.strictEqual(db.notificacoes.find((n) => n.id === 'n3'), undefined); // n3 veio só pelo realtime, não está no "banco"
   await hub.markRead('*'); assert.strictEqual(hub.state().unread, 0); assert.ok(db.notificacoes.every((n) => n.lida));
   await hub.setTaskStatus('t1', 'in_progress'); assert.strictEqual(hub.tasks.find((t) => t.id === 't1').status, 'in_progress');
+  await hub.setTaskStatus('at:a1', 'completed'); assert.strictEqual(atPatch, 'concluida'); assert.ok(!hub.tasks.some((t) => t.id === 'at:a1'));
   await hub.setTaskStatus('t1', 'completed'); assert.strictEqual(hub.tasks.length, 1); assert.strictEqual(db.tasks.find((t) => t.id === 't1').status, 'completed');
   await assert.rejects(hub.setTaskStatus('t3', 'weird'), /inválido/);
 
@@ -127,7 +137,7 @@ wss.on('connection', (ws, req) => {
   const hub2 = new HubClient({ dir, secret, WebSocket, url, anon: 'anon-test', site: 'https://hub.test' });
   assert.strictEqual(hub2.linked(), true);
   await hub2.start(60);
-  assert.strictEqual(hub2.profile.name, 'JP Teste'); assert.strictEqual(hub2.connected, true);
+  assert.strictEqual(hub2.profile.name, 'JP Teste'); assert.strictEqual(hub2.connected, true); assert.strictEqual(JSON.parse(hub2.webSession().value).refresh_token, 'rt-web', 'sessão web sobrevive ao reinício');
   hub2.stop();
 
   // refresh revogado → desvincula sozinho

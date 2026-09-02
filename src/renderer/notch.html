@@ -113,23 +113,49 @@
   .ev .c { width: 4px; align-self: stretch; border-radius: 2px; } .ev .t { font-size: 11.5px; color: var(--muted); width: 88px; font-variant-numeric: tabular-nums; } .ev .s { font-size: 13px; font-weight: 600; }
   .empty { text-align: center; color: var(--muted); padding: 22px 0; font-size: 13px; }
   .empty svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.6; display: block; margin: 0 auto 6px; }
-  /* hub */
-  .hub2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; }
-  .hubhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .hubhead .av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #2dd4bf, #6366f1); display: grid; place-items: center; font-weight: 800; color: #08131a; font-size: 13px; }
-  .rt { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); } .rt.on { background: var(--ok); } .rt.error { background: var(--bad); }
-  .sc { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 10px; }
-  .sc .s { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); cursor: pointer; font-size: 11.5px; white-space: nowrap; overflow: hidden; }
-  .sc .s:hover { background: var(--bg3); } .sc .s.form { border-color: rgba(45,212,191,.35); } .sc .s.k { outline: 1px solid var(--acc); }
-  .sc .s .ic { font-size: 14px; } .sc .s .nm { overflow: hidden; text-overflow: ellipsis; }
-  .nt { display: flex; gap: 9px; padding: 8px 6px; border-top: 1px solid var(--line); cursor: pointer; border-radius: 8px; } .nt:first-child { border-top: 0; } .nt:hover { background: var(--bg2); }
-  .nt .dotu { width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; margin-top: 6px; flex: 0 0 7px; } .nt.read .dotu { background: transparent; }
-  .nt .ti { font-size: 12.5px; font-weight: 600; } .nt.read .ti { font-weight: 500; color: #c9c9cf; } .nt .ms { font-size: 11.5px; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .nt .ag { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
-  .tk { display: flex; gap: 8px; align-items: center; padding: 7px 6px; border-top: 1px solid var(--line); border-radius: 8px; } .tk:first-child { border-top: 0; } .tk:hover { background: var(--bg2); }
-  .tk .pr { width: 4px; align-self: stretch; border-radius: 2px; } .tk .ti { font-size: 12.5px; font-weight: 600; cursor: pointer; } .tk .du { font-size: 10.5px; color: var(--muted); } .tk .du.late { color: var(--bad); font-weight: 700; }
-  .tk button { padding: 4px 8px; font-size: 11px; } .tk .ok { background: rgba(34,197,94,.18); color: var(--ok); }
-  .lst { max-height: 300px; overflow: auto; scrollbar-width: none; } .lst::-webkit-scrollbar { display: none; }
-  .login { max-width: 360px; margin: 10px auto; display: flex; flex-direction: column; gap: 8px; } .login input { width: 100%; }
+  /* hub — estilo Apple: listas agrupadas, tiles, campo de busca arredondado */
+  :root { --blue: #0a84ff; --teal: #64d2ff; --sep: rgba(255,255,255,.08); --fill: rgba(118,118,128,.22); --fill2: rgba(118,118,128,.34); }
+  .hubhead { display: flex; align-items: center; gap: 12px; padding: 2px 2px 10px; }
+  .hubhead .av { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(145deg, #5e5ce6, #0a84ff); display: grid; place-items: center; font-weight: 700; color: #fff; font-size: 14px; box-shadow: 0 4px 12px rgba(10,132,255,.3); }
+  .hubhead .nm { font-size: 15px; font-weight: 700; letter-spacing: -.2px; } .hubhead .sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .rt { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; } .rt.on { background: #30d158; box-shadow: 0 0 6px #30d158; } .rt.error { background: #ff453a; }
+  .pillbtn { border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600; background: var(--fill); } .pillbtn:hover { background: var(--fill2); } .pillbtn.blue { background: var(--blue); color: #fff; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--fill); border-radius: 12px; padding: 0 12px; height: 36px; margin-bottom: 12px; }
+  .search svg { width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2; flex: 0 0 15px; }
+  .search input { flex: 1; background: transparent; border: 0; padding: 0; font-size: 13.5px; } .search input:focus { outline: 0; } .search kbd { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.08); border-radius: 5px; padding: 1px 5px; }
+  .tiles { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px 6px; margin-bottom: 14px; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; padding: 4px 2px; border-radius: 14px; }
+  .tile:hover { background: rgba(255,255,255,.05); } .tile.k { background: rgba(10,132,255,.18); }
+  .tile .ic { width: 50px; height: 50px; border-radius: 15px; display: grid; place-items: center; font-size: 24px; background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.05)); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 4px 10px rgba(0,0,0,.35); position: relative; }
+  .tile.form .ic { background: linear-gradient(160deg, #1f6feb, #0a84ff); } .tile.pinned .ic::after { content: ""; position: absolute; right: 5px; top: 5px; width: 6px; height: 6px; border-radius: 50%; background: #ffd60a; }
+  .tile .nm { font-size: 10.5px; text-align: center; line-height: 1.15; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e5e5ea; }
+  .glist { background: rgba(255,255,255,.055); border-radius: 16px; overflow: hidden; }
+  .grow-item { display: flex; align-items: center; gap: 11px; padding: 10px 14px; cursor: pointer; position: relative; }
+  .grow-item + .grow-item::before { content: ""; position: absolute; left: 44px; right: 0; top: 0; height: 1px; background: var(--sep); }
+  .grow-item:hover { background: rgba(255,255,255,.05); }
+  .grow-item .lead { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; background: var(--fill); flex: 0 0 30px; }
+  .grow-item .ti { font-size: 13px; font-weight: 600; letter-spacing: -.1px; } .grow-item .ms { font-size: 11.5px; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .grow-item .ag { font-size: 10.5px; color: var(--muted); white-space: nowrap; margin-left: auto; padding-left: 8px; }
+  .grow-item.read { opacity: .6; } .grow-item .udot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: 0 0 8px; } .grow-item.read .udot { visibility: hidden; }
+  .chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgba(100,210,255,.16); color: var(--teal); letter-spacing: .2px; }
+  .chip.late { background: rgba(255,69,58,.18); color: #ff6961; } .chip.pr-urgent { background: rgba(255,69,58,.18); color: #ff6961; } .chip.pr-high { background: rgba(255,159,10,.18); color: #ffb340; } .chip.pr-medium { background: rgba(255,214,10,.14); color: #ffd60a; } .chip.pr-low { background: rgba(10,132,255,.16); color: #6fb3ff; }
+  .tk-actions { display: flex; gap: 6px; margin-left: auto; } .tk-actions button { border-radius: 999px; width: 30px; height: 30px; padding: 0; display: grid; place-items: center; font-size: 13px; background: var(--fill); }
+  .tk-actions button.ok { background: rgba(48,209,88,.2); color: #30d158; } .tk-actions button:hover { background: var(--fill2); }
+  .segc { display: inline-flex; background: var(--fill); border-radius: 10px; padding: 2px; gap: 2px; } .segc button { border-radius: 8px; padding: 5px 14px; font-size: 12px; background: transparent; color: #d1d1d6; } .segc button.on { background: rgba(99,99,102,.95); color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .sec-h { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 10px 4px 6px; display: flex; justify-content: space-between; align-items: center; }
+  .sec-h a { cursor: pointer; color: var(--blue); text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .lst { max-height: 320px; overflow: auto; scrollbar-width: none; } .lst::-webkit-scrollbar { display: none; }
+  .login { max-width: 340px; margin: 14px auto; display: flex; flex-direction: column; gap: 10px; } .login input { width: 100%; border-radius: 12px; background: var(--fill); border: 0; padding: 10px 12px; font-size: 13.5px; }
+  .login .logo { width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 6px; background: linear-gradient(145deg, #5e5ce6, #0a84ff); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 20px rgba(10,132,255,.35); }
+  /* banner (Dynamic Island) de notificação na pastilha fechada */
+  body.banner #mini { height: 62px; padding: 0 16px; gap: 12px; justify-content: flex-start; }
+  body.banner #pill { border-radius: 0 0 24px 24px; }
+  .bn-ic { width: 36px; height: 36px; border-radius: 11px; background: linear-gradient(145deg, #5e5ce6, #0a84ff); display: grid; place-items: center; font-size: 18px; flex: 0 0 36px; }
+  .bn { min-width: 0; flex: 1; white-space: normal; } .bn .t { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .bn .m { font-size: 11.5px; color: #c7c7cc; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.25; }
+  .bn-x { color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; } .bn-x:hover { color: var(--fg); }
+  /* toques Apple no restante */
+  .card { border-radius: 18px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.05); }
+  button.pri { background: var(--blue); color: #fff; }
   /* sistema */
   .sys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .kpi { display: flex; justify-content: space-between; align-items: baseline; } .kpi b { font-size: 20px; font-weight: 700; }
@@ -164,10 +190,10 @@ const I = {
   cpu: '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 1v5M15 1v5M9 18v5M15 18v5M1 9h5M1 15h5M18 9h5M18 15h5"/></svg>',
   calEmpty: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>'
 };
-const TABS = [['hub', 'Medsystem Hub'], ['music', 'Música'], ['sys', 'Sistema'], ['apps', 'Apps'], ['notes', 'Notas'], ['cal', 'Calendário']];   // canvas desativado por enquanto
+const TABS = [['hub', 'Medsystem Hub'], ['notes', 'Tarefas e notas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
-let hub = null, hubQ = '', hubBusy = '';
+let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks';
 
 const fmtB = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : b > 1e3 ? Math.round(b / 1e3) + ' KB' : Math.round(b) + ' B';
 const fmtRate = (b) => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB/s' : (b / 1e3).toFixed(0) + ' KB/s';
@@ -180,6 +206,7 @@ function mediaPos(m) { if (!m) return 0; const p = m.position + (m.playing ? (Da
 
 // ---------- fechado ----------
 function renderMini() {
+  if (document.body.classList.contains('banner')) return;
   const box = $('#mini'); const sh = (settings.notch && settings.notch.show) || {};
   let h = '';
   const m = sys && sys.media;
@@ -188,7 +215,7 @@ function renderMini() {
   if (sh.calendar !== false && cal && cal.next) { const min = Math.round((cal.next.start - Date.now()) / 60000); h += `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 18))}</span></div>`; }
   const n = (approvals.pending || []).length + ((approvals.maestri && approvals.maestri.prompts) || []).length;
   if (n) h += `<div class="seg" style="color:var(--warn)">⚠ ${n}</div>`;
-  if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#2dd4bf">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; }
+  if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; }
   if (sh.clock !== false) h = `<div class="seg clock"><b>${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>` + h;
   if (sh.weather !== false && wx && wx.ok) h += `<div class="seg" title="${esc(wx.desc || '')}${wx.label ? ' · ' + esc(wx.label) : ''}"><span class="wi">${wx.icon}</span>${wx.temp}°</div>`;
   if (!h) h = `<div class="seg muted">SideNotch</div>`;
@@ -201,7 +228,7 @@ function renderMini() {
 // ---------- aberto ----------
 function renderTabs() {
   const t = $('#tabs'); t.innerHTML = '';
-  for (const [id, name] of TABS) { const d = document.createElement('div'); d.className = 'tab' + (tab === id ? ' on' : ''); d.title = name; d.innerHTML = I[id] + (id === 'hub' && hub && hub.linked && hub.unread ? `<span class="cnt" style="background:#2dd4bf;color:#062a26">${hub.unread}</span>` : ''); d.onclick = () => { tab = id; renderTabs(); renderView(); }; t.appendChild(d); }
+  for (const [id, name] of TABS) { const d = document.createElement('div'); d.className = 'tab' + (tab === id ? ' on' : ''); d.title = name; d.innerHTML = (id === 'notes' ? I.check : I[id]) + (id === 'notes' && hub && hub.linked && hub.overdue ? `<span class="cnt" style="background:#ff453a;color:#fff">${hub.overdue}</span>` : '') + (id === 'hub' && hub && hub.linked && hub.unread ? `<span class="cnt" style="background:#2dd4bf;color:#062a26">${hub.unread}</span>` : ''); d.onclick = () => { tab = id; renderTabs(); renderView(); }; t.appendChild(d); }
   t.insertAdjacentHTML('beforeend', `<div class="sp"></div><div class="clock">${new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })} · ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>`);
   const g = document.createElement('div'); g.className = 'tab'; g.innerHTML = I.gear; g.title = 'Configurações'; g.onclick = () => api.openSettings(); t.appendChild(g);
 }
@@ -212,7 +239,7 @@ function renderView() {
   else if (tab === 'music') v.innerHTML = viewMusic();
   else if (tab === 'sys') v.innerHTML = viewSys();
   else if (tab === 'apps') { v.innerHTML = viewApps(); bindApps(); }
-  else if (tab === 'notes') { v.innerHTML = viewNotes(); bindNotes(); }
+  else if (tab === 'notes') { const seg = `<div class="row" style="margin-bottom:10px"><div class="segc"><button id="segTasks" class="${notesMode === 'tasks' ? 'on' : ''}">Tarefas${hub && hub.tasks && hub.tasks.length ? ' · ' + hub.tasks.length : ''}</button><button id="segNotes" class="${notesMode === 'notes' ? 'on' : ''}">Notas</button></div></div>`; if (notesMode === 'tasks') { v.innerHTML = seg + viewTasks(); bindTasks(); } else { v.innerHTML = seg + viewNotes(); bindNotes(); } $('#segTasks').onclick = () => { notesMode = 'tasks'; renderView(); }; $('#segNotes').onclick = () => { notesMode = 'notes'; renderView(); }; }
   else if (tab === 'canvas') { v.innerHTML = viewCanvas(); bindCanvas(); }
   else if (tab === 'cal') { v.innerHTML = viewCal(); bindCal(); }
   if (tab === 'music') bindMusic();
@@ -451,61 +478,98 @@ function bindCal() {
 
 // Medsystem Hub
 const ago = (t) => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? 'agora' : m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' h' : Math.round(m / 1440) + ' d'; };
-const PRI = { urgent: 'var(--bad)', high: '#f97316', medium: 'var(--warn)', low: 'var(--info)' };
-function viewHub() {
-  if (!hub) return '<div class="empty">Carregando…</div>';
-  if (!hub.linked) return `<div class="login"><div style="text-align:center"><div style="font-size:26px">🏥</div><b>Medsystem Hub</b><div class="muted">Entre com o mesmo e-mail e senha do Hub. A sessão fica cifrada neste PC.</div></div>
-      <input id="hbEmail" placeholder="e-mail" type="email" autocomplete="username"><input id="hbPass" placeholder="senha" type="password" autocomplete="current-password">
-      <button id="hbLogin" class="pri">Vincular</button><div class="muted" id="hbMsg" style="text-align:center;color:var(--bad)">${esc(hub.error || '')}</div></div>`;
-  const p = hub.profile || {};
-  const ini = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
+const PRI_N = { urgent: 'Crítica', high: 'Alta', medium: 'Média', low: 'Baixa' };
+const NT_ICON = (t) => ({ tarefa: '✅', chamado: '🎧', mensagem: '💬', alerta: '⚠️', aviso: '📣' }[String(t || '').toLowerCase()] || '🔔');
+const SEARCH_SVG = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+function hubTiles() {
   const q = hubQ.trim().toLowerCase();
   const scs = (hub.shortcuts || []).filter((s) => !q || s.name.toLowerCase().includes(q));
   const pins = new Set((settings.hub && settings.hub.pinned) || []);
   const ordered = q ? scs : [...scs.filter((s) => pins.has(s.id)), ...scs.filter((s) => !pins.has(s.id))];
-  const shown = ordered.slice(0, q ? 12 : 8);
-  let h = `<div class="hubhead"><div class="av">${esc(ini)}</div><div class="grow"><b>${esc(p.name || '')}</b> <span class="muted">${esc([p.sector, p.role].filter(Boolean).join(' · '))}</span></div>
-      <span class="rt ${hub.realtime}" title="tempo real: ${hub.realtime}"></span><span class="muted">${hub.error ? '<span style="color:var(--bad)">' + esc(hub.error) + '</span>' : hub.realtime === 'on' ? 'ao vivo' : 'consulta periódica'}</span>
-      <input id="hbQ" placeholder="Abrir… (ex.: cham)" value="${esc(hubQ)}" style="width:170px"><button id="hbSite" title="Abrir o Hub">Hub ↗</button></div>`;
-  h += `<div class="sc">${shown.map((s, i) => `<div class="s ${s.kind} ${q && i === 0 ? 'k' : ''} ${pins.has(s.id) ? 'pinned' : ''}" data-sc="${esc(s.id)}" title="${esc(s.path)} · clique direito fixa"><span class="ic">${s.icon}</span><span class="nm">${esc(s.name)}</span></div>`).join('') || '<div class="muted">Nada encontrado</div>'}</div>`;
+  return { shown: ordered.slice(0, q ? 16 : 8), pins, q };
+}
+function viewHub() {
+  if (!hub) return '<div class="empty">Carregando…</div>';
+  if (!hub.linked) return `<div class="login"><div class="logo">🏥</div><div style="text-align:center"><div style="font-size:16px;font-weight:700;letter-spacing:-.2px">Medsystem Hub</div><div class="muted" style="margin-top:3px">Use o mesmo e-mail e senha do Hub. Só a sessão fica guardada, cifrada neste PC.</div></div>
+      <input id="hbEmail" placeholder="E-mail" type="email" autocomplete="username"><input id="hbPass" placeholder="Senha" type="password" autocomplete="current-password">
+      <button id="hbLogin" class="pri" style="padding:10px;border-radius:12px;font-size:13.5px">Entrar</button><div class="muted" id="hbMsg" style="text-align:center;color:#ff6961">${esc(hub.error || '')}</div></div>`;
+  const p = hub.profile || {};
+  const ini = (p.name || '?').split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
+  const { shown, pins, q } = hubTiles();
+  let h = `<div class="hubhead"><div class="av">${esc(ini)}</div><div class="grow"><div class="nm">${esc(p.name || '')}</div><div class="sub"><span class="rt ${hub.realtime}"></span>${hub.error ? '<span style="color:#ff6961">' + esc(hub.error) + '</span>' : esc([p.sector, p.role].filter(Boolean).join(' · '))}${hub.realtime === 'on' ? ' · ao vivo' : ''}</div></div>
+      <button class="pillbtn" id="hbTasks">${I.check}<span style="margin-left:6px">${(hub.tasks || []).length} tarefa(s)</span></button><button class="pillbtn blue" id="hbSite">Abrir Hub</button></div>`;
+  h += `<div class="search">${SEARCH_SVG}<input id="hbQ" placeholder="Buscar formulário ou página… (ex.: chamado)" value="${esc(hubQ)}"><kbd>↵</kbd></div>`;
+  h += `<div class="tiles">${shown.map((s, i) => `<div class="tile ${s.kind} ${q && i === 0 ? 'k' : ''} ${pins.has(s.id) ? 'pinned' : ''}" data-sc="${esc(s.id)}" title="${esc(s.path)} — clique direito fixa"><div class="ic">${s.icon}</div><div class="nm">${esc(s.name)}</div></div>`).join('') || '<div class="muted" style="grid-column:1/-1">Nada encontrado</div>'}</div>`;
   const nts = hub.notifications || [];
-  const nl = nts.slice(0, 25).map((n) => `<div class="nt ${n.lida ? 'read' : ''}" data-nt="${esc(n.id)}" data-link="${esc(n.link || '')}"><div class="dotu"></div><div class="grow"><div class="ti">${esc(n.titulo)}</div>${n.mensagem ? `<div class="ms">${esc(n.mensagem)}</div>` : ''}</div><div class="ag">${ago(n.created_at)}</div></div>`).join('');
-  const tks = hub.tasks || [];
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const tl = tks.slice(0, 25).map((t) => { const due = t.due_date ? new Date(t.due_date + 'T12:00') : null; const late = due && due < today; const dueS = due ? (late ? 'atrasada · ' : '') + due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '') : 'sem prazo';
-    return `<div class="tk"><div class="pr" style="background:${PRI[t.priority] || 'var(--muted)'}"></div><div class="grow"><div class="ti" data-tk="${esc(t.id)}" title="${esc(t.description || '')}">${esc(t.title)}</div><div class="du ${late ? 'late' : ''}">${dueS}${t.status === 'in_progress' ? ' · em andamento' : ''}</div></div>${t.status !== 'in_progress' ? `<button data-ts="${esc(t.id)}:in_progress" title="Em andamento">▶</button>` : ''}<button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">✓</button></div>`; }).join('');
-  h += `<div class="hub2"><div><div class="row"><h3 class="grow" style="margin:0">Notificações${hub.unread ? ` <span class="muted" style="text-transform:none;letter-spacing:0">· ${hub.unread} nova(s)</span>` : ''}</h3>${hub.unread ? '<a id="hbAll" class="muted" style="cursor:pointer">marcar todas</a>' : ''}</div><div class="card lst" style="padding:4px 8px">${nl || '<div class="empty">Nenhuma notificação</div>'}</div></div>
-    <div><div class="row"><h3 class="grow" style="margin:0">Minhas tarefas${tks.length ? ` <span class="muted" style="text-transform:none;letter-spacing:0">· ${tks.length}${hub.overdue ? ', ' + hub.overdue + ' atrasada(s)' : ''}</span>` : ''}</h3><a id="hbTasks" class="muted" style="cursor:pointer">abrir /tarefas</a></div><div class="card lst" style="padding:4px 8px">${tl || '<div class="empty">Nada pendente 🎉</div>'}</div></div></div>
-    <div class="muted" style="margin-top:6px;font-size:10.5px">${esc(p.email || '')} · <a id="hbSync" style="cursor:pointer">atualizar</a> · <a id="hbOut" style="cursor:pointer">desvincular</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
+  h += `<div class="sec-h"><span>Notificações${hub.unread ? ` · ${hub.unread} nova(s)` : ''}</span>${hub.unread ? '<a id="hbAll">Marcar todas como lidas</a>' : ''}</div>`;
+  h += `<div class="glist lst">${nts.slice(0, 30).map((n) => `<div class="grow-item ${n.lida ? 'read' : ''}" data-nt="${esc(n.id)}" data-link="${esc(n.link || '')}"><span class="udot"></span><div class="lead">${NT_ICON(n.tipo)}</div><div class="grow" style="min-width:0"><div class="ti">${esc(n.titulo)}</div>${n.mensagem ? `<div class="ms">${esc(n.mensagem)}</div>` : ''}</div><span class="ag">${ago(n.created_at)}</span></div>`).join('') || '<div class="empty">Nenhuma notificação</div>'}</div>`;
+  h += `<div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center">${esc(p.email || '')} · <a id="hbSync" style="cursor:pointer">atualizar</a> · <a id="hbOut" style="cursor:pointer">desvincular</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
   return h;
+}
+function taskRow(t) {
+  const today = day0(Date.now());
+  const due = t.due_date ? new Date(t.due_date + 'T12:00') : null; const late = due && day0(due) < today;
+  const dueS = due ? due.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '') : '';
+  return `<div class="grow-item" data-tkrow="${esc(t.id)}"><div class="lead" style="background:${late ? 'rgba(255,69,58,.18)' : 'var(--fill)'}">${t.source === 'at' ? '🔧' : '✅'}</div>
+    <div class="grow" style="min-width:0"><div class="ti" data-tk="${esc(t.link || '')}" title="${esc(t.description || '')}">${esc(t.title)}</div>
+    <div class="ms" style="-webkit-line-clamp:1">${t.description ? esc(t.description) + ' · ' : ''}<span class="chip pr-${t.priority}">${PRI_N[t.priority] || t.priority}</span>${t.label ? ` <span class="chip">${esc(t.label)}</span>` : ''}${dueS ? ` <span class="chip ${late ? 'late' : ''}" style="${late ? '' : 'background:var(--fill);color:#d1d1d6'}">${late ? 'atrasada · ' : ''}${dueS}</span>` : ''}${t.status === 'in_progress' ? ' <span class="chip" style="background:rgba(48,209,88,.16);color:#30d158">em andamento</span>' : ''}</div></div>
+    <div class="tk-actions">${t.status !== 'in_progress' ? `<button data-ts="${esc(t.id)}:in_progress" title="Iniciar">▶</button>` : ''}<button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">✓</button></div></div>`;
+}
+function viewTasks() {
+  if (!hub || !hub.linked) return `<div class="empty">Vincule o Medsystem Hub (aba 🏠) para ver suas tarefas aqui.</div>`;
+  const tks = hub.tasks || []; const today = day0(Date.now());
+  const late = tks.filter((t) => t.due_date && day0(new Date(t.due_date + 'T12:00')) < today);
+  const todayT = tks.filter((t) => t.due_date && day0(new Date(t.due_date + 'T12:00')) === today);
+  const rest = tks.filter((t) => !late.includes(t) && !todayT.includes(t));
+  const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="glist">${arr.map(taskRow).join('')}</div>` : '';
+  return `<div class="lst" style="max-height:440px">${tks.length ? grp('Atrasadas', late) + grp('Hoje', todayT) + grp('Próximas / sem prazo', rest) : '<div class="empty">Nada pendente 🎉</div>'}</div>
+    <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center"><a id="hbTasks2" style="cursor:pointer;color:var(--blue)">Abrir central de tarefas no Hub</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
+}
+function bindTasks() {
+  const setHub = (r) => { if (r && r.state) hub = r.state; renderTabs(); renderView(); };
+  document.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); const [id, st] = b.dataset.ts.split(/:(?=[a-z_]+$)/); b.disabled = true; const r = await api.hubTask(id, st); if (!r.ok) { hubBusy = r.error; renderView(); } else setHub(r); });
+  document.querySelectorAll('[data-tk]').forEach((el) => el.onclick = () => api.hubOpen(el.dataset.tk || '/tarefas'));
+  const t2 = $('#hbTasks2'); if (t2) t2.onclick = () => api.hubOpen('/tarefas');
 }
 function bindHub() {
   const setHub = (r) => { if (r && r.state) hub = r.state; else if (r && r.linked !== undefined) hub = r; renderTabs(); renderView(); };
   const login = $('#hbLogin');
   if (login) {
-    const go = async () => { const e = $('#hbEmail').value.trim(), pw = $('#hbPass').value; if (!e || !pw) return; login.disabled = true; login.textContent = 'Entrando…'; const r = await api.hubLogin(e, pw); if (!r.ok) { login.disabled = false; login.textContent = 'Vincular'; $('#hbMsg').textContent = r.error; } else setHub(r); };
+    const go = async () => { const e = $('#hbEmail').value.trim(), pw = $('#hbPass').value; if (!e || !pw) return; login.disabled = true; login.textContent = 'Entrando…'; const r = await api.hubLogin(e, pw); if (!r.ok) { login.disabled = false; login.textContent = 'Entrar'; $('#hbMsg').textContent = r.error; } else setHub(r); };
     login.onclick = go; $('#hbPass').onkeydown = (e) => { if (e.key === 'Enter') go(); }; $('#hbEmail').onkeydown = (e) => { if (e.key === 'Enter') $('#hbPass').focus(); };
     return;
   }
   const q = $('#hbQ');
-  q.oninput = () => { hubQ = q.value; const v = $('#view'); const pos = q.selectionStart; v.innerHTML = viewHub(); bindHub(); const nq = $('#hbQ'); api.setFocusable(true); nq.focus(); nq.setSelectionRange(pos, pos); fitPill(); };
-  q.onkeydown = (e) => { if (e.key === 'Enter') { const k = document.querySelector('.sc .s'); if (k) k.click(); } if (e.key === 'Escape') { hubQ = ''; q.blur(); api.setFocusable(false); setOpen(false); } };
-  document.querySelectorAll('[data-sc]').forEach((el) => {
+  q.oninput = () => { hubQ = q.value; const { shown, pins, q: qq } = hubTiles(); const box = document.querySelector('.tiles'); box.innerHTML = shown.map((s, i) => `<div class="tile ${s.kind} ${qq && i === 0 ? 'k' : ''} ${pins.has(s.id) ? 'pinned' : ''}" data-sc="${esc(s.id)}"><div class="ic">${s.icon}</div><div class="nm">${esc(s.name)}</div></div>`).join('') || '<div class="muted" style="grid-column:1/-1">Nada encontrado</div>'; bindTiles(); fitPill(); };
+  q.onkeydown = (e) => { if (e.key === 'Enter') { const k = document.querySelector('.tiles .tile'); if (k) k.click(); } if (e.key === 'Escape') { hubQ = ''; q.blur(); api.setFocusable(false); setOpen(false); } };
+  const bindTiles = () => document.querySelectorAll('[data-sc]').forEach((el) => {
     el.onclick = () => { const s = hub.shortcuts.find((x) => x.id === el.dataset.sc); if (s) api.hubOpen(s.path); hubQ = ''; api.setFocusable(false); };
     el.oncontextmenu = async (e) => { e.preventDefault(); const p = new Set((settings.hub && settings.hub.pinned) || []); p.has(el.dataset.sc) ? p.delete(el.dataset.sc) : p.add(el.dataset.sc); settings = await api.saveSettings({ hub: { pinned: [...p] } }); renderView(); };
   });
+  bindTiles();
   document.querySelectorAll('[data-nt]').forEach((el) => el.onclick = async () => { const id = el.dataset.nt; if (el.dataset.link) api.hubOpen(el.dataset.link, id); else { const r = await api.hubRead(id); setHub(r); } });
-  document.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async () => { const [id, st] = b.dataset.ts.split(':'); b.disabled = true; const r = await api.hubTask(id, st); if (!r.ok) { hubBusy = r.error; renderView(); } else setHub(r); });
-  document.querySelectorAll('[data-tk]').forEach((el) => el.onclick = () => api.hubOpen('/tarefas?id=' + el.dataset.tk));
   const all = $('#hbAll'); if (all) all.onclick = async () => setHub(await api.hubRead('*'));
-  $('#hbSite').onclick = () => api.hubOpen('/dashboard'); $('#hbTasks').onclick = () => api.hubOpen('/tarefas');
+  $('#hbSite').onclick = () => api.hubOpen('/dashboard'); $('#hbTasks').onclick = () => { tab = 'notes'; notesMode = 'tasks'; renderTabs(); renderView(); };
   $('#hbSync').onclick = async () => { hubBusy = 'atualizando…'; renderView(); hub = await api.hubSync(); hubBusy = ''; renderTabs(); renderView(); };
   $('#hbOut').onclick = async () => { hub = await api.hubLogout(); renderTabs(); renderView(); };
 }
+// banner estilo Dynamic Island na pastilha fechada
+let bannerTimer = null;
+function showBanner(n) {
+  if (document.body.classList.contains('open')) return;
+  clearTimeout(bannerTimer);
+  const box = $('#mini');
+  box.innerHTML = `<div class="bn-ic">🔔</div><div class="bn"><div class="t">${esc(n.title)}</div><div class="m">${esc(n.text || '')}</div></div><span class="bn-x" id="bnX">×</span>`;
+  document.body.classList.add('banner');
+  $('#pill').style.width = '460px'; $('#pill').style.height = '62px';
+  box.onclick = (e) => { if (e.target.id === 'bnX') { hideBanner(); return; } api.hubOpen(n.link, n.hubNotifId); hideBanner(); };
+  bannerTimer = setTimeout(hideBanner, 9000);
+}
+function hideBanner() { clearTimeout(bannerTimer); if (!document.body.classList.contains('banner')) return; document.body.classList.remove('banner'); $('#mini').onclick = null; $('#pill').style.height = ''; renderMini(); }
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [780, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [640, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -514,6 +578,7 @@ function fitPill() {
 }
 function setOpen(v) {
   if (!v && (pinned || typing() || drag)) return;
+  if (v && document.body.classList.contains('banner')) hideBanner();
   if (v && !document.body.classList.contains('open')) { renderTabs(); renderView(); }
   document.body.classList.toggle('open', v);
   if (v) fitPill(); else { $('#pill').style.height = ''; api.setFocusable(false); renderMini(); }
@@ -535,7 +600,8 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
-  api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if (tab === 'hub' && !typing()) renderView(); } else if (h.unread > (wasUnread || 0)) { /* nova notificação: pisca a pastilha */ document.body.classList.add('alert'); setTimeout(renderMini, 4000); } });
+  api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes') && !typing()) renderView(); }  });
+  api.onNotify((n) => { if (n.type === 'hub' && !(settings.dnd)) showBanner(n); });
   api.onNotchOpen((t) => { tab = t || 'hub'; renderTabs(); setOpen(true); renderView(); setTimeout(() => { const q = $('#hbQ'); if (q) { api.setFocusable(true); q.focus(); q.select(); } }, 60); });
   api.onApprovals((a) => { approvals = a; renderMini(); });
   api.onBar((w) => { if (w === 'blur') { const a = document.activeElement; if (a && a.blur) a.blur(); } });

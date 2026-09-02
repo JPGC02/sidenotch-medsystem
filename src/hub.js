@@ -62,6 +62,7 @@ class HubClient extends EventEmitter {
     this.url = (o.url || DEFAULT_URL).replace(/\/$/, ''); this.anon = o.anon || DEFAULT_ANON; this.site = (o.site || DEFAULT_SITE).replace(/\/$/, '');
     this.fetch = o.fetch || globalThis.fetch; this.WebSocket = o.WebSocket || null;
     this.session = null;           // { access_token, refresh_token, expires_at, user: {id,email} }
+    this.web = null;               // 2ª sessão (família de refresh token própria) injetada na janela do Hub para não pedir login de novo
     this.profile = null;           // { name, email, sector:{slug,name}, role:{slug,level}, modules:[] }
     this.notifications = []; this.tasks = []; this.error = null; this.connected = false; this.realtime = 'off';
     this.ws = null; this.hb = null; this.refreshTimer = null; this.pollTimer = null; this.ref = 0; this.lastSig = '';
@@ -73,7 +74,7 @@ class HubClient extends EventEmitter {
     if (!this.sessionFile) return;
     try {
       if (!this.session) { fs.rmSync(this.sessionFile, { force: true }); return; }
-      const raw = JSON.stringify({ refresh_token: this.session.refresh_token, email: this.session.user.email });
+      const raw = JSON.stringify({ refresh_token: this.session.refresh_token, email: this.session.user.email, web: this.web || null });
       const buf = this.secret ? this.secret.encrypt(raw) : Buffer.from(raw, 'utf8');
       fs.mkdirSync(path.dirname(this.sessionFile), { recursive: true });
       fs.writeFileSync(this.sessionFile, buf);
@@ -102,13 +103,31 @@ class HubClient extends EventEmitter {
   }
   async login(email, password) {
     await this._auth('password', { email: String(email).trim(), password });
+    // segunda sessão independente para o site (supabase-js roda a própria rotação de refresh token; se compartilhássemos a mesma, uma derrubaria a outra)
+    try {
+      const res = await this.fetch(`${this.url}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: this.anon }, body: JSON.stringify({ email: String(email).trim(), password }) });
+      const j = await res.json();
+      if (res.ok && j.access_token) { const exp = decodeJwt(j.access_token).exp; this.web = { ...j, expires_at: exp || Math.floor(Date.now() / 1000) + (j.expires_in || 3600), token_type: 'bearer' }; this._saveSession(); }
+    } catch { /* sem sessão web: o usuário loga uma vez na janela */ }
     await this.loadProfile();
     await this.sync();
     this.connect();
     this.emit('change');
     return this.state();
   }
-  async refreshSession() {
+  // sessão para o localStorage do site (chave sb-<ref>-auth-token); só entrega uma vez por janela
+  webSession() {
+    if (!this.web) { const s = this._loadSession(); if (s && s.web) this.web = s.web; }
+    if (!this.web) return null;
+    const ref = (new URL(this.url).hostname.split('.')[0]) || 'supabase';
+    return { key: `sb-${ref}-auth-token`, value: JSON.stringify(this.web) };
+  }
+  refreshSession() {
+    // chamadas paralelas compartilham o mesmo refresh (o refresh token é de uso único)
+    if (!this._refreshing) this._refreshing = this._refreshNow().finally(() => { this._refreshing = null; });
+    return this._refreshing;
+  }
+  async _refreshNow() {
     const rt = this.session ? this.session.refresh_token : (this._loadSession() || {}).refresh_token;
     if (!rt) throw new Error('não vinculado');
     try { await this._auth('refresh_token', { refresh_token: rt }); this.error = null; }
@@ -122,14 +141,14 @@ class HubClient extends EventEmitter {
   logout() {
     clearTimeout(this.refreshTimer); clearInterval(this.pollTimer); this._closeWs();
     if (this.session) { this.fetch(`${this.url}/auth/v1/logout`, { method: 'POST', headers: this._h() }).catch(() => {}); }
-    this.session = null; this.profile = null; this.notifications = []; this.tasks = []; this.connected = false;
+    this.session = null; this.web = null; this.profile = null; this.notifications = []; this.tasks = []; this.connected = false;
     this._saveSession();
   }
 
   // ---------- REST ----------
   _h(extra = {}) { return { apikey: this.anon, Authorization: `Bearer ${this.session.access_token}`, 'Content-Type': 'application/json', ...extra }; }
   async _ensure() {
-    if (!this.session) { const s = this._loadSession(); if (!s) throw new Error('não vinculado'); await this.refreshSession(); }
+    if (!this.session) { const s = this._loadSession(); if (!s) throw new Error('não vinculado'); this.web = s.web || null; await this.refreshSession(); }
     else if (this.session.expires_at - Date.now() < 60000) await this.refreshSession();
   }
   async rest(method, pathq, body, extra) {
@@ -184,9 +203,19 @@ class HubClient extends EventEmitter {
   }
   async loadTasks() {
     const uid = this.session.user.id;
-    const rows = await this.rest('GET', `tasks?assignee_id=eq.${uid}&status=neq.completed&select=id,title,description,status,priority,due_date,created_at&order=due_date.asc.nullslast,created_at.desc&limit=60`) || [];
-    this.tasks = rows;
-    return rows;
+    const [gerais, at] = await Promise.all([
+      this.rest('GET', `tasks?assignee_id=eq.${uid}&status=neq.completed&select=id,title,description,status,priority,due_date,created_at&order=due_date.asc.nullslast,created_at.desc&limit=60`).then((r) => (r || []).map((t) => ({ ...t, source: 'geral', label: null, link: `/tarefas?id=${t.id}` }))),
+      // OS que o Fluxo da AT encarregou ao usuário (mesma fonte da Central de Tarefas do Hub)
+      this.rest('GET', `at_os_tarefa?responsavel=eq.${uid}&situacao=not.in.(concluida,cancelada)&select=id,codigo_os,cliente,equipamento,urgencia,situacao,prazo,observacao,criado_em&order=prazo.asc.nullslast,criado_em.desc&limit=80`).then((r) => (r || []).map((t) => ({
+        id: 'at:' + t.id, title: `OS ${t.codigo_os}${t.cliente ? ' · ' + t.cliente : ''}`, description: [t.equipamento, t.observacao].filter(Boolean).join(' — '),
+        status: { pendente: 'pending', em_andamento: 'in_progress' }[t.situacao] || 'pending', priority: { baixa: 'low', media: 'medium', alta: 'high', critica: 'urgent' }[t.urgencia] || 'medium',
+        due_date: t.prazo, created_at: t.criado_em, source: 'at', label: `AT · OS ${t.codigo_os}`, link: '/assistencia-tecnica/fluxo/tarefas', codigoOs: t.codigo_os
+      }))).catch(() => [])
+    ]);
+    const all = [...gerais, ...at];
+    all.sort((a, b) => (a.due_date || '9999') < (b.due_date || '9999') ? -1 : (a.due_date || '9999') > (b.due_date || '9999') ? 1 : (b.created_at || '').localeCompare(a.created_at || ''));
+    this.tasks = all;
+    return all;
   }
   async sync() {
     try { await Promise.all([this.loadNotifications(), this.loadTasks()]); this.error = null; this.connected = true; }
@@ -204,7 +233,8 @@ class HubClient extends EventEmitter {
   }
   async setTaskStatus(id, status) {
     if (!['pending', 'in_progress', 'completed'].includes(status)) throw new Error('status inválido');
-    await this.rest('PATCH', `tasks?id=eq.${id}&assignee_id=eq.${this.session.user.id}`, { status }, { Prefer: 'return=minimal' });
+    if (String(id).startsWith('at:')) await this.rest('PATCH', `at_os_tarefa?id=eq.${id.slice(3)}&responsavel=eq.${this.session.user.id}`, { situacao: { pending: 'pendente', in_progress: 'em_andamento', completed: 'concluida' }[status] }, { Prefer: 'return=minimal' });
+    else await this.rest('PATCH', `tasks?id=eq.${id}&assignee_id=eq.${this.session.user.id}`, { status }, { Prefer: 'return=minimal' });
     if (status === 'completed') this.tasks = this.tasks.filter((t) => t.id !== id); else { const t = this.tasks.find((x) => x.id === id); if (t) t.status = status; }
     this._emitIfChanged();
   }
@@ -225,6 +255,7 @@ class HubClient extends EventEmitter {
       const cfg = (pc) => ({ config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: pc }, access_token: this.session.access_token });
       send(`realtime:sidenotch-notif-${uid}`, 'phx_join', cfg([{ event: 'INSERT', schema: 'public', table: 'notificacoes', filter: `usuario_id=eq.${uid}` }]));
       send(`realtime:sidenotch-tasks-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'tasks', filter: `assignee_id=eq.${uid}` }]));
+      send(`realtime:sidenotch-at-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'at_os_tarefa', filter: `responsavel=eq.${uid}` }]));
       clearInterval(this.hb); this.hb = setInterval(() => send('phoenix', 'heartbeat', {}), 25000);
     };
     ws.onmessage = (ev) => {
@@ -236,7 +267,7 @@ class HubClient extends EventEmitter {
         if (d.table === 'notificacoes' && d.type === 'INSERT' && d.record) {
           const n = d.record;
           if (!this.notifications.some((x) => x.id === n.id)) { this.notifications.unshift(n); this.notifications = this.notifications.slice(0, 60); this.emit('notification', n); this._emitIfChanged(); }
-        } else if (d.table === 'tasks') { this.loadTasks().then(() => this._emitIfChanged()).catch(() => {}); }
+        } else if (d.table === 'tasks' || d.table === 'at_os_tarefa') { this.loadTasks().then(() => this._emitIfChanged()).catch(() => {}); }
       }
     };
     ws.onclose = () => { clearInterval(this.hb); if (this.ws === ws) { this.ws = null; this.realtime = 'off'; this._emitIfChanged(); this._reconnect = setTimeout(() => this.connect(), 15000); } };
