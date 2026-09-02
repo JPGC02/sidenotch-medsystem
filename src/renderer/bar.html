@@ -2,43 +2,52 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <title>SideNotch</title>
 <style>
   :root {
     --bg: #0b0b0d; --bg2: #151518; --bg3: #1f1f24; --fg: #f3f3f5; --muted: #8a8a93;
     --ok: #22c55e; --warn: #f59e0b; --bad: #ef4444; --info: #60a5fa; --track: #2a2a30;
-    --bar-w: 64px; --collapsed-w: 6px; --bite: 22px;
+    --bar-w: 62px; --collapsed-w: 6px; --bite: 40px; --rail-r: 28px; --gear-gap: 12px; --gear-size: 40px; --arc-start: 255deg;
+    --rail: #08090A; --dial: rgba(255,255,255,.055); --dial-hot: rgba(255,255,255,.14); --signal: #3ECF8E;
+    /* mola "glide" (stiffness 300 · damping 40 · mass 1 · ζ 1,155 · 733 ms) — mesma curva do spring.js, para transições sem JS */
+    --ease-move: linear(0, 0.0287, 0.0949, 0.1779, 0.2658, 0.3518, 0.4322, 0.5054, 0.5709, 0.6288, 0.6796, 0.7238, 0.7622, 0.7955, 0.8241, 0.8489, 0.8702, 0.8885, 0.9042, 0.9178, 0.9294, 0.9394, 0.948, 0.9553, 0.9617, 0.9671, 0.9718, 0.9758, 0.9792, 0.9821, 0.9847, 0.9868, 0.9887, 0.9903, 0.9917, 0.9929, 0.9939, 0.9947, 0.9955, 0.9961, 0.9967, 0.9971, 0.9975, 0.9979, 0.9982, 0.9985, 0.9987, 0.9989, 0.999);
+    --dur-move: 733ms; --ease-fade: cubic-bezier(.32,.72,0,1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
   html, body { width: 100%; height: 100%; background: transparent; overflow: hidden;
-    font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; color: var(--fg); }
+    font-family: "Instrument Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: var(--fg); }
   #root { position: relative; width: 100%; height: 100%; }
 
   #hit { position: absolute; top: 0; bottom: 0; width: 28px; }
   body.right #hit { right: 0; } body.left #hit { left: 0; }
+  /* zona de proximidade: só acorda a engrenagem (o mouse continua atravessando para o desktop) */
+  #zone { position: absolute; top: 0; bottom: 0; width: 150px; }
+  body.right #zone { right: 0; } body.left #zone { left: 0; }
 
   /* pílula escura ancorada na borda: cantos externos bem redondos + "mordidas" côncavas em cima e embaixo
      (pseudo-elementos com gradiente radial que fundem a pílula com a borda da tela) */
   #bar { position: absolute; top: 50%; transform: translateY(-50%);
-    width: var(--collapsed-w); background: var(--bg);
-    box-shadow: 0 6px 24px rgba(0,0,0,.45);
-    transition: width .22s cubic-bezier(.2,.8,.2,1), border-radius .22s; overflow: visible; }
+    width: var(--collapsed-w); background: var(--rail);
+    box-shadow: -18px 0 44px rgba(0,0,0,.42);
+    transition: width 420ms var(--ease-move), border-radius 420ms var(--ease-move); overflow: visible; }
+  body.left #bar { box-shadow: 18px 0 44px rgba(0,0,0,.42); }
   #bar > * { position: relative; z-index: 1; }
   #bar::before, #bar::after { content: ""; position: absolute; width: var(--bite); height: var(--bite); pointer-events: none; }
   body.right #bar { right: 0; border-radius: 16px 0 0 16px; }
   body.left  #bar { left: 0;  border-radius: 0 16px 16px 0; }
   body.open #bar { width: var(--bar-w); }
-  body.right.open #bar { border-radius: 30px 0 0 30px; }
-  body.left.open  #bar { border-radius: 0 30px 30px 0; }
-  body.right #bar::before { right: 0; top: calc(-1 * var(--bite)); background: radial-gradient(circle at 0 0, transparent calc(var(--bite) - .5px), var(--bg) var(--bite)); }
-  body.right #bar::after  { right: 0; bottom: calc(-1 * var(--bite)); background: radial-gradient(circle at 0 100%, transparent calc(var(--bite) - .5px), var(--bg) var(--bite)); }
-  body.left #bar::before  { left: 0; top: calc(-1 * var(--bite)); background: radial-gradient(circle at 100% 0, transparent calc(var(--bite) - .5px), var(--bg) var(--bite)); }
-  body.left #bar::after   { left: 0; bottom: calc(-1 * var(--bite)); background: radial-gradient(circle at 100% 100%, transparent calc(var(--bite) - .5px), var(--bg) var(--bite)); }
+  body.right.open #bar { border-radius: var(--rail-r) 0 0 var(--rail-r); }
+  body.left.open  #bar { border-radius: 0 var(--rail-r) var(--rail-r) 0; }
+  body.right #bar::before { right: 0; top: calc(-1 * var(--bite)); background: radial-gradient(circle at 0 0, transparent calc(var(--bite) - .5px), var(--rail) var(--bite)); }
+  body.right #bar::after  { right: 0; bottom: calc(-1 * var(--bite)); background: radial-gradient(circle at 0 100%, transparent calc(var(--bite) - .5px), var(--rail) var(--bite)); }
+  body.left #bar::before  { left: 0; top: calc(-1 * var(--bite)); background: radial-gradient(circle at 100% 0, transparent calc(var(--bite) - .5px), var(--rail) var(--bite)); }
+  body.left #bar::after   { left: 0; bottom: calc(-1 * var(--bite)); background: radial-gradient(circle at 100% 100%, transparent calc(var(--bite) - .5px), var(--rail) var(--bite)); }
   body:not(.open) #bar::before, body:not(.open) #bar::after { width: 10px; height: 10px; }
-  body.right:not(.open) #bar::before { top: -10px; background: radial-gradient(circle at 0 0, transparent 9.5px, var(--bg) 10px); }
-  body.right:not(.open) #bar::after { bottom: -10px; background: radial-gradient(circle at 0 100%, transparent 9.5px, var(--bg) 10px); }
-  body.left:not(.open) #bar::before { top: -10px; background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--bg) 10px); }
-  body.left:not(.open) #bar::after { bottom: -10px; background: radial-gradient(circle at 100% 100%, transparent 9.5px, var(--bg) 10px); }
+  body.right:not(.open) #bar::before { top: -10px; background: radial-gradient(circle at 0 0, transparent 9.5px, var(--rail) 10px); }
+  body.right:not(.open) #bar::after { bottom: -10px; background: radial-gradient(circle at 0 100%, transparent 9.5px, var(--rail) 10px); }
+  body.left:not(.open) #bar::before { top: -10px; background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--rail) 10px); }
+  body.left:not(.open) #bar::after { bottom: -10px; background: radial-gradient(circle at 100% 100%, transparent 9.5px, var(--rail) 10px); }
   body.dragging #bar { opacity: .85; }
 
   /* notch fechada: pontinhos / percentual */
@@ -72,12 +81,22 @@
   .ibtn .cnt.wait { background: var(--warn); color: #1a1200; }
   #dnd.on { color: var(--warn); }
   #sep { width: 28px; height: 1px; background: var(--track); margin: 4px 0; }
-  .dk { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; font-size: 19px; cursor: pointer; position: relative; background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.05)); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 3px 8px rgba(0,0,0,.35); margin: 2px 0; transition: transform .12s; }
-  .dk:hover { transform: scale(1.08); } .dk.form { background: linear-gradient(160deg, #1f6feb, #0a84ff); }
-  .dk .cnt { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  /* engrenagem: mais um mostrador, pendurado abaixo da pílula com 30% de arco em repouso */
+  #gear { position: absolute; left: 50%; top: calc(100% + var(--gear-gap)); width: var(--gear-size); height: var(--gear-size); margin-left: calc(var(--gear-size) / -2); display: grid; place-items: center; cursor: pointer; color: var(--fg); border-radius: 50%; z-index: 2; opacity: 0; transition: opacity .2s var(--ease-fade); }
+  body.open #gear { opacity: 1; }
+  #gear .ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(var(--arc-start)); }
+  #gear .disc { fill: #17191C; opacity: 0; }
+  #gear .arc { fill: none; stroke: #2E3338; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 94.25 94.25; stroke-dashoffset: 66; will-change: stroke-dashoffset; }
+  #gear .cog { position: relative; width: 16px; height: 16px; opacity: 0; transform: scale(.6); }
+  /* mostradores (slots): círculo de 34 px, escala 1.06 no hover, .pointed quando o popover aponta para ele */
+  .dk { width: 44px; height: 40px; display: grid; place-items: center; cursor: pointer; position: relative; border-radius: 12px; }
+  .dk .dial { width: 34px; height: 34px; border-radius: 50%; background: var(--dial); display: grid; place-items: center; transition: background .18s var(--ease-fade), transform .18s var(--ease-fade); }
+  .dk:hover .dial { transform: scale(1.06); } .dk:active .dial { transform: scale(.94); transition-duration: .08s; } .dk.pointed .dial { background: var(--dial-hot); }
+  .dk.form .dial { background: rgba(62,207,142,.13); color: var(--signal); } .dk.form.pointed .dial { background: rgba(62,207,142,.24); }
+  .dk .cnt { position: absolute; top: 0; right: 1px; min-width: 16px; height: 16px; border-radius: 8px; background: #ff453a; color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
   .dk .cnt.blue { background: #0a84ff; } .dk .cnt.green { background: #25d366; color: #05240f; } .dk .cnt.orange { background: #ff9f0a; color: #2a1800; }
   .card.chat { border-left-color: #25d366; cursor: pointer; } .card .chip.tr { background: rgba(255,159,10,.2); color: #ffb340; } .card .chip.me { background: rgba(37,211,102,.16); color: #4ade80; }
-  .dk svg { width: 21px; height: 21px; } .dk.form svg { color: #fff; }
+  .dk svg { width: 17px; height: 17px; opacity: .94; }
   .ibtn svg { fill: none; stroke: none; width: 20px; height: 20px; } .card .tka button svg { width: 14px; height: 14px; }
   .card.hubn { border-left-color: #0a84ff; cursor: pointer; } .card.hubn.read { opacity: .6; } .card.hubt { border-left-color: #30d158; }
   .card .chip { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(100,210,255,.16); color: #64d2ff; } .card .chip.late { background: rgba(255,69,58,.18); color: #ff6961; }
@@ -85,10 +104,14 @@
   #compact .hdot { width: 7px; height: 7px; border-radius: 50%; background: #0a84ff; box-shadow: 0 0 6px #0a84ff; }
 
   /* painel lateral (cartões, toasts, sessões, popover) */
-  #panel { position: absolute; top: 50%; transform: translateY(-50%); max-height: 100%; width: 262px; display: none; flex-direction: column; gap: 8px; overflow-y: auto; padding: 2px 0; scrollbar-width: none; }
-  body.right #panel { right: calc(var(--bar-w) + 14px); } body.left #panel { left: calc(var(--bar-w) + 14px); }
-  body.open #panel.has { display: flex; }
-  .card { background: var(--bg); border-radius: 18px; padding: 11px 13px; box-shadow: 0 10px 30px rgba(0,0,0,.5); border-left: 3px solid var(--warn); animation: fade .15s ease; }
+  #panelWrap { position: absolute; top: 50%; transform: translateY(-50%); width: 262px; max-height: 100%; display: none; }
+  body.right #panelWrap { right: calc(var(--bar-w) + 14px); } body.left #panelWrap { left: calc(var(--bar-w) + 14px); }
+  body.open #panelWrap.has { display: block; }
+  #panel { position: relative; max-height: calc(100vh - 20px); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 2px 0; scrollbar-width: none; will-change: transform, opacity, height; }
+  #tail { position: absolute; width: 8px; height: 15px; background: var(--rail); clip-path: polygon(0 0, 100% 50%, 0 100%); transform: translateY(-50%); pointer-events: none; opacity: 0; transition: opacity .15s; }
+  body.right #tail { right: -7px; } body.left #tail { left: -7px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+  #panelWrap.tailed #tail { opacity: 1; }
+  .card { background: #0A0B0C; border-radius: 13px; padding: 11px 12px; box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.4); border-left: 3px solid var(--warn); animation: fade .15s ease; }
   @keyframes fade { from { opacity: 0; transform: translateX(var(--dx, 6px)); } }
   body.left .card { --dx: -6px; }
   .card.done { border-left-color: var(--ok); } .card.waiting { border-left-color: var(--warn); } .card.denied { border-left-color: var(--bad); }
@@ -151,13 +174,15 @@
 </head>
 <body class="right">
 <div id="root">
+  <div id="zone"></div>
   <div id="hit"></div>
   <div id="bar">
     <div id="badge"></div>
     <div id="compact"></div>
     <div id="list"></div>
+    <div id="gear" title="Configurações"><svg class="ring" viewBox="0 0 34 34" aria-hidden="true"><circle class="disc" cx="17" cy="17" r="15"/><circle class="arc" cx="17" cy="17" r="15"/></svg><span class="cog"></span></div>
   </div>
-  <div id="panel"></div>
+  <div id="panelWrap"><span id="tail"></span><div id="panel"></div></div>
 </div>
 
 <script src="iconsax.js"></script>
@@ -219,12 +244,13 @@ function renderBar() {
     if (usage.length) { const sp = document.createElement('div'); sp.id = 'sep'; list.appendChild(sp); }
     const pins = new Set((settings.hub && settings.hub.pinned) || []);
     const scs = hub.shortcuts || []; const dock = [...scs.filter((x) => pins.has(x.id)), ...scs.filter((x) => !pins.has(x.id))].slice(0, Math.max(3, Math.min(6, Number(settings.hub && settings.hub.dockCount) || 5)));
-    for (const sc of dock) { const d = document.createElement('div'); d.className = 'dk ' + sc.kind; d.innerHTML = IX[sc.ix] || sc.icon; d.title = sc.name; d.onclick = () => api.hubOpen(sc.path); d.addEventListener('mouseenter', () => { if (view === 'pop') setView(null); }); list.appendChild(d); }
-    const nb = document.createElement('div'); nb.className = 'dk'; nb.innerHTML = SVG.bell + (hub.unread ? `<span class="cnt blue">${hub.unread}</span>` : ''); nb.title = 'Notificações do Hub'; nb.onclick = () => toggleView('hubnotif'); nb.addEventListener('mouseenter', () => { if (hub.unread) toggleView('hubnotif', true); }); list.appendChild(nb);
-    if (hub.hasWhatsapp) { const cb = document.createElement('div'); cb.className = 'dk'; cb.innerHTML = SVG.chat + (hub.chatUnread ? `<span class="cnt green">${hub.chatUnread}</span>` : hub.chatTransfers ? `<span class="cnt orange">${hub.chatTransfers}</span>` : ''); cb.title = 'Conversas do WhatsApp'; cb.onclick = () => toggleView('hubchat'); cb.addEventListener('mouseenter', () => { if (hub.chatUnread || hub.chatTransfers) toggleView('hubchat', true); }); list.appendChild(cb); }
-    const tb = document.createElement('div'); tb.className = 'dk'; tb.innerHTML = SVG.check + (hub.tasks.length ? `<span class="cnt ${hub.overdue ? '' : 'blue'}">${hub.overdue || hub.tasks.length}</span>` : ''); tb.title = 'Minhas tarefas'; tb.onclick = () => toggleView('hubtasks'); list.appendChild(tb);
+    const dial = (cls, svg, title, badge) => { const d = document.createElement('div'); d.className = 'dk ' + cls; d.innerHTML = `<span class="dial">${svg}</span>${badge || ''}`; d.title = title; return d; };
+    for (const sc of dock) { const d = dial(sc.kind, IX[sc.ix] || sc.icon, sc.name); d.onclick = () => api.hubOpen(sc.path); d.addEventListener('mouseenter', () => { if (view === 'pop') setView(null); }); list.appendChild(d); }
+    const nb = dial('', SVG.bell, 'Notificações do Hub', hub.unread ? `<span class="cnt blue">${hub.unread}</span>` : ''); nb.dataset.view = 'hubnotif'; nb.onclick = () => toggleView('hubnotif'); nb.addEventListener('mouseenter', () => { if (hub.unread) toggleView('hubnotif', true); }); list.appendChild(nb);
+    if (hub.hasWhatsapp) { const cb = dial('', SVG.chat, 'Conversas do WhatsApp', hub.chatUnread ? `<span class="cnt green">${hub.chatUnread}</span>` : hub.chatTransfers ? `<span class="cnt orange">${hub.chatTransfers}</span>` : ''); cb.dataset.view = 'hubchat'; cb.onclick = () => toggleView('hubchat'); cb.addEventListener('mouseenter', () => { if (hub.chatUnread || hub.chatTransfers) toggleView('hubchat', true); }); list.appendChild(cb); }
+    const tb = dial('', SVG.check, 'Minhas tarefas', hub.tasks.length ? `<span class="cnt ${hub.overdue ? '' : 'blue'}">${hub.overdue || hub.tasks.length}</span>` : ''); tb.dataset.view = 'hubtasks'; tb.onclick = () => toggleView('hubtasks'); list.appendChild(tb);
   } else if (hub && !hub.linked) {
-    const lb = document.createElement('div'); lb.className = 'dk'; lb.innerHTML = IX.Hospital; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
+    const lb = document.createElement('div'); lb.className = 'dk'; lb.innerHTML = `<span class="dial">${IX.Hospital}</span>`; lb.title = 'Vincular ao Medsystem Hub (Configurações)'; lb.onclick = () => api.openSettings(); list.appendChild(lb);
   }
   const sep = document.createElement('div'); sep.id = 'sep'; list.appendChild(sep);
   const mt = (approvals.maestri && approvals.maestri.terminals) || [];
@@ -241,7 +267,6 @@ function renderBar() {
     db.addEventListener('mouseenter', () => { if (approvals.feed.length) toggleView('feed', true); });
     list.appendChild(db);
   }
-  list.appendChild(btn('gear', SVG.gear, 'Configurações', () => api.openSettings()));
   barH = list.scrollHeight + 32;
   fitHeight();
   renderCompact();
@@ -270,7 +295,35 @@ function renderCompact() {
 function setView(v) { view = v; renderPanel(); }
 function toggleView(v, force) { setView(force ? v : (view === v ? null : v)); }
 
+// morph do popover (dock/): FLIP entre o estado anterior e o novo, com a mola glide; a seta acompanha o mostrador apontado
+let lastView = null, tailY = 24;
 function renderPanel() {
+  const wrap = $('#panelWrap'), panelEl = $('#panel');
+  const wasOpen = document.body.classList.contains('open') && wrap.classList.contains('has');
+  const first = wasOpen ? panelEl.getBoundingClientRect() : null, firstTail = tailY;
+  const prevHtml = panelEl.innerHTML;
+  renderPanelInner();
+  const has = wrap.classList.contains('has');
+  document.querySelectorAll('.dk').forEach((d) => d.classList.toggle('pointed', !!view && d.dataset.view === view));
+  // seta aponta para o mostrador da vista atual
+  const target = view && document.querySelector(`.dk[data-view="${view}"] .dial`);
+  wrap.classList.toggle('tailed', !!target);
+  if (has && target) {
+    const w = wrap.getBoundingClientRect(), t = target.getBoundingClientRect();
+    tailY = Math.max(14, Math.min(t.top + t.height / 2 - w.top, w.height - 14)); $('#tail').style.top = tailY + 'px';
+  }
+  if (!has || !document.body.classList.contains('open')) { lastView = view; return; }
+  const { css, duration } = EASE.move;
+  if (!wasOpen) { anim(panelEl, [{ opacity: 0, transform: 'translateX(7px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: D(230), easing: css, fill: 'both' }); lastView = view; return; }
+  if (view !== lastView) {
+    const last = panelEl.getBoundingClientRect(); const dy = first.top - last.top;
+    if (Math.abs(dy) > 0.5 || Math.abs(first.height - last.height) > 0.5) anim(panelEl, [{ transform: `translateY(${dy}px)`, height: first.height + 'px' }, { transform: 'translateY(0)', height: last.height + 'px' }], { duration: D(duration), easing: css });
+    if (target) anim($('#tail'), [{ transform: `translateY(${firstTail + dy - tailY}px) translateY(-50%)` }, { transform: 'translateY(0) translateY(-50%)' }], { duration: D(duration), easing: css });
+    if (prevHtml !== panelEl.innerHTML) anim(panelEl, [{ opacity: .35 }, { opacity: 1 }], { duration: D(170), delay: D(40), easing: EASE.fade.css, fill: 'both' });
+  }
+  lastView = view;
+}
+function renderPanelInner() {
   const panel = $('#panel'); panel.innerHTML = '';
   const pend = approvals.pending, feed = approvals.feed;
   // 1) aprovações agrupadas por sessão
@@ -294,7 +347,7 @@ function renderPanel() {
   if (view === 'sessions') panel.appendChild(sessionsCard());
   // 4) popover de uso
   if (view === 'pop' && hovered) panel.appendChild(usageCard(hovered));
-  panel.classList.toggle('has', panel.children.length > 0);
+  $('#panelWrap').classList.toggle('has', panel.children.length > 0);
   const alertN = pend.length + mp.length;
   document.body.classList.toggle('alert', alertN > 0);
   $('#badge').textContent = alertN;
@@ -473,13 +526,29 @@ function setOpen(v) {
   document.body.classList.toggle('open', v);
   if (!v) { hovered = null; if (view === 'pop' || view === 'sessions' || view === 'hubnotif' || view === 'hubtasks' || view === 'hubchat') setView(null); }
 }
-const UI = '#bar, #panel, #hit';
+const UI = '#bar, #panelWrap, #hit';
 const root = $('#root');
 root.addEventListener('mousemove', (e) => {
   const overUi = e.target.closest(UI);
   api.setIgnoreMouse(!overUi);
   if (overUi) { clearTimeout(openTimer); setOpen(true); }
+  showGear(!!overUi || (!!e.target.closest('#zone') && document.body.classList.contains('open')));
 });
+// engrenagem: o arco fecha, o disco preenche e o ícone aparece (preset snappy 700/42)
+const gearEl = $('#gear'); gearEl.querySelector('.cog').innerHTML = IX.Setting2 || '';
+const gArc = gearEl.querySelector('.arc'), gDisc = gearEl.querySelector('.disc'), gCog = gearEl.querySelector('.cog');
+const RING = 2 * Math.PI * 15, ARC = { rest: RING * 0.7, open: 0 };
+let gearShown = false;
+function showGear(on) {
+  if (on === gearShown) return; gearShown = on;
+  const { css, duration } = EASE.pop, FADE = EASE.fade.css;
+  gArc.style.strokeDashoffset = on ? ARC.open : ARC.rest;
+  anim(gArc, [{ strokeDashoffset: on ? ARC.rest : ARC.open }, { strokeDashoffset: on ? ARC.open : ARC.rest }], { duration: D(on ? duration : 170), easing: on ? css : FADE });
+  anim(gDisc, [{ opacity: on ? 0 : 1 }, { opacity: on ? 1 : 0 }], { duration: D(on ? 200 : 120), delay: D(on ? 60 : 0), easing: FADE, fill: 'both' });
+  anim(gCog, on ? [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }] : [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.7)' }], { duration: D(on ? 170 : 100), delay: D(on ? 110 : 0), easing: FADE, fill: 'both' });
+}
+gearEl.onclick = () => api.openSettings();
+document.addEventListener('mouseleave', () => showGear(false));
 document.addEventListener('mouseleave', () => { api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 300); });
 root.addEventListener('mouseover', (e) => { if (!e.target.closest(UI)) openTimer = setTimeout(() => setOpen(false), 300); });
 document.addEventListener('mouseup', () => { if (document.body.classList.contains('dragging')) { document.body.classList.remove('dragging'); api.drag('end'); } });
@@ -512,7 +581,7 @@ function onNotify(n) {
   api.onSettings(applySettings);
   api.onHub((h) => { hub = h; renderBar(); if (view === 'hubnotif' || view === 'hubtasks' || view === 'hubchat') renderPanel(); });
   let deferred = false;
-  const typing = () => document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && $('#panel').contains(document.activeElement);
+  const typing = () => document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && $('#panelWrap').contains(document.activeElement);
   api.onApprovals((a) => { approvals = a; renderBar(); if (typing()) { deferred = true; return; } renderPanel(); });
   document.addEventListener('focusout', () => setTimeout(() => { if (deferred && !typing()) { deferred = false; renderPanel(); } }, 100));
   api.onNotify(onNotify);
