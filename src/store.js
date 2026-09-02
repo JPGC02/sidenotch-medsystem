@@ -56,8 +56,8 @@ const DEFAULTS = {
   },
   sidebar: { enabled: true, aiTools: true },
   docks: {                    // dois docks independentes, cada um com lado / posição / monitor
-    hub: { enabled: true, side: 'right', vertical: 'center', offset: 0, y: null, displayId: null },
-    ai:  { enabled: true, side: 'left',  vertical: 'center', offset: 0, y: null, displayId: null }
+    hub: { enabled: true, side: 'right', vertical: 'center', offset: 0, y: null, displayId: null, compact: 'dots', gear: { gap: 12, size: 40, arc: 255, dx: 0 } },
+    ai:  { enabled: true, side: 'left',  vertical: 'center', offset: 0, y: null, displayId: null, compact: 'dots', gear: { gap: 12, size: 40, arc: 255, dx: 0 } }
   },   // aiTools: botões de sessões do Claude Code / não perturbe na barra
   webapps: null,              // null = lista padrão (apps.DEFAULT_WEBAPPS); [{id,name,url}]
   pinnedApps: [],             // ids de apps do Menu Iniciar fixados

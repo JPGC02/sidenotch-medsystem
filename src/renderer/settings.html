@@ -77,14 +77,21 @@
         <div class="r"><div class="l"><b>Posição vertical</b></div><select id="dkHubV"><option value="center">Centro</option><option value="top">Topo</option><option value="bottom">Base</option><option value="custom">Onde eu arrastei</option></select></div>
         <div class="r"><div class="l"><b>Deslocamento</b><small>px, positivo desce</small></div><input id="dkHubOff" type="number" step="10"></div>
         <div class="r"><div class="l"><b>Monitor</b></div><select id="dkHubDisp"></select></div>
+        <div class="r"><div class="l"><b>Fechado mostra</b></div><select id="dkHubCompact"><option value="dots">Pontinhos</option><option value="percent">Total de pendências</option><option value="off">Nada (só a borda)</option></select></div>
+        <div class="r"><div class="l"><b>Engrenagem</b><small>distância da pílula · tamanho · início do arco (°) · deslocamento lateral (px)</small></div><div class="actions" style="padding:0;gap:6px"><input id="dkHubGGap" type="number" style="min-width:64px;width:64px" title="distância"><input id="dkHubGSize" type="number" style="min-width:64px;width:64px" title="tamanho"><input id="dkHubGArc" type="number" style="min-width:64px;width:64px" title="início do arco"><input id="dkHubGDx" type="number" style="min-width:64px;width:64px" title="deslocamento lateral"></div></div>
         <h2>Dock das IAs — uso do Claude, Codex, Cursor, Gemini, aprovações e sessões</h2>
         <div class="r"><div class="l"><b>Ativar</b></div><label class="sw"><input id="dkAiOn" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Lado</b></div><select id="dkAiSide"><option value="right">Direita</option><option value="left">Esquerda</option></select></div>
         <div class="r"><div class="l"><b>Posição vertical</b></div><select id="dkAiV"><option value="center">Centro</option><option value="top">Topo</option><option value="bottom">Base</option><option value="custom">Onde eu arrastei</option></select></div>
         <div class="r"><div class="l"><b>Deslocamento</b><small>px, positivo desce</small></div><input id="dkAiOff" type="number" step="10"></div>
         <div class="r"><div class="l"><b>Monitor</b></div><select id="dkAiDisp"></select></div>
+        <div class="r"><div class="l"><b>Fechado mostra</b></div><select id="dkAiCompact"><option value="dots">Pontinhos</option><option value="percent">Maior % usado</option><option value="off">Nada (só a borda)</option></select></div>
+        <div class="r"><div class="l"><b>Engrenagem</b><small>distância da pílula · tamanho · início do arco (°) · deslocamento lateral (px)</small></div><div class="actions" style="padding:0;gap:6px"><input id="dkAiGGap" type="number" style="min-width:64px;width:64px" title="distância"><input id="dkAiGSize" type="number" style="min-width:64px;width:64px" title="tamanho"><input id="dkAiGArc" type="number" style="min-width:64px;width:64px" title="início do arco"><input id="dkAiGDx" type="number" style="min-width:64px;width:64px" title="deslocamento lateral"></div></div>
+        <h2>Dock do topo — notch (música, sistema, apps, tarefas, calendário, Hub)</h2>
+        <div class="r"><div class="l"><b>Ativar</b></div><label class="sw"><input id="ntEnabled" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Monitor</b></div><select id="ntDisplay"></select></div>
+        <div class="r"><div class="l"><b>Deslocamento horizontal</b><small>px, positivo para a direita</small></div><input id="ntOffset" type="number" step="10"></div>
         <h2>Geral</h2>
-        <div class="r"><div class="l"><b>Notch fechada mostra</b></div><select id="compact"><option value="dots">Pontinhos coloridos</option><option value="percent">Maior % usado</option><option value="off">Nada (só a borda)</option></select></div>
         <div class="r"><div class="l"><b>Largura mínima fechada</b><small>px</small></div><input id="collapsedWidth" type="number" min="2" max="24"></div>
         <div class="r"><div class="l"><b>Atualizar uso a cada</b><small>segundos — o endpoint do Claude limita chamadas frequentes</small></div><input id="refreshSeconds" type="number" min="30" step="30"></div>
       </section>
@@ -128,9 +135,7 @@
     <div class="page" data-p="notch">
       <h1>Notch</h1><p class="lead">Pastilha no topo do monitor: Hub, tarefas e notas, calendário, apps, música e sistema.</p>
       <section>
-        <div class="r"><div class="l"><b>Mostrar o notch</b></div><label class="sw"><input id="ntEnabled" type="checkbox"><span></span></label></div>
-        <div class="r"><div class="l"><b>Monitor</b></div><select id="ntDisplay"></select></div>
-        <div class="r"><div class="l"><b>Deslocamento horizontal</b><small>px, positivo para a direita</small></div><input id="ntOffset" type="number" step="10"></div>
+        <p class="help" style="padding:8px 0">Ativar, monitor e deslocamento do notch ficam em <b>Geral → Dock do topo</b>.</p>
         <div class="r"><div class="l"><b>Aba inicial</b></div><select id="ntTab"><option value="hub">Medsystem Hub</option><option value="chat">Conversas</option><option value="music">Música</option><option value="sys">Sistema</option><option value="apps">Apps</option><option value="notes">Tarefas e notas</option><option value="canvas">Canvas</option><option value="cal">Calendário</option></select></div>
         <h2>Na pastilha fechada</h2>
         <div class="r"><div class="l"><b>Música tocando</b></div><label class="sw"><input id="ntMusic" type="checkbox"><span></span></label></div>
@@ -265,10 +270,11 @@ function renderCalSources() {
   });
 }
 
+const dockCollect = (k) => ({ enabled: $(`#dk${k}On`).checked, side: $(`#dk${k}Side`).value, vertical: $(`#dk${k}V`).value, offset: Number($(`#dk${k}Off`).value) || 0, displayId: $(`#dk${k}Disp`).value || null, compact: $(`#dk${k}Compact`).value, gear: { gap: Number($(`#dk${k}GGap`).value), size: Number($(`#dk${k}GSize`).value) || 40, arc: Number($(`#dk${k}GArc`).value), dx: Number($(`#dk${k}GDx`).value) || 0 } });
 function collect() {
   const patch = {
-    docks: { hub: { enabled: $('#dkHubOn').checked, side: $('#dkHubSide').value, vertical: $('#dkHubV').value, offset: Number($('#dkHubOff').value) || 0, displayId: $('#dkHubDisp').value || null }, ai: { enabled: $('#dkAiOn').checked, side: $('#dkAiSide').value, vertical: $('#dkAiV').value, offset: Number($('#dkAiOff').value) || 0, displayId: $('#dkAiDisp').value || null } },
-    collapsedWidth: Number($('#collapsedWidth').value) || 6, compact: $('#compact').value,
+    docks: { hub: dockCollect('Hub'), ai: dockCollect('Ai') },
+    collapsedWidth: Number($('#collapsedWidth').value) || 6,
     refreshSeconds: Number($('#refreshSeconds').value) || 180, autoLaunch: $('#autoLaunch').checked, dnd: $('#dnd').checked,
     order: settings.order, providers: {},
     sidebar: { enabled: $('#sbEnabled').checked, aiTools: $('#sbAi').checked },
@@ -296,9 +302,9 @@ async function load() {
   const displays = await api.getDisplays();
   const opts = '<option value="">Automático (principal)</option>' + displays.map((d) => `<option value="${d.id}">${d.label}</option>`).join('');
   $('#dkHubDisp').innerHTML = opts; $('#dkAiDisp').innerHTML = opts; $('#ntDisplay').innerHTML = opts;
-  const dk = settings.docks || {}; const fill = (k, d) => { d = d || {}; $(`#dk${k}On`).checked = d.enabled !== false; $(`#dk${k}Side`).value = d.side || 'right'; $(`#dk${k}V`).value = d.vertical || 'center'; $(`#dk${k}Off`).value = d.offset || 0; $(`#dk${k}Disp`).value = d.displayId || ''; };
+  const dk = settings.docks || {}; const fill = (k, d) => { d = d || {}; $(`#dk${k}On`).checked = d.enabled !== false; $(`#dk${k}Side`).value = d.side || 'right'; $(`#dk${k}V`).value = d.vertical || 'center'; $(`#dk${k}Off`).value = d.offset || 0; $(`#dk${k}Disp`).value = d.displayId || ''; $(`#dk${k}Compact`).value = d.compact || settings.compact || 'dots'; const g = d.gear || {}; $(`#dk${k}GGap`).value = g.gap ?? 12; $(`#dk${k}GSize`).value = g.size ?? 40; $(`#dk${k}GArc`).value = g.arc ?? 255; $(`#dk${k}GDx`).value = g.dx ?? 0; };
   fill('Hub', dk.hub); fill('Ai', dk.ai);
-  $('#collapsedWidth').value = settings.collapsedWidth; $('#compact').value = settings.compact || 'dots';
+  $('#collapsedWidth').value = settings.collapsedWidth;
   $('#refreshSeconds').value = settings.refreshSeconds; $('#autoLaunch').checked = !!settings.autoLaunch; $('#dnd').checked = !!settings.dnd;
   $('#sbEnabled').checked = !settings.sidebar || settings.sidebar.enabled !== false;
   const nt = settings.notch || {}; $('#ntEnabled').checked = nt.enabled !== false; $('#ntDisplay').value = nt.displayId || ''; $('#ntOffset').value = nt.offsetX || 0; $('#ntTab').value = nt.tab || 'music';

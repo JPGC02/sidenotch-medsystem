@@ -85,6 +85,8 @@
   #gear { position: absolute; left: 50%; top: calc(100% + var(--gear-gap)); width: var(--gear-size); height: var(--gear-size); margin-left: calc(var(--gear-size) / -2); display: grid; place-items: center; cursor: pointer; color: var(--fg); border-radius: 50%; z-index: 2; opacity: 0; transition: opacity .2s var(--ease-fade); }
   body.open #gear { opacity: 1; }
   #gear .ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(var(--arc-start)); }
+  body.left #gear .ring { transform: scaleX(-1) rotate(var(--arc-start)); }   /* espelha o arco quando o dock está à esquerda */
+  #gear { margin-left: calc(var(--gear-size) / -2 + var(--gear-dx, 0px)); }
   #gear .disc { fill: #17191C; opacity: 0; }
   #gear .arc { fill: none; stroke: #2E3338; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 94.25 94.25; stroke-dashoffset: 66; will-change: stroke-dashoffset; }
   #gear .cog { position: relative; width: 16px; height: 16px; opacity: 0; transform: scale(.6); }
@@ -296,15 +298,28 @@ function fitHeight() { api.setBarHeight(Math.max(barH, 640)); }   // altura fixa
 
 function renderCompact() {
   const c = $('#compact'); c.innerHTML = '';
-  const mode = settings.compact || 'dots';
-  const ok = isAiDock ? usage.filter((u) => u.ok && u.primary) : [];
-  if (isHubDock && hub && hub.linked && hub.unread) { document.documentElement.style.setProperty('--collapsed-w', Math.max(settings.collapsedWidth || 6, 12) + 'px'); c.insertAdjacentHTML('beforeend', '<div class="hdot"></div>'); if (mode === 'off' || !ok.length) return; }
-  else if (mode === 'off' || !ok.length) { document.documentElement.style.setProperty('--collapsed-w', (settings.collapsedWidth || 6) + 'px'); return; }
+  const dk = (settings.docks && settings.docks[ROLE]) || {};
+  const mode = dk.compact || settings.compact || 'dots';
+  const setW = (w) => document.documentElement.style.setProperty('--collapsed-w', w + 'px');
+  const base = settings.collapsedWidth || 6;
+  if (mode === 'off') { setW(base); return; }
+  if (isHubDock) {
+    // dock do Hub fechado: pontinhos (azul = notificações, verde = WhatsApp, vermelho = tarefas atrasadas) ou o total em número
+    if (!hub || !hub.linked) { setW(base); return; }
+    const items = [];
+    if (hub.unread) items.push(['#0a84ff', hub.unread]); if (hub.chatUnread) items.push(['#25d366', hub.chatUnread]); if (hub.overdue) items.push(['#ff453a', hub.overdue]);
+    if (!items.length) { setW(base); return; }
+    if (mode === 'dots') { setW(Math.max(base, 12)); for (const [col] of items) c.insertAdjacentHTML('beforeend', `<div class="hdot" style="background:${col};box-shadow:0 0 6px ${col}"></div>`); }
+    else { setW(18); c.innerHTML = `<div class="pctv" style="color:${items[0][0]}">${items.reduce((a, x) => a + x[1], 0)}</div>`; }
+    return;
+  }
+  const ok = usage.filter((u) => u.ok && u.primary);
+  if (!ok.length) { setW(base); return; }
   if (mode === 'dots') {
-    document.documentElement.style.setProperty('--collapsed-w', Math.max(settings.collapsedWidth || 6, 11) + 'px');
+    setW(Math.max(base, 11));
     for (const u of ok) c.insertAdjacentHTML('beforeend', `<div class="dot" style="background:${color(u.primary.usedPercent)}"></div>`);
   } else {
-    document.documentElement.style.setProperty('--collapsed-w', '18px');
+    setW(18);
     const worst = ok.reduce((a, b) => (b.primary.usedPercent > a.primary.usedPercent ? b : a));
     c.innerHTML = `<div class="pctv" style="color:${color(worst.primary.usedPercent)}">${Math.round(worst.primary.usedPercent)}%</div>`;
   }
@@ -579,6 +594,9 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
 function applySettings(s) {
   settings = s;
   const dk = (s.docks && s.docks[ROLE]) || { side: s.side };
+  // ajustes finos da engrenagem (Configurações → Geral): distância, tamanho, início do arco e deslocamento lateral
+  const g = dk.gear || {}; const R = document.documentElement.style;
+  R.setProperty('--gear-gap', (g.gap ?? 12) + 'px'); R.setProperty('--gear-size', (g.size ?? 40) + 'px'); R.setProperty('--arc-start', (g.arc ?? 255) + 'deg'); R.setProperty('--gear-dx', (g.dx ?? 0) + 'px');
   document.body.classList.toggle('left', dk.side === 'left');
   document.body.classList.toggle('right', dk.side !== 'left');
   document.body.classList.toggle('dnd', !!s.dnd);
