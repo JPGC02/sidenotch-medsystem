@@ -58,6 +58,12 @@ contextBridge.exposeInMainWorld('sidenotch', {
   soundTest: (preset, cfg) => ipcRenderer.invoke('sound:test', preset, cfg),
   soundPick: () => ipcRenderer.invoke('sound:pick'),
   onSound: (cb) => ipcRenderer.on('sound:play', (_e, d) => cb(d)),
+  clipList: () => ipcRenderer.invoke('clipboard:list'),
+  clipUse: (id) => ipcRenderer.invoke('clipboard:use', id),
+  clipPin: (id, v) => ipcRenderer.invoke('clipboard:pin', id, v),
+  clipRemove: (id) => ipcRenderer.invoke('clipboard:remove', id),
+  clipClear: (keep) => ipcRenderer.invoke('clipboard:clear', keep),
+  onClipboard: (cb) => ipcRenderer.on('clipboard', (_e, d) => cb(d)),
   onHub: (cb) => ipcRenderer.on('hub', (_e, d) => cb(d)),
   onNotchOpen: (cb) => ipcRenderer.on('notch:open', (_e, t) => cb(t)),
   onBar: (cb) => { for (const ch of ['bar:open', 'bar:toggle', 'bar:blur']) ipcRenderer.on(ch, () => cb(ch.split(':')[1])); }

@@ -156,6 +156,17 @@
   .tform input, .tform select, .tform textarea { width: 100%; border-radius: 10px; background: var(--fill); border: 0; padding: 8px 10px; font-size: 13px; color: var(--fg); } .tform textarea { grid-column: 1 / -1; height: 54px; resize: none; }
   .tform .acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
   .bn-ic.wa { background: linear-gradient(145deg, #25d366, #128c7e); }
+  /* área de transferência (Win+V) */
+  .clips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .clip { background: rgba(255,255,255,.055); border-radius: 14px; padding: 10px 12px; cursor: pointer; position: relative; min-height: 64px; display: flex; flex-direction: column; gap: 6px; border: 1px solid transparent; }
+  .clip:hover { background: rgba(255,255,255,.09); } .clip.copied { border-color: var(--blue); }
+  .clip .tx { font-size: 12.5px; line-height: 1.35; max-height: 66px; overflow: hidden; white-space: pre-wrap; word-break: break-word; user-select: text; }
+  .clip.code .tx { font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; } .clip.url .tx { color: #6fb3ff; }
+  .clip img { max-height: 90px; max-width: 100%; border-radius: 8px; object-fit: contain; align-self: flex-start; }
+  .clip .ft { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); margin-top: auto; }
+  .clip .ft .sp { flex: 1; } .clip .act { opacity: 0; display: flex; gap: 2px; } .clip:hover .act { opacity: 1; }
+  .clip .act button { width: 24px; height: 24px; padding: 0; border-radius: 50%; background: var(--fill); display: grid; place-items: center; } .clip .act button svg { width: 13px; height: 13px; } .clip.pinned .act .pn { color: #ffd60a; }
+  .clip .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; vertical-align: -2px; margin-right: 4px; border: 1px solid rgba(255,255,255,.2); }
   /* banner (Dynamic Island) de notificação na pastilha fechada */
   body.banner #mini { height: 62px; padding: 0 16px; gap: 12px; justify-content: flex-start; }
   body.banner #pill { border-radius: 0 0 24px 24px; }
@@ -197,12 +208,12 @@ const I = {
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
-const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['clip', 'Área de transferência'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
 const tabsForState = () => { TABS = TABS_ALL.filter(([id]) => id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)); if (!TABS.some((t) => t[0] === tab)) tab = 'hub'; };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
-let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false;
+let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false, clips = [], clipQ = '', clipCopied = null;
 
 const fmtB = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : b > 1e3 ? Math.round(b / 1e3) + ' KB' : Math.round(b) + ' B';
 const fmtRate = (b) => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB/s' : (b / 1e3).toFixed(0) + ' KB/s';
@@ -247,6 +258,7 @@ function renderView() {
   const v = $('#view');
   if (tab === 'hub') { v.innerHTML = viewHub(); bindHub(); }
   else if (tab === 'chat') { v.innerHTML = viewChat(); bindChat(); }
+  else if (tab === 'clip') { v.innerHTML = viewClip(); bindClip(); }
   else if (tab === 'music') v.innerHTML = viewMusic();
   else if (tab === 'sys') v.innerHTML = viewSys();
   else if (tab === 'apps') { v.innerHTML = viewApps(); bindApps(); }
@@ -591,6 +603,29 @@ function bindHub() {
   $('#hbSync').onclick = async () => { hubBusy = 'atualizando…'; renderView(); hub = await api.hubSync(); hubBusy = ''; renderTabs(); renderView(); };
   $('#hbOut').onclick = async () => { hub = await api.hubLogout(); renderTabs(); renderView(); };
 }
+// área de transferência (histórico tipo Win+V)
+const KIND_ICON = { url: 'Global', email: 'Message', color: 'Brush2', path: 'Folder', phone: 'Whatsapp', number: 'Calendar1', code: 'Code', text: 'DocumentText', image: 'Element3' };
+function viewClip() {
+  const q = clipQ.trim().toLowerCase();
+  const list = clips.filter((c) => !q || (c.type === 'text' && (c.text || '').toLowerCase().includes(q)));
+  const pinned = list.filter((c) => c.pinned), rest = list.filter((c) => !c.pinned);
+  const card = (c) => `<div class="clip ${c.type === 'text' ? c.kind : 'image'} ${c.pinned ? 'pinned' : ''} ${clipCopied === c.id ? 'copied' : ''}" data-clip="${c.id}" title="Clique para copiar de volta">
+      ${c.type === 'image' ? `<img src="${c.data}">` : `<div class="tx">${c.kind === 'color' ? `<span class="sw" style="background:${esc(c.text.trim().startsWith('#') ? c.text.trim() : '#' + c.text.trim())}"></span>` : ''}${esc(c.text.length > 400 ? c.text.slice(0, 400) + '…' : c.text)}</div>`}
+      <div class="ft">${IX[KIND_ICON[c.type === 'image' ? 'image' : c.kind] || 'DocumentText'] ? `<span class="ix" style="width:12px;height:12px;display:inline-grid">${IX[KIND_ICON[c.type === 'image' ? 'image' : c.kind] || 'DocumentText']}</span>` : ''}<span>${c.type === 'image' ? `${c.w}×${c.h}` : c.len > 160 ? c.len + ' caracteres' : ({ url: 'link', email: 'e-mail', color: 'cor', path: 'caminho', phone: 'telefone', number: 'número', code: 'código' }[c.kind] || 'texto')}</span><span class="sp"></span><span>${clipCopied === c.id ? '<b style="color:var(--blue)">copiado ✓</b>' : ago(c.at)}</span>
+      <span class="act"><button class="pn" data-pin="${c.id}" title="${c.pinned ? 'Desafixar' : 'Fixar'}">${IX.Star1Bold || '★'}</button><button data-del="${c.id}" title="Remover">${IX.Trash}</button></span></div></div>`;
+  const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="clips">${arr.map(card).join('')}</div>` : '';
+  return `<div class="search" style="margin-bottom:10px">${I.search}<input id="clipQ" placeholder="Buscar no histórico…" value="${esc(clipQ)}"><button class="pillbtn" id="clipClear" title="Limpar (mantém fixados)">Limpar</button></div>
+    <div class="lst" style="max-height:430px">${list.length ? grp('Fixados', pinned) + grp('Recentes', rest) : `<div class="empty">${I.clip}Nada copiado ainda.<div class="muted" style="margin-top:4px">Tudo que você copiar (Ctrl+C) aparece aqui — texto, links e imagens. Clique num item para copiar de volta.</div></div>`}</div>`;
+}
+function bindClip() {
+  const refresh = (l) => { if (Array.isArray(l)) clips = l; const v = $('#view'); const q = $('#clipQ'); const keep = q && document.activeElement === q; const pos = keep ? q.selectionStart : 0; v.innerHTML = viewClip(); bindClip(); if (keep) { const nq = $('#clipQ'); api.setFocusable(true); nq.focus(); nq.setSelectionRange(pos, pos); } fitPill(); };
+  $('#clipQ').oninput = () => { clipQ = $('#clipQ').value; refresh(); };
+  $('#clipClear').onclick = async () => refresh(await api.clipClear(true));
+  document.querySelectorAll('[data-clip]').forEach((el) => el.onclick = async (e) => { if (e.target.closest('[data-pin],[data-del]')) return; await api.clipUse(el.dataset.clip); clipCopied = el.dataset.clip; refresh(); setTimeout(() => { if (clipCopied === el.dataset.clip) { clipCopied = null; if (tab === 'clip') refresh(); } }, 1500); });
+  document.querySelectorAll('[data-pin]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); refresh(await api.clipPin(b.dataset.pin)); });
+  document.querySelectorAll('[data-del]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); refresh(await api.clipRemove(b.dataset.del)); });
+}
+
 // banner estilo Dynamic Island na pastilha fechada
 let bannerTimer = null;
 function showBanner(n) {
@@ -633,7 +668,7 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], chat: [640, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], chat: [640, 0], clip: [640, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -657,7 +692,7 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
 
 (async () => {
   settings = await api.getSettings(); tab = (settings.notch && settings.notch.tab) || 'music'; if (!TABS.some((t) => t[0] === tab)) tab = 'music';
-  hub = await api.hubGet(); sys = await api.getSystem(); cal = await api.getCalendar(); docs = await api.getDocs(); approvals = await api.getApprovals(); webapps = await api.listWebApps();
+  hub = await api.hubGet(); clips = (await api.clipList()) || []; sys = await api.getSystem(); cal = await api.getCalendar(); docs = await api.getDocs(); approvals = await api.getApprovals(); webapps = await api.listWebApps();
   renderMini();
   let musicKey = '';
   api.onSystem((s) => { sys = s; renderMini(); if (!document.body.classList.contains('open')) return; if (tab === 'sys') renderView(); if (tab === 'music') { const m = s.media; const k = m ? `${m.title}|${m.artist}|${m.playing}|${!!m.art}` : ''; if (k !== musicKey) { musicKey = k; renderView(); } } });
@@ -666,6 +701,7 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onSettings((s) => { settings = s; renderMini(); });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
   api.onSound(playSound);
+  api.onClipboard((l) => { clips = l || []; if (tab === 'clip' && document.body.classList.contains('open') && !typing()) renderView(); });
   api.onNotify((n) => { if ((n.type === 'hub' || n.type === 'chat') && !(settings.dnd)) showBanner(n); });
   api.onNotchOpen((t) => { tab = t || 'hub'; renderTabs(); setOpen(true); renderView(); setTimeout(() => { const q = $('#hbQ'); if (q) { api.setFocusable(true); q.focus(); q.select(); } }, 60); });
   api.onApprovals((a) => { approvals = a; renderMini(); });

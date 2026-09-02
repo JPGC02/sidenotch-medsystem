@@ -43,7 +43,8 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '' },   // ex.: "CommandOrControl+Shift+Space"
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '' },
+  clipboard: { enabled: true, max: 60 },   // histórico da área de transferência (aba no notch)   // ex.: "CommandOrControl+Shift+Space"
   update: { auto: true },
   maestri: {                  // Maestri Wire (https://www.themaestri.app/pt-br/docs/wire)
     enabled: false, host: '127.0.0.1', port: 7434, token: '', keyHash: '', deviceId: '', deviceIdentifier: '', role: '', alternateHosts: [],

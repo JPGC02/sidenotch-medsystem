@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage, dialog } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage, dialog, clipboard } = require('electron');
 const path = require('path');
 const { Store } = require('./store');
 const { fetchAll, resetCache } = require('./providers');
@@ -12,10 +12,11 @@ const { Calendar } = require('./calendar');
 const { Weather } = require('./weather');
 const { Docs } = require('./docs');
 const { HubClient } = require('./hub');
+const { ClipboardHistory } = require('./clipboard');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist;
 const webappWins = new Map();
 let lastUsage = [];
 
@@ -37,6 +38,9 @@ app.whenReady().then(() => {
   }
   app.setAppUserModelId('com.medsystem.sidenotch.hub');
   docs = new Docs(app.getPath('userData'));
+  clipHist = new ClipboardHistory(app.getPath('userData'), clipboard, { max: Number(store.get().clipboard.max) || 60 });
+  clipHist.on('change', () => broadcast('clipboard', clipHist.list()));
+  if (store.get().clipboard.enabled !== false) clipHist.start();
   createBars();
   createNotch();
   createTray();
@@ -56,7 +60,7 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => openSettings());
 app.on('window-all-closed', (e) => e.preventDefault());
-app.on('will-quit', () => { globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); });
 
 // ---------- Notch (topo) ----------
 const NOTCH_W = 960, NOTCH_H = 560;
@@ -359,6 +363,7 @@ function registerShortcuts() {
   reg(sc.toggle, () => { if (bar) { if (!bar.isVisible()) bar.show(); bar.webContents.send('bar:toggle'); } });
   reg(sc.approve, () => { const p = server && server.list()[0]; if (p && p.kind === 'permission') server.decide(p.id, 'allow'); });
   reg(sc.deny, () => { const p = server && server.list()[0]; if (p) server.decide(p.id, 'deny'); });
+  reg(sc.clip, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'clip'); } });
   reg(sc.hub, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'hub'); } });
 }
 
@@ -435,6 +440,7 @@ ipcMain.handle('settings:save', (_e, patch) => {
   if (patch && patch.calendar) startCalendar();
   if (patch && patch.weather) { weather.loc = null; startWeather(); }
   if (patch && patch.hub) startHub();
+  if (patch && patch.clipboard && clipHist) { clipHist.max = Number(store.get().clipboard.max) || 60; if (store.get().clipboard.enabled !== false) clipHist.start(); else clipHist.stop(); }
   broadcast('settings', store.get());
   resetCache();
   refresh();
@@ -486,6 +492,11 @@ ipcMain.handle('webapps:set', (_e, list) => { store.set({ webapps: Array.isArray
 ipcMain.handle('calendar:get', () => calendar ? calendar.state() : null);
 ipcMain.handle('weather:get', () => weather ? weather.snapshot() : null);
 ipcMain.handle('calendar:refresh', async () => { await calendar.refresh(store.get().calendar.sources || []); const st = calendar.state(); broadcast('calendar', st); return st; });
+ipcMain.handle('clipboard:list', () => clipHist ? clipHist.list() : []);
+ipcMain.handle('clipboard:use', (_e, id) => clipHist.use(id));
+ipcMain.handle('clipboard:pin', (_e, id, v) => { clipHist.pin(id, v); return clipHist.list(); });
+ipcMain.handle('clipboard:remove', (_e, id) => { clipHist.remove(id); return clipHist.list(); });
+ipcMain.handle('clipboard:clear', (_e, keepPinned) => { clipHist.clear(keepPinned !== false); return clipHist.list(); });
 ipcMain.handle('docs:get', () => docs.get());
 ipcMain.handle('docs:set', (_e, patch) => docs.set(patch || {}));
 ipcMain.on('notch:height', (_e, h) => { /* altura fixa; reservado */ });

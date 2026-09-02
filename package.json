@@ -1,14 +1,14 @@
 {
   "name": "sidenotch-medsystem",
   "productName": "SideNotch Medsystem",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "SideNotch edição Medsystem: notch do Windows com notificações, tarefas e atalhos do Medsystem Hub, além de uso das IAs, aprovações do Claude Code, Maestri, música, sistema e calendário.",
   "main": "src/main.js",
   "author": "JP / Medsystem",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "test": "node test/providers.test.js && node test/approvals.test.js && node test/history.test.js && node test/maestri.test.js && node test/calendar.test.js && node test/hub.test.js",
+    "test": "node test/providers.test.js && node test/approvals.test.js && node test/history.test.js && node test/maestri.test.js && node test/calendar.test.js && node test/hub.test.js && node test/clipboard.test.js",
     "dist": "electron-builder --win nsis --x64",
     "dist:zip": "electron-builder --win zip --x64"
   },
