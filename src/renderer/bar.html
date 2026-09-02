@@ -549,7 +549,7 @@ root.addEventListener('mousemove', (e) => {
   const overUi = e.target.closest(UI);
   api.setIgnoreMouse(!overUi);
   if (overUi) { clearTimeout(openTimer); setOpen(true); }
-  showGear(!!overUi || (!!e.target.closest('#zone') && document.body.classList.contains('open')));
+  showGear(!!e.target.closest('#gear'));
 });
 // engrenagem: o arco fecha, o disco preenche e o ícone aparece (preset snappy 700/42)
 const gearEl = $('#gear'); gearEl.querySelector('.cog').innerHTML = IX.Setting2 || '';
@@ -566,6 +566,7 @@ function showGear(on) {
 }
 gearEl.onclick = () => api.openSettings();
 document.addEventListener('mouseleave', () => showGear(false));
+gearEl.addEventListener('mouseleave', () => showGear(false));
 document.addEventListener('mouseleave', () => { api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 300); });
 root.addEventListener('mouseover', (e) => { if (!e.target.closest(UI)) openTimer = setTimeout(() => setOpen(false), 300); });
 document.addEventListener('mouseup', () => { if (document.body.classList.contains('dragging')) { document.body.classList.remove('dragging'); api.drag('end'); } });
