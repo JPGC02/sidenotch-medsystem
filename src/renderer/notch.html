@@ -203,7 +203,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const IX = window.IX || {};
 const I = {
-  music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
+  music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };

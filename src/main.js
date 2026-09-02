@@ -1,7 +1,7 @@
 const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage, dialog, clipboard } = require('electron');
 const path = require('path');
 const { Store } = require('./store');
-const { fetchAll, resetCache } = require('./providers');
+const { fetchAll, resetCache, setCacheDir } = require('./providers');
 const approvals = require('./approvals');
 const { History } = require('./history');
 const { Updater } = require('./updater');
@@ -26,6 +26,7 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');   /
 app.whenReady().then(() => {
   store = new Store(app.getPath('userData'));
   history = new History(app.getPath('userData'));
+  setCacheDir(app.getPath('userData'));
   if (!store.get().approvals.token) store.set({ approvals: { token: approvals.newToken() } });
   // edição Medsystem: na 1ª execução (ou vindo da 1.0.x) desliga os provedores de IA e a faixa de % — quem quiser religa nas configurações
   if (!store.get().medsystemInit) store.set({ medsystemInit: 1, compact: 'off', providers: { claude: { enabled: false }, codex: { enabled: false }, cursor: { enabled: false }, gemini: { enabled: false } } });

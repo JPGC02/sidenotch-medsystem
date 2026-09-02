@@ -19,7 +19,7 @@
   .nav i { display: inline-grid; place-items: center; width: 18px; height: 18px; } .nav svg { width: 18px; height: 18px; opacity: .9; }
   .nav:hover { background: var(--glass); } .nav.on { background: var(--acc); color: #0b0b10; } .nav.on svg { opacity: 1; }
   aside .foot { margin-top: auto; -webkit-app-region: no-drag; font-size: 11px; color: var(--muted); padding: 8px 10px; }
-  main { overflow: auto; padding: 44px 28px 28px; scrollbar-width: thin; }
+  main { overflow: auto; padding: 44px 28px 28px; scrollbar-width: none; } main::-webkit-scrollbar { display: none; }
   h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; letter-spacing: -.3px; } .lead { color: var(--muted); margin: 0 0 18px; }
   .page { display: none; } .page.on { display: block; animation: fade .18s ease; } @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
   section { background: var(--glass); border: 1px solid var(--line); border-radius: 20px; padding: 4px 16px; margin-bottom: 14px; backdrop-filter: blur(20px); }
@@ -40,8 +40,16 @@
   .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 0; }
   .st { font-size: 11.5px; color: var(--muted); } .st.ok { color: var(--ok); } .st.err { color: var(--bad); } .st.warn { color: var(--warn); }
   .help { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
-  .prov { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
-  .prov:first-of-type { border-top: 0; } .prov .name { font-weight: 600; } .prov .extra { grid-column: 1 / -1; } .prov .extra input { width: 100%; }
+  #providers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 0; }
+  .prov { background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; transition: background .15s, transform .15s; }
+  .prov:hover { background: rgba(255,255,255,.08); } .prov.on { border-color: rgba(52,211,153,.25); }
+  .prov .logo { width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,.07); display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); } .prov .logo svg { width: 26px; height: 26px; } .prov .logo .em { font-size: 20px; font-weight: 800; color: var(--muted); }
+  .prov .name { font-weight: 700; font-size: 14px; letter-spacing: -.2px; }
+  .prov .st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.07); font-size: 11px; margin-top: 4px; max-width: 100%; }
+  .prov .st.ok { background: rgba(52,211,153,.14); color: var(--ok); } .prov .st.err { background: rgba(248,113,113,.14); color: var(--bad); } .prov .st.warn { background: rgba(251,191,36,.14); color: var(--warn); }
+  .prov .st b { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 6px; }
+  .prov .help { margin-top: 6px; } .prov .side { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; } .prov .side button { padding: 5px 9px; font-size: 11px; }
+  .prov .extra { grid-column: 1 / -1; } .prov .extra input { width: 100%; }
   kbd { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 11px; }
   #saved { color: var(--ok); font-size: 12px; }
   .bar { position: fixed; left: 208px; right: 0; bottom: 0; padding: 10px 28px; display: flex; gap: 10px; align-items: center; background: linear-gradient(transparent, rgba(0,0,0,.55) 40%); }
@@ -151,7 +159,7 @@
 
     <div class="page" data-p="prov">
       <h1>Provedores</h1><p class="lead">Uso das IAs (opcional nesta edição — desligado por padrão). Ative os que você usa e arraste a ordem com ↑.</p>
-      <section><div id="providers"></div></section>
+      <div id="providers"></div>
     </div>
 
     <div class="page" data-p="claude">
@@ -225,6 +233,7 @@
 </div>
 
 <script src="iconsax.js"></script>
+<script src="logos.js"></script>
 <script>
 const api = window.sidenotch;
 const $ = (s) => document.querySelector(s);
@@ -246,20 +255,23 @@ let settings, usage = [], calSources = [];
 
 function renderProviders() {
   const box = $('#providers'); box.innerHTML = '';
+  const LG = window.LOGOS || {}; const IXX = window.IX || {};
+  const glyph = { cursor: IXX.Monitor, gemini: IXX.Lamp, antigravity: IXX.Cpu, openrouter: IXX.Global, nvidia: IXX.Driver, opencode: IXX.Code };
   for (const id of settings.order) {
     const m = META[id]; if (!m) continue;
     const s = settings.providers[id] || {}; const u = usage.find((x) => x.id === id);
-    const st = !s.enabled ? '<span class="st">desativado</span>' : !u ? '<span class="st">—</span>'
-      : u.ok ? `<span class="st ${u.stale ? 'warn' : 'ok'}">${u.stale ? 'Desatualizado (' + u.staleReason + ')' : 'OK'}${u.primary ? ' · ' + Math.round(u.primary.usedPercent) + '% usado' : u.stats ? ' · ' + u.stats.label + ' hoje' : ''}${u.account ? ' · ' + u.account : ''}</span>`
-      : `<span class="st err" title="${(u.hint || '').replace(/"/g, '&quot;')}">${u.error}</span>`;
-    const row = document.createElement('div'); row.className = 'prov';
-    row.innerHTML = `<label class="sw"><input type="checkbox" data-en="${id}" ${s.enabled ? 'checked' : ''}><span></span></label>
-      <div><div class="name">${m.name}</div>${st}<div class="help">${m.help}${u && !u.ok && u.hint ? '<br><b>Dica:</b> ' + u.hint : ''}</div></div>
-      <div><button data-up="${id}" title="Mover para cima">↑</button></div>
+    const st = !s.enabled ? '<span class="st"><b></b>desativado</span>' : !u ? '<span class="st"><b></b>aguardando</span>'
+      : u.ok ? `<span class="st ${u.stale ? 'warn' : 'ok'}"><b></b>${u.stale ? 'Desatualizado · ' + u.staleReason : 'OK'}${u.primary ? ' · ' + Math.round(u.primary.usedPercent) + '% usado' : u.stats ? ' · ' + u.stats.label + ' hoje' : ''}${u.account ? ' · ' + u.account : ''}</span>`
+      : `<span class="st err" title="${(u.hint || '').replace(/"/g, '&quot;')}"><b></b>${u.error}</span>`;
+    const row = document.createElement('div'); row.className = 'prov' + (s.enabled ? ' on' : '');
+    row.innerHTML = `<div class="logo">${LG[id] || glyph[id] || `<span class="em">${m.name[0]}</span>`}</div>
+      <div style="min-width:0"><div class="name">${m.name}</div>${st}<div class="help">${m.help}${u && !u.ok && u.hint ? '<br><b>Dica:</b> ' + u.hint : ''}</div></div>
+      <div class="side"><label class="sw"><input type="checkbox" data-en="${id}" ${s.enabled ? 'checked' : ''}><span></span></label><button data-up="${id}" title="Mover para cima">↑</button></div>
       ${m.field ? `<div class="extra"><input type="password" data-field="${id}:${m.field}" placeholder="${m.placeholder}" value="${(s[m.field] || '').replace(/"/g, '&quot;')}"></div>` : ''}`;
     box.appendChild(row);
   }
   box.querySelectorAll('[data-up]').forEach((b) => b.addEventListener('click', () => { const i = settings.order.indexOf(b.dataset.up); if (i > 0) { [settings.order[i - 1], settings.order[i]] = [settings.order[i], settings.order[i - 1]]; renderProviders(); } }));
+  box.querySelectorAll('[data-en]').forEach((c) => c.addEventListener('change', () => c.closest('.prov').classList.toggle('on', c.checked)));
 }
 
 function renderCalSources() {

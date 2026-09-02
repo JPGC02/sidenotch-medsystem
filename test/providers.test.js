@@ -107,5 +107,5 @@ console.log(`\n${n} testes OK`);
   [r] = await idx.fetchAll(s, { force: true }); assert.equal(calls, 4);
   assert.equal(r.ok, true, 'mantém último valor bom'); assert.equal(r.stale, true); assert.match(r.staleReason, /429/);
   [r] = await idx.fetchAll(s, { force: true }); assert.equal(calls, 4, 'em backoff, nem o force chama de novo');
-  idx.resetCache(); [r] = await idx.fetchAll(s); assert.equal(r.ok, false, 'sem valor bom anterior mostra o erro');
+  idx.resetCache(); [r] = await idx.fetchAll(s); assert.equal(calls, 5, 'resetCache libera nova consulta'); assert.equal(r.ok, true, 'resetCache mantém o último valor bom'); assert.equal(r.stale, true);
 })().then(() => console.log('✓ cache/backoff')).catch((e) => { console.error(e); process.exit(1); });
