@@ -1,0 +1,64 @@
+{
+  "name": "sidenotch-medsystem",
+  "productName": "SideNotch Medsystem",
+  "version": "1.0.0",
+  "description": "SideNotch edição Medsystem: notch do Windows com notificações, tarefas e atalhos do Medsystem Hub, além de uso das IAs, aprovações do Claude Code, Maestri, música, sistema e calendário.",
+  "main": "src/main.js",
+  "author": "JP / Medsystem",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/providers.test.js && node test/approvals.test.js && node test/history.test.js && node test/maestri.test.js && node test/calendar.test.js && node test/hub.test.js",
+    "dist": "electron-builder --win nsis --x64",
+    "dist:zip": "electron-builder --win zip --x64"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.medsystem.sidenotch.hub",
+    "productName": "SideNotch Medsystem",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "SideNotch-Medsystem-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "JPGC02",
+        "repo": "sidenotch-medsystem",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "repository": "https://github.com/JPGC02/sidenotch-medsystem",
+  "dependencies": {
+    "electron-updater": "6.3.9",
+    "ws": "8.18.0"
+  }
+}
