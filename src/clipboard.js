@@ -50,7 +50,7 @@ class ClipboardHistory extends EventEmitter {
       if (item.type === 'text') { item.preview = item.text.replace(/\s+/g, ' ').trim().slice(0, 160); item.kind = classify(item.text); }
       this.items.unshift(item);
       const pinned = this.items.filter((i) => i.pinned), rest = this.items.filter((i) => !i.pinned).slice(0, this.max);
-      this.items = [...pinned, ...rest].sort((a, b) => b.at - a.at);
+      this.items = [...pinned, ...rest].sort((a, b) => b.at - a.at || 0);
     }
     this._save(); this.emit('change');
   }
@@ -61,7 +61,7 @@ class ClipboardHistory extends EventEmitter {
     this.ignoreOnce = it.hash; this.lastHash = it.hash;
     if (it.type === 'image') { const { nativeImage } = require('electron'); this.clip.writeImage(nativeImage.createFromDataURL(it.data)); }
     else this.clip.writeText(it.text);
-    it.at = Date.now(); this.items.sort((a, b) => b.at - a.at); this._save(); this.emit('change');
+    it.at = Date.now(); this.items = [it, ...this.items.filter((i) => i !== it)]; this._save(); this.emit('change');
     return true;
   }
   pin(id, v) { const it = this.items.find((i) => i.id === id); if (it) { it.pinned = v == null ? !it.pinned : !!v; this._save(); this.emit('change'); } }
