@@ -56,6 +56,12 @@
   main { padding-bottom: 80px; }
   .srcrow { display: grid; grid-template-columns: 140px 1fr 70px 32px; gap: 8px; align-items: center; padding: 6px 0; }
   .srcrow input { min-width: 0; width: 100%; }
+  .dkrow { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid transparent; }
+  .dkrow.on { background: rgba(124,140,255,.12); border-color: rgba(124,140,255,.35); } .dkrow.off { opacity: .45; }
+  .dkrow .ic { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,.08); display: grid; place-items: center; flex: 0 0 28px; } .dkrow .ic svg { width: 16px; height: 16px; }
+  .dkrow .nm { flex: 1; min-width: 0; font-size: 12.5px; } .dkrow .nm small { display: block; color: var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dkrow .ord { display: flex; gap: 2px; } .dkrow .ord button { padding: 3px 7px; font-size: 11px; } .dkrow input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--acc); }
+  .dkrow .kind { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(62,207,142,.15); color: #3ECF8E; } .dkrow .kind.page { background: rgba(255,255,255,.08); color: var(--muted); }
 </style>
 </head>
 <body>
@@ -136,6 +142,15 @@
         <div class="r"><div class="l"><b>Máximo de itens</b></div><input id="clipMax" type="number" min="10" max="300"></div>
         <div class="r"><div class="l"><b>Atalho global do histórico</b><small>ex.: <kbd>CommandOrControl+Shift+V</kbd></small></div><input id="scClip" type="text" placeholder="vazio = desativado"></div>
         <div class="r"><div class="l"><b>Atalho global do lançador</b><small>abre o notch na aba Hub com busca, ex.: <kbd>CommandOrControl+Shift+H</kbd></small></div><input id="scHub" type="text" placeholder="vazio = desativado"></div>
+      </section>
+      <section>
+        <h2>Atalhos no dock do Hub</h2>
+        <p class="help" style="padding:6px 0 2px">Marque o que quer no dock e ordene com ↑↓. Só aparecem os formulários e páginas que o seu setor/cargo tem acesso no Hub. Sem nada marcado, o dock usa os 5 primeiros (fixados no notch primeiro).</p>
+        <div class="row" style="display:flex;gap:8px;align-items:center;padding:6px 0"><input id="dkQ" type="text" placeholder="Filtrar…" style="flex:1"><span class="help" id="dkCount"></span></div>
+        <div id="dockList" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 0 10px"></div>
+        <h2>Atalho personalizado</h2>
+        <div class="srcrow" style="grid-template-columns:150px 1fr 120px 90px"><input id="cuName" type="text" placeholder="Nome"><input id="cuPath" type="text" placeholder="/rota/do/hub ou https://…"><select id="cuIx"><option value="Global">🌐 Link</option><option value="DocumentText">📄 Formulário</option><option value="Element3">▦ Página</option><option value="Headphone">🎧 Suporte</option><option value="Receipt2">🧾 Financeiro</option><option value="ShoppingCart">🛒 Compras</option><option value="People">👥 Pessoas</option><option value="Calendar1">📅 Agenda</option><option value="Monitor">🖥 Sistema</option><option value="Whatsapp">💬 WhatsApp</option><option value="Flag">🚩 Demanda</option><option value="Lamp">💡 Ideia</option></select><button id="cuAdd" class="pri">Adicionar</button></div>
+        <div id="customList" class="help" style="padding-bottom:10px"></div>
       </section>
       <section>
         <h2>Avançado</h2>
@@ -251,7 +266,7 @@ const META = {
   nvidia: { name: 'NVIDIA NIM', help: 'Chave nvapi-… de build.nvidia.com. A NVIDIA não expõe uso por API.', field: 'apiKey', placeholder: 'nvapi-…' },
   opencode: { name: 'OpenCode (local)', help: 'Custo/tokens de hoje e do mês lidos dos arquivos locais do OpenCode CLI.' }
 };
-let settings, usage = [], calSources = [];
+let settings, usage = [], calSources = [], dockSel = [], customSc = [], hubCatalog = [], hubShortcuts = [];
 
 function renderProviders() {
   const box = $('#providers'); box.innerHTML = '';
@@ -300,7 +315,7 @@ function collect() {
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
     shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim() },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
-    hub: { enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
+    hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
     update: { auto: $('#upAuto').checked },
     maestri: { host: $('#mHost').value.trim() || '127.0.0.1', port: Number($('#mPort').value) || 7434, pollSeconds: Number($('#mPoll').value) || 4, notifyAttention: $('#mAttn').checked },
     calendar: { sources: calSources.filter((s) => s.url), refreshMinutes: Number($('#calMin').value) || 15 }
@@ -331,7 +346,7 @@ async function load() {
   $('#nDone').checked = !!n.done; $('#nWaiting').checked = !!n.waiting; $('#nDenied').checked = !!n.denied; $('#nToast').checked = !!n.toast; $('#nDismiss').value = n.autoDismissSec ?? 20;
   $('#alEnabled').checked = !!al.enabled; $('#alTh').value = (al.thresholds || [80, 95]).join(', '); $('#alReset').checked = !!al.onReset;
   $('#scToggle').value = sc.toggle || ''; $('#scApprove').value = sc.approve || ''; $('#scDeny').value = sc.deny || ''; $('#scHub').value = sc.hub || ''; $('#scClip').value = sc.clip || ''; const cb = settings.clipboard || {}; $('#clipOn').checked = cb.enabled !== false; $('#clipMax').value = cb.max || 60;
-  const hb = settings.hub || {}; $('#hbEnabled').checked = hb.enabled !== false; $('#hbNotify').checked = hb.notify !== false; $('#hbToast').checked = hb.toast !== false; $('#hbSound').checked = hb.sound !== false; $('#hbRead').checked = hb.markReadOnOpen !== false; $('#hbPoll').value = hb.pollSeconds || 90; $('#hbDock').value = hb.dockCount || 5; $('#hbChat').checked = hb.chatNotify !== false; $('#hbSndP').value = hb.soundPreset || 'pop'; $('#hbSndC').value = hb.soundChat || 'message'; $('#hbVol').value = hb.volume ?? 0.6; $('#hbSndF').value = hb.soundFile || ''; $('#sbAi').checked = !!(settings.sidebar && settings.sidebar.aiTools); $('#hbUrl').value = hb.url || ''; $('#hbSite').value = hb.site || '';
+  const hb = settings.hub || {}; dockSel = (hb.dock || []).slice(); customSc = JSON.parse(JSON.stringify(hb.custom || [])); $('#hbEnabled').checked = hb.enabled !== false; $('#hbNotify').checked = hb.notify !== false; $('#hbToast').checked = hb.toast !== false; $('#hbSound').checked = hb.sound !== false; $('#hbRead').checked = hb.markReadOnOpen !== false; $('#hbPoll').value = hb.pollSeconds || 90; $('#hbDock').value = hb.dockCount || 5; $('#hbChat').checked = hb.chatNotify !== false; $('#hbSndP').value = hb.soundPreset || 'pop'; $('#hbSndC').value = hb.soundChat || 'message'; $('#hbVol').value = hb.volume ?? 0.6; $('#hbSndF').value = hb.soundFile || ''; $('#sbAi').checked = !!(settings.sidebar && settings.sidebar.aiTools); $('#hbUrl').value = hb.url || ''; $('#hbSite').value = hb.site || '';
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   renderHub(await api.hubGet());
   $('#upAuto').checked = !!(settings.update && settings.update.auto);
@@ -361,8 +376,24 @@ function renderMaestri(m) {
   $('#mKey').textContent = m.keyHash ? `Chave fixada (SHA-256, base64): ${m.keyHash} — confira com a aba Manual do Maestri.` : '';
   $('#mUnpair').hidden = !m.paired;
 }
+function renderDock() {
+  const box = $('#dockList'); if (!box) return;
+  const q = ($('#dkQ').value || '').trim().toLowerCase();
+  const IXX = window.IX || {};
+  const all = [...hubCatalog, ...customSc.map((c) => ({ id: 'u:' + c.id, name: c.name, path: c.path, ix: c.ix, kind: c.kind || 'page', allowed: true, custom: true }))];
+  const order = (id) => { const i = dockSel.indexOf(id); return i < 0 ? 1e6 : i; };
+  const list = all.filter((s) => !q || s.name.toLowerCase().includes(q) || s.path.toLowerCase().includes(q)).sort((a, b) => order(a.id) - order(b.id) || (b.allowed - a.allowed));
+  box.innerHTML = list.map((s) => { const on = dockSel.includes(s.id); const i = dockSel.indexOf(s.id);
+    return `<div class="dkrow ${on ? 'on' : ''} ${s.allowed ? '' : 'off'}" title="${s.allowed ? s.path : 'Sem acesso a este módulo no Hub (' + (s.module || '') + ')'}"><input type="checkbox" data-dk="${s.id}" ${on ? 'checked' : ''} ${s.allowed ? '' : 'disabled'}><span class="ic">${IXX[s.ix] || ''}</span><span class="nm">${s.name}<small>${s.path}</small></span><span class="kind ${s.kind}">${s.kind === 'form' ? 'form' : 'página'}</span>${on ? `<span class="ord"><button data-mv="${s.id}:-1" ${i === 0 ? 'disabled' : ''}>↑</button><button data-mv="${s.id}:1" ${i === dockSel.length - 1 ? 'disabled' : ''}>↓</button></span>` : ''}</div>`; }).join('') || '<div class="help">Nada encontrado.</div>';
+  $('#dkCount').textContent = `${dockSel.length} no dock · ${all.filter((s) => s.allowed).length} disponíveis`;
+  box.querySelectorAll('[data-dk]').forEach((c) => c.onchange = () => { const id = c.dataset.dk; if (c.checked) { if (!dockSel.includes(id)) dockSel.push(id); } else dockSel = dockSel.filter((x) => x !== id); renderDock(); });
+  box.querySelectorAll('[data-mv]').forEach((b) => b.onclick = () => { const [id, d] = b.dataset.mv.split(':'); const i = dockSel.indexOf(id), j = i + Number(d); if (j < 0 || j >= dockSel.length) return; [dockSel[i], dockSel[j]] = [dockSel[j], dockSel[i]]; renderDock(); });
+  $('#customList').innerHTML = customSc.length ? customSc.map((c, k) => `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border-radius:8px;padding:3px 8px;margin:2px 4px 2px 0">${c.name} <span style="color:var(--muted)">${c.path}</span><a data-cudel="${k}" style="cursor:pointer;color:var(--bad)">×</a></span>`).join('') : 'Nenhum atalho personalizado.';
+  $('#customList').querySelectorAll('[data-cudel]').forEach((a) => a.onclick = () => { const c = customSc.splice(Number(a.dataset.cudel), 1)[0]; dockSel = dockSel.filter((x) => x !== 'u:' + c.id); renderDock(); });
+}
 function renderHub(h) {
   if (!h) return;
+  if (h.catalog) hubCatalog = h.catalog; if (h.shortcuts) hubShortcuts = h.shortcuts; renderDock();
   $('#hbLinked').hidden = !h.linked; $('#hbForm').hidden = !!h.linked;
   if (h.linked) { const p = h.profile || {}; $('#hbName').textContent = p.name || p.email || 'Vinculado'; $('#hbInfo').textContent = [p.email, p.sector, p.role].filter(Boolean).join(' · ') + (p.modules ? ` · ${p.modules.length} módulo(s)` : ''); }
   const parts = [];
@@ -392,6 +423,8 @@ $('#mPair').addEventListener('click', async () => {
 $('#mUnpair').addEventListener('click', async () => renderMaestri(await api.maestriUnpair()));
 $('#hbLogin').addEventListener('click', async () => { await api.saveSettings(collect()); $('#hbStatus').textContent = 'Entrando…'; const r = await api.hubLogin($('#hbEmail').value.trim(), $('#hbPass').value); if (!r.ok) $('#hbStatus').innerHTML = `<span class="st err">Falha: ${r.error}</span>`; else { $('#hbPass').value = ''; renderHub(r.state); } });
 $('#hbOut').addEventListener('click', async () => renderHub(await api.hubLogout()));
+$('#dkQ').addEventListener('input', renderDock);
+$('#cuAdd').addEventListener('click', () => { const name = $('#cuName').value.trim(), path = $('#cuPath').value.trim(); if (!name || !path) return; const id = 'c' + Date.now().toString(36); customSc.push({ id, name, path, ix: $('#cuIx').value, kind: $('#cuIx').value === 'DocumentText' ? 'form' : 'page' }); dockSel.push('u:' + id); $('#cuName').value = ''; $('#cuPath').value = ''; renderDock(); });
 const sndCfg = () => ({ volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim() });
 $('#hbSndT1').addEventListener('click', () => api.soundTest($('#hbSndP').value, sndCfg()));
 $('#hbSndT2').addEventListener('click', () => api.soundTest($('#hbSndC').value, sndCfg()));

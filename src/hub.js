@@ -46,7 +46,45 @@ const SHORTCUTS = [
   { id: 'chat', name: 'Chat', path: '/chat', module: 'chat', icon: '💬', ix: 'MessageText', kind: 'page' },
   { id: 'planos', name: 'Planos de ação', path: '/planos-acao', module: 'planos-acao', icon: '🎯', ix: 'Flag', kind: 'page' },
   { id: 'fluxos', name: 'Fluxos', path: '/fluxos', module: 'fluxos', icon: '🔁', ix: 'Repeat', kind: 'page' },
-  { id: 'dashboard', name: 'Dashboard', path: '/dashboard', module: null, icon: '🏠', ix: 'Element3', kind: 'page' }
+  { id: 'dashboard', name: 'Dashboard', path: '/dashboard', module: null, icon: '🏠', ix: 'Element3', kind: 'page' },
+  // ---- mais páginas e formulários do Hub (aparecem só para quem tem o módulo) ----
+  { id: 'contatos', name: 'Organizador de Contato', path: '/contatos', module: null, icon: '💬', ix: 'Whatsapp', kind: 'page' },
+  { id: 'contatos-board', name: 'Kanban de conversas', path: '/contatos/board', module: null, icon: '📋', ix: 'Element3', kind: 'page' },
+  { id: 'ideias-central', name: 'Central de Ideias', path: '/sistemas/ideias', module: 'sistemas', icon: '💡', ix: 'Lamp', kind: 'page' },
+  { id: 'sistemas', name: 'Sistemas', path: '/sistemas', module: 'sistemas', icon: '🧩', ix: 'Code', kind: 'page' },
+  { id: 'compras', name: 'Compras', path: '/compras', module: 'compras', icon: '🛒', ix: 'ShoppingCart', kind: 'page' },
+  { id: 'pedidos-internet', name: 'Pedidos internet', path: '/compras/pedidos-internet', module: 'compras', icon: '🛒', ix: 'Global', kind: 'page' },
+  { id: 'estoque', name: 'Estoque', path: '/estoque', module: 'estoque', icon: '📦', ix: 'Box', kind: 'page' },
+  { id: 'veiculos', name: 'Veículos', path: '/veiculos', module: 'veiculos', icon: '🚗', ix: 'Truck', kind: 'page' },
+  { id: 'mais-pratico', name: 'Mais Prático', path: '/mais-pratico', module: 'mais-pratico', icon: '🗂️', ix: 'Folder', kind: 'page' },
+  { id: 'newsletters', name: 'Newsletters', path: '/newsletters', module: 'newsletters', icon: '📰', ix: 'DocumentText', kind: 'page' },
+  { id: 'cursos', name: 'Cursos', path: '/cursos', module: 'cursos', icon: '🎓', ix: 'Book1', kind: 'page' },
+  { id: 'cowork', name: 'Cowork Monitor', path: '/cowork-monitor', module: 'cowork-monitor', icon: '🖥️', ix: 'Monitor', kind: 'page' },
+  { id: 'fin-inad', name: 'Inadimplentes', path: '/financeiro/inadimplentes', module: 'financeiro-inadimplentes', icon: '💳', ix: 'Receipt2', kind: 'page' },
+  { id: 'fin-nf', name: 'Notas fiscais', path: '/financeiro/notas-fiscais', module: 'financeiro-notas-fiscais', icon: '🧾', ix: 'DocumentText', kind: 'page' },
+  { id: 'fin-sol', name: 'Solicitações financeiras', path: '/financeiro/solicitacoes', module: 'financeiro-solicitacoes', icon: '💰', ix: 'Receipt2', kind: 'page' },
+  { id: 'qualidade', name: 'Planejamento da qualidade', path: '/planejamento-qualidade', module: 'planejamento-qualidade', icon: '✅', ix: 'ArchiveTick', kind: 'page' },
+  { id: 'precos', name: 'Formação de preços', path: '/formacao-precos', module: 'formacao-precos', icon: '🏷️', ix: 'Receipt2', kind: 'page' },
+  { id: 'pos-venda', name: 'Pós-venda', path: '/pos-venda', module: 'pos-venda', icon: '🤝', ix: 'People', kind: 'page' },
+  { id: 'efetivacao', name: 'Efetivação de clientes', path: '/efetivacao-clientes', module: 'efetivacao-clientes', icon: '📝', ix: 'ArchiveTick', kind: 'form' },
+  { id: 'portais', name: 'Portais', path: '/comercial/portais', module: 'portais', icon: '🌐', ix: 'Global', kind: 'page' },
+  { id: 'comercial', name: 'Comercial', path: '/comercial', module: 'comercial', icon: '📈', ix: 'Element3', kind: 'page' },
+  { id: 'cal-painel', name: 'Calibração · painel', path: '/calibracao/painel', module: 'setor-calibracao', icon: '🎛️', ix: 'Cpu', kind: 'page' },
+  { id: 'cal-padroes', name: 'Calibração · padrões', path: '/calibracao/padroes', module: 'calibracao-padroes', icon: '📏', ix: 'Cpu', kind: 'page' },
+  { id: 'cal-prop', name: 'Calibração · propostas', path: '/calibracao/propostas', module: 'calibracao-propostas', icon: '📄', ix: 'DocumentText', kind: 'form' },
+  { id: 'at-painel', name: 'AT · painel', path: '/assistencia-tecnica/painel', module: 'setor-assistencia-tecnica', icon: '🔧', ix: 'Monitor', kind: 'page' },
+  { id: 'at-fluxo', name: 'AT · fluxo', path: '/assistencia-tecnica/fluxo', module: 'assistencia-tecnica-fluxo', icon: '🔁', ix: 'Repeat', kind: 'page' },
+  { id: 'at-os', name: 'AT · ordens de serviço', path: '/assistencia-tecnica/ordens', module: 'assistencia-tecnica-os', icon: '🛠️', ix: 'Driver', kind: 'page' },
+  { id: 'locacao', name: 'Locação', path: '/locacao/painel', module: 'locacao-painel', icon: '🏢', ix: 'Building', kind: 'page' },
+  { id: 'odonto', name: 'Odonto', path: '/odonto/financeiro', module: 'setor-odonto', icon: '🦷', ix: 'Health', kind: 'page' },
+  { id: 'projetos', name: 'Projetos', path: '/projetos/dashboard', module: 'setor-projetos', icon: '📐', ix: 'Element3', kind: 'page' },
+  { id: 'filiais', name: 'Filiais', path: '/filiais', module: 'setor-filiais', icon: '🏬', ix: 'Building', kind: 'page' },
+  { id: 'ecommerce', name: 'E-commerce', path: '/e-commerce', module: 'e-commerce', icon: '🛍️', ix: 'ShoppingCart', kind: 'page' },
+  { id: 'auditoria', name: 'Auditoria', path: '/auditoria', module: 'auditoria', icon: '🔎', ix: 'SearchZoomIn', kind: 'page' },
+  { id: 'diretoria', name: 'Diretoria', path: '/diretoria', module: 'diretoria', icon: '🏛️', ix: 'Building', kind: 'page' },
+  { id: 'onboarding-rh', name: 'Onboarding RH', path: '/onboarding-rh', module: 'onboarding-rh', icon: '🧑‍💼', ix: 'People', kind: 'page' },
+  { id: 'docs-novo', name: 'Novo artigo (documentação)', path: '/onboarding/admin/articles/new', module: 'onboarding', icon: '📝', ix: 'DocumentText', kind: 'form' },
+  { id: 'automacoes', name: 'Automações', path: '/automacoes', module: 'automacoes', icon: '⚙️', ix: 'Setting2', kind: 'page' }
 ];
 
 function decodeJwt(t) { try { return JSON.parse(Buffer.from(String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')); } catch { return {}; } }
@@ -377,7 +415,14 @@ class HubClient extends EventEmitter {
   shortcuts() {
     const mods = new Set(this.profile ? this.profile.modules : []);
     const admin = this.profile && this.profile.role.level >= 100;
-    return SHORTCUTS.filter((s) => !s.module || admin || mods.has(s.module)).map((s) => ({ ...s, url: this.site + s.path }));
+    const cfg = this.getCfg() || {};
+    const custom = (cfg.custom || []).filter((c) => c && c.path).map((c) => ({ id: 'u:' + (c.id || c.path), name: c.name || c.path, path: /^(https?:|\/)/.test(c.path) ? c.path : '/' + c.path, module: null, icon: c.icon || '🔗', ix: c.ix || 'Global', kind: c.kind || 'page', custom: true }));
+    return [...SHORTCUTS.filter((s) => !s.module || admin || mods.has(s.module)), ...custom].map((s) => ({ ...s, url: this.urlFor(s.path) }));
+  }
+  // catálogo completo (para a tela de configurações), marcando o que o usuário tem acesso
+  catalog() {
+    const allowed = new Set(this.shortcuts().map((s) => s.id));
+    return SHORTCUTS.map((s) => ({ id: s.id, name: s.name, path: s.path, ix: s.ix, kind: s.kind, module: s.module, allowed: allowed.has(s.id) }));
   }
   urlFor(link) { if (!link) return this.site; if (/^https?:/.test(link)) return link; return this.site + (link.startsWith('/') ? '' : '/') + link; }
   state() {
@@ -391,7 +436,7 @@ class HubClient extends EventEmitter {
       tasks: this.tasks, overdue,
       agenda: this.agenda,
       chats: this.chats, chatUnread: this.chats.reduce((a, c) => a + (c.unread || 0), 0), chatTransfers: this.chats.filter((c) => c.transferred && c.unassigned).length, hasWhatsapp: this.instances.length > 0 || this.chats.length > 0,
-      shortcuts: this.shortcuts()
+      shortcuts: this.shortcuts(), catalog: this.catalog()
     };
   }
 }

@@ -183,7 +183,7 @@ function startHub() {
     const secret = safeStorage.isEncryptionAvailable() ? { encrypt: (s) => safeStorage.encryptString(s), decrypt: (b) => safeStorage.decryptString(b) } : null;
     let WS = null; try { WS = require('ws'); } catch { /* sem realtime: só polling */ }
     const h = store.get().hub || {};
-    hub = new HubClient({ dir: app.getPath('userData'), secret, WebSocket: WS, url: h.url || undefined, anon: h.anon || undefined, site: h.site || undefined });
+    hub = new HubClient({ dir: app.getPath('userData'), secret, WebSocket: WS, url: h.url || undefined, anon: h.anon || undefined, site: h.site || undefined, getCfg: () => store.get().hub || {} });
     hub.on('change', () => { const st = hub.state(); broadcast('hub', st); updateTrayTooltip(); if (calendar) { calendar.setExtra(st.agenda || []); broadcast('calendar', calendar.state()); } });
     // WhatsApp: mensagem / transferência / atribuição → cartão + banner (estilo WhatsApp) + toast
     hub.on('chat', (ev) => {

@@ -192,7 +192,13 @@ wss.on('connection', (ws, req) => {
   // logout apaga o arquivo
   hub2.logout(); assert.ok(!fs.existsSync(path.join(dir, 'hub-session.bin')));
 
-  assert.ok(SHORTCUTS.every((s) => s.path.startsWith('/') && s.name && s.icon));
+  assert.ok(SHORTCUTS.every((s) => s.path.startsWith('/') && s.name && s.icon && s.ix));
+  assert.strictEqual(new Set(SHORTCUTS.map((s) => s.id)).size, SHORTCUTS.length, 'ids únicos');
+  // atalhos personalizados vindos das configurações + catálogo com flag de acesso
+  const hub4 = new HubClient({ dir, secret, url, anon: 'anon-test', site: 'https://hub.test', getCfg: () => ({ custom: [{ id: 'x1', name: 'Planilha', path: 'https://docs.google.com/x' }, { id: 'x2', name: 'Chamados AT', path: 'chamados?setor=at', ix: 'Headphone' }] }) });
+  hub4.profile = { id: UID, role: { level: 30, slug: 'colaborador' }, modules: ['compras'] };
+  const sc4 = hub4.shortcuts(); assert.strictEqual(sc4.find((s) => s.id === 'u:x1').url, 'https://docs.google.com/x'); assert.strictEqual(sc4.find((s) => s.id === 'u:x2').url, 'https://hub.test/chamados?setor=at');
+  const cat = hub4.catalog(); assert.ok(cat.find((c) => c.id === 'cotacao').allowed && !cat.find((c) => c.id === 'nf').allowed && cat.find((c) => c.id === 'dashboard').allowed);
   for (const s of sockets) s.terminate();
   wss.close(); server.close();
   console.log('hub.test: OK');
