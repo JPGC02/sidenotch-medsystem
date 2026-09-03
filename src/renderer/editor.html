@@ -36,7 +36,7 @@
   canvas { box-shadow: 0 20px 50px rgba(0,0,0,.5); border-radius: 6px; cursor: crosshair; max-width: 100%; max-height: 100%; }
   canvas.sel { cursor: move; }
   .help { font-size: 11.5px; color: var(--muted); }
-  #textbox { position: fixed; display: none; background: rgba(20,20,24,.94); border: 1px solid var(--acc); border-radius: 10px; padding: 8px 10px; font: 600 14px "Segoe UI Variable Text", "Segoe UI", sans-serif; min-width: 140px; outline: 0; resize: none; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  #textbox { position: fixed; display: none; background: rgba(20,20,24,.94); border: 1px solid var(--acc); border-radius: 10px; padding: 8px 10px; font: 600 14px "Segoe UI Variable Text", "Segoe UI", sans-serif; min-width: 140px; max-width: 520px; outline: 0; resize: none; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.5); overflow: hidden; white-space: pre; line-height: 1.3; z-index: 20; }
   #toast { position: fixed; top: 46px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.5); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--muted); opacity: 0; transition: opacity .2s; pointer-events: none; }
 </style>
 </head>
@@ -96,6 +96,8 @@ $('#undo').onclick = undo; $('#redo').onclick = redo; $('#del').onclick = () => 
 
 cv.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return; const p = norm(e);
+  // caixa de texto aberta: o clique fora confirma o texto onde ele está e não começa outra forma
+  if (tb.style.display === 'block') { e.preventDefault(); commitText(); return; }
   if (tool === 'select') { sel = A.hit(shapes, p.x, p.y); draw(); if (sel >= 0) { const s = shapes[sel]; if (s.type !== 'blur') setColorUi(s.color); if (s.width) { $('#sizeIn').value = s.width; width = s.width; } snap(); drag = { move: true, px: p.x, py: p.y, s: { ...s } }; } return; }
   if (tool === 'text') { openText(p, null); return; }
   if (!DRAW.has(tool)) return;
@@ -113,17 +115,19 @@ cv.addEventListener('dblclick', (e) => { const p = norm(e); const i = A.hit(shap
 
 function openText(p, idx) {
   const r = cv.getBoundingClientRect(); tb.style.display = 'block'; tb.style.left = (r.left + p.x * r.width) + 'px'; tb.style.top = (r.top + p.y * r.height) + 'px'; tb.style.color = idx >= 0 ? (shapes[idx].color || color) : color;
-  tb.value = idx >= 0 ? shapes[idx].text : ''; tb.dataset.idx = idx == null ? -1 : idx; tb.dataset.x = p.x; tb.dataset.y = p.y; tb.focus();
+  tb.value = idx >= 0 ? shapes[idx].text : ''; tb.dataset.idx = idx == null ? -1 : idx; tb.dataset.x = p.x; tb.dataset.y = p.y; autosize(); tb.focus();
 }
+function autosize() { tb.style.height = 'auto'; tb.style.height = (tb.scrollHeight + 2) + 'px'; tb.style.width = 'auto'; tb.style.width = Math.max(140, Math.min(520, tb.scrollWidth + 8)) + 'px'; }
+tb.addEventListener('input', autosize);
 function commitText() {
-  if (tb.style.display === 'none') return; const v = tb.value.trim(); const idx = Number(tb.dataset.idx); tb.style.display = 'none';
+  if (tb.style.display !== 'block') return; const v = tb.value.trim(); const idx = Number(tb.dataset.idx); tb.style.display = 'none';
   if (!v) { if (idx >= 0) { snap(); shapes.splice(idx, 1); } draw(); return; }
   snap();
   if (idx >= 0) shapes[idx].text = v; else { const x = Number(tb.dataset.x), y = Number(tb.dataset.y); shapes.push({ type: 'text', x1: x, y1: y, x2: Math.min(1, x + 0.25), y2: Math.min(1, y + 0.08), text: v, color, size: Math.max(0.6, width) }); }
   draw();
 }
 tb.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); } if (e.key === 'Escape') { tb.style.display = 'none'; } e.stopPropagation(); });
-tb.addEventListener('blur', commitText);
+tb.addEventListener('blur', () => setTimeout(commitText, 0));
 
 async function save() { toast('Salvando…'); const png = A.rasterize(img, shapes); await api.qaEditorSave(id, shapes, shapes.length ? png : null); window.close(); }
 $('#save').onclick = save; $('#cancel').onclick = () => window.close();
