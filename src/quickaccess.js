@@ -71,6 +71,7 @@ class QuickAccess {
     const x = side === 'right' ? d.workArea.x + d.workArea.width - W : d.workArea.x;
     this.stack.setBounds({ x, y: d.workArea.y + d.workArea.height - H, width: W, height: H });
     if (!this.stack.isVisible()) this.stack.show();
+    try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), `${new Date().toISOString()} stack display=${d.id} bounds=${JSON.stringify(this.stack.getBounds())}\n`); } catch { /* ignore */ }
   }
   _push(item) { const send = () => this.stack && !this.stack.isDestroyed() && this.stack.webContents.send('qa:push', this._card(item)); if (this.stack.webContents.isLoading()) this.stack.webContents.once('did-finish-load', () => setTimeout(send, 50)); else send(); }
   _card(item) { const it = this.caps.get(item.id) || item; return { ...it, thumb: 'file:///' + this.caps.best(it.id).replace(/\\/g, '/') + '?v=' + (it.editedAt || it.at) }; }
@@ -80,6 +81,7 @@ class QuickAccess {
   copy(id) { const it = this.caps.get(id); if (!it) return false; clipboard.writeImage(nativeImage.createFromPath(this.caps.best(id))); return true; }
   async saveAs(id) {
     const it = this.caps.get(id); if (!it) return null;
+    app.focus({ steal: true });
     const r = await dialog.showSaveDialog({ title: 'Salvar captura', defaultPath: path.join(app.getPath('pictures'), `captura-${new Date(it.at).toISOString().slice(0, 19).replace(/[T:]/g, '-')}.png`), filters: [{ name: 'PNG', extensions: ['png'] }] });
     if (r.canceled) return null;
     fs.copyFileSync(this.caps.best(id), r.filePath); return r.filePath;
@@ -125,8 +127,10 @@ class QuickAccess {
     if (this.editor && !this.editor.isDestroyed()) { this.editor.close(); }
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     const w = Math.min(d.workArea.width - 80, Math.max(720, it.w + 260)), h = Math.min(d.workArea.height - 80, Math.max(520, it.h + 140));
-    const win = new BrowserWindow({ width: w, height: h, title: 'Editar captura', backgroundColor: '#0B0C0E', autoHideMenuBar: true, icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } });
+    const win = new BrowserWindow({ width: w, height: h, title: 'Editar captura', backgroundColor: '#1c1c1e', autoHideMenuBar: true, show: false, icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } });
     this.editor = win; win.setMenu(null);
+    // a pilha não é focável: sem isto o Windows abre o editor atrás da janela ativa
+    win.once('ready-to-show', () => { app.focus({ steal: true }); win.show(); win.setAlwaysOnTop(true); win.focus(); setTimeout(() => { if (!win.isDestroyed()) win.setAlwaysOnTop(false); }, 400); });
     win.loadFile(path.join(__dirname, 'renderer', 'editor.html'), { query: { id } });
     win.on('closed', () => { if (this.editor === win) this.editor = null; });
   }

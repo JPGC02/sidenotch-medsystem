@@ -47,6 +47,7 @@ const FADE = 'cubic-bezier(.32,.72,0,1)';
 let cfg = { ttl: 0, side: 'left' }, cards = new Map(), hoverT = null, hoverOut = null;
 const zone = document.getElementById('zone');
 const anim = (el, kf, o) => { try { return el.animate(kf, o); } catch { return null; } };
+const LOG = (m) => { try { api.qaLog(m); } catch { /* ignore */ } };
 
 function card(it) {
   const el = document.createElement('div'); el.className = 'card newest' + (it.pinned ? ' pinned' : ''); el.dataset.id = it.id;
@@ -60,15 +61,15 @@ function bind(el, it) {
   const id = it.id;
   // hover em dois níveis: parcial imediato, completo após 350 ms; sair some em < 200 ms
   el.addEventListener('pointerenter', () => { api.qaInteractive(true); el.classList.add('h1'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.add('h2'), 350); pauseTtl(el, true); });
-  el.addEventListener('pointerleave', () => { clearTimeout(el._t); el.classList.remove('h1', 'h2'); const st = el.querySelector('.status'); if (st.classList.contains('done')) { st.classList.remove('on', 'done', 'ok', 'err'); } pauseTtl(el, false); });
+  el.addEventListener('pointerleave', () => { clearTimeout(el._t); el.classList.remove('h1', 'h2'); const st = el.querySelector('.status'); if (st.classList.contains('done')) { clearTimeout(st._t); st._t = setTimeout(() => st.classList.remove('on', 'done', 'ok', 'err'), 2500); } pauseTtl(el, false); });
   // drag nativo: threshold 6 px → o SO recebe um PNG real
   let down = null;
-  el.addEventListener('pointerdown', (e) => { if (e.button !== 0 || e.target.closest('[data-a]')) return; down = { x: e.clientX, y: e.clientY }; });
+  el.addEventListener('pointerdown', (e) => { LOG('pointerdown ' + e.target.className + ' btn=' + e.button); if (e.button !== 0 || e.target.closest('[data-a]')) return; down = { x: e.clientX, y: e.clientY }; });
   el.addEventListener('pointermove', (e) => { if (!down) return; if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { down = null; el.classList.add('dragging'); api.qaDrag(id); setTimeout(() => el.classList.remove('dragging'), 800); } });
   el.addEventListener('pointerup', () => { down = null; });
   el.addEventListener('dblclick', () => api.qaEdit(id));
   el.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', async (e) => {
-    e.stopPropagation(); const a = b.dataset.a;
+    e.stopPropagation(); const a = b.dataset.a; LOG('click ' + a + ' ' + id);
     if (a === 'close') { if (e.altKey) closeAll(); else remove(id); }
     else if (a === 'pin') { const p = await api.qaPin(id); el.classList.toggle('pinned', p); }
     else if (a === 'edit') api.qaEdit(id);
@@ -93,7 +94,7 @@ function push(it) {
 }
 function update(it) { const el = cards.get(it.id); if (el) { el.querySelector('img').src = it.thumb; el.classList.toggle('pinned', !!it.pinned); } }
 function remove(id) {
-  const el = cards.get(id); if (!el) return;
+  const el = cards.get(id); if (!el) return; LOG('remove ' + id + ' ' + new Error().stack.split('\n').slice(1, 4).join(' | '));
   const first = new Map([...zone.children].map((c) => [c, c.getBoundingClientRect().top]));
   const a = anim(el, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${cfg.side === 'right' ? 40 : -40}px)` }], { duration: 160, easing: FADE, fill: 'both' });
   const done = () => { el.remove(); cards.delete(id);
@@ -111,7 +112,7 @@ zone.addEventListener('pointerleave', () => api.qaInteractive(false));
 document.addEventListener('mousemove', (e) => { const over = e.target.closest('.card'); api.qaInteractive(!!over); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
 window.addEventListener('error', (e) => api.qaLog && api.qaLog('erro: ' + e.message + ' @' + e.lineno));
-api.onQa((ev, data) => { if (ev === 'remove') { const el = cards.get(data); if (el) { el.remove(); cards.delete(data); if (!cards.size) { api.qaInteractive(false); api.qaStackEmpty(); } } } else if (ev === 'config') cfg = { ...cfg, ...data }, document.body.classList.toggle('right', cfg.side === 'right'); else if (ev === 'push') push(data); else if (ev === 'update') update(data); });
+api.onQa((ev, data) => { LOG('event ' + ev + ' ' + (data && data.id || data)); if (ev === 'remove') { const el = cards.get(data); if (el) { el.remove(); cards.delete(data); if (!cards.size) { api.qaInteractive(false); api.qaStackEmpty(); } } } else if (ev === 'config') cfg = { ...cfg, ...data }, document.body.classList.toggle('right', cfg.side === 'right'); else if (ev === 'push') push(data); else if (ev === 'update') update(data); });
 </script>
 </body>
 </html>

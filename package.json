@@ -1,7 +1,7 @@
 {
   "name": "sidenotch-medsystem",
   "productName": "SideNotch Medsystem",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "SideNotch edição Medsystem: notch do Windows com notificações, tarefas e atalhos do Medsystem Hub, além de uso das IAs, aprovações do Claude Code, Maestri, música, sistema e calendário.",
   "main": "src/main.js",
   "author": "JP / Medsystem",
@@ -56,8 +56,7 @@
       }
     ],
     "asarUnpack": [
-      "node_modules/tesseract.js/**",
-      "node_modules/tesseract.js-core/**"
+      "node_modules/**"
     ]
   },
   "repository": "https://github.com/JPGC02/sidenotch-medsystem",
