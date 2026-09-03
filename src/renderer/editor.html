@@ -114,8 +114,9 @@ cv.addEventListener('pointerup', () => { if (drag && drag.idx != null) { const s
 cv.addEventListener('dblclick', (e) => { const p = norm(e); const i = A.hit(shapes, p.x, p.y); if (i >= 0 && shapes[i].type === 'text') openText({ x: shapes[i].x1, y: shapes[i].y1 }, i); });
 
 function openText(p, idx) {
-  const r = cv.getBoundingClientRect(); tb.style.display = 'block'; tb.style.left = (r.left + p.x * r.width) + 'px'; tb.style.top = (r.top + p.y * r.height) + 'px'; tb.style.color = idx >= 0 ? (shapes[idx].color || color) : color;
-  tb.value = idx >= 0 ? shapes[idx].text : ''; tb.dataset.idx = idx == null ? -1 : idx; tb.dataset.x = p.x; tb.dataset.y = p.y; autosize(); tb.focus();
+  idx = (idx == null || idx < 0) ? -1 : idx; const ex = idx >= 0 ? shapes[idx] : null; // null >= 0 e true em JS - normaliza antes
+  const r = cv.getBoundingClientRect(); tb.style.display = 'block'; tb.style.left = (r.left + p.x * r.width) + 'px'; tb.style.top = (r.top + p.y * r.height) + 'px'; tb.style.color = (ex && ex.color) || color;
+  tb.value = ex ? ex.text : ''; tb.dataset.idx = idx; tb.dataset.x = p.x; tb.dataset.y = p.y; autosize(); tb.focus();
 }
 function autosize() { tb.style.height = 'auto'; tb.style.height = (tb.scrollHeight + 2) + 'px'; tb.style.width = 'auto'; tb.style.width = Math.max(140, Math.min(520, tb.scrollWidth + 8)) + 'px'; }
 tb.addEventListener('input', autosize);
