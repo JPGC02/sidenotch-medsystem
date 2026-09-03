@@ -14,7 +14,7 @@
   body { background: transparent; color: var(--fg); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-size: 13px; overflow: hidden; user-select: none; }
   body.solid { background: linear-gradient(160deg, #17171d, #0f0f13); }
   #app { display: grid; grid-template-columns: 76px 1fr; height: 100%; }
-  #dragzone { position: fixed; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; z-index: 5; }
+  #dragzone { position: fixed; top: 0; left: 90px; right: 0; height: 36px; -webkit-app-region: drag; z-index: 5; }
   aside { padding: 44px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--ink); backdrop-filter: blur(30px); }
   .tool { width: 46px; height: 42px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: #d7d7dd; position: relative; }
   .tool svg { width: 19px; height: 19px; } .tool:hover { background: var(--glass); } .tool.on { background: var(--acc); color: #fff; }
@@ -170,5 +170,6 @@ window.addEventListener('resize', () => img && fit());
 })();
 </script>
 <script src="glass.js"></script>
+<script src="traffic.js"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@
   body.solid { background: linear-gradient(160deg, #17171d, #0f0f13); }
   #app { display: grid; grid-template-columns: 208px 1fr; height: 100%; }
   aside { padding: 44px 12px 12px; display: flex; flex-direction: column; gap: 4px; background: var(--ink); backdrop-filter: blur(30px); }
-  #dragzone { position: fixed; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; }
+  #dragzone { position: fixed; top: 0; left: 90px; right: 0; height: 36px; -webkit-app-region: drag; }
   aside .brand { -webkit-app-region: drag; display: flex; align-items: center; gap: 10px; padding: 6px 10px 14px; font-weight: 700; font-size: 15px; }
   aside .brand i { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--acc), var(--acc2)); display: inline-block; }
   .nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; color: #d7d7dd; font-weight: 500; }
@@ -65,9 +65,17 @@
   .dkrow .kind { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(62,207,142,.15); color: #3ECF8E; } .dkrow .kind.page { background: rgba(255,255,255,.08); color: var(--muted); }
 
   /* busca da navegação */
-  .nsearch { display: flex; align-items: center; gap: 7px; margin: 0 2px 10px; padding: 7px 10px; border-radius: 12px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1); box-shadow: inset 0 1px 2px rgba(0,0,0,.35); -webkit-app-region: no-drag; }
-  .nsearch svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 14px; }
+  .nsearch { display: flex; align-items: center; gap: 8px; margin: 2px 2px 12px; padding: 8px 11px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14); -webkit-app-region: no-drag; transition: background .16s, border-color .16s, box-shadow .16s; }
+  .nsearch:focus-within { background: rgba(255,255,255,.11); border-color: rgba(var(--pg-rgb), .55); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 3px rgba(var(--pg-rgb), .18); }
+  .nsearch svg { width: 13px; height: 13px; color: var(--muted); flex: 0 0 13px; }
   .nsearch input { background: transparent; border: 0; outline: 0; color: var(--fg); font: inherit; font-size: 12px; min-width: 0; width: 100%; padding: 0; }
+  .nsearch input::placeholder { color: rgba(255,255,255,.38); }
+  /* cor da aba: cada página tem um tom, que tinge a aurora, o item ativo e os destaques */
+  :root { --pg-rgb: 124, 140, 255; }
+  body::before { transition: filter .6s; filter: blur(28px) saturate(1.25) hue-rotate(var(--pg-hue, 0deg)); }
+  .nav i { color: rgba(255,255,255,.75); } .nav.on i { color: #fff; }
+  .nav[data-c] i svg { color: var(--nc); }
   .nav.hide { display: none; }
   mark { background: rgba(124,140,255,.35); color: #fff; border-radius: 3px; padding: 0 2px; }
   .r.hit, .mod.hit, .prov.hit { box-shadow: inset 0 0 0 1px rgba(124,140,255,.5); border-radius: 12px; }
@@ -95,8 +103,12 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset -1px 0 0 rgba(255,255,255,.04); }
   .nav { border-radius: 12px; transition: background .16s, color .16s; position: relative; }
   .nav:hover { background: rgba(255,255,255,.09); }
-  .nav.on { background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10)); color: #fff; border: 1px solid rgba(255,255,255,.28);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 12px 2px rgba(255,255,255,.12), 0 6px 18px rgba(0,0,0,.28); }
+  .nav.on { background: linear-gradient(180deg, rgba(var(--pg-rgb), .42), rgba(var(--pg-rgb), .20)); color: #fff; border: 1px solid rgba(255,255,255,.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 12px 2px rgba(255,255,255,.08), 0 6px 18px rgba(var(--pg-rgb), .3); }
+  .nav.on i svg { color: #fff !important; }
+  h1 { background: linear-gradient(90deg, #fff, rgba(var(--pg-rgb), .9)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  button.pri { background: linear-gradient(180deg, rgba(var(--pg-rgb), 1), rgba(var(--pg-rgb), .75)); color: #fff; }
+  .sw input:checked + span { background: rgb(var(--pg-rgb)); }
   .nav.on::after { content: ""; position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,.8), transparent, rgba(255,255,255,.3)); border-radius: 2px; }
   section { position: relative; overflow: hidden; border-radius: 20px;
     background: rgba(255,255,255,.085);
@@ -127,17 +139,17 @@
   <aside>
     <div class="brand"><i style="background:linear-gradient(135deg,#2dd4bf,#6366f1)"></i>SideNotch <span style="color:#2dd4bf;font-weight:600">Med</span></div>
     <div class="nsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="navQ" type="text" placeholder="Buscar ajuste…" autocomplete="off"></div>
-    <div class="nav on" data-p="geral"><i data-ix="Element3"></i>Geral</div>
-    <div class="nav" data-p="modulos"><i data-ix="Category"></i>Módulos</div>
-    <div class="nav" data-p="cmds"><i data-ix="Code"></i>Comandos do TI</div>
-    <div class="nav" data-p="hub"><i data-ix="Home2"></i>Medsystem Hub</div>
-    <div class="nav" data-p="notch"><i data-ix="Monitor"></i>Notch</div>
-    <div class="nav" data-p="prov"><i data-ix="Cpu"></i>Provedores</div>
-    <div class="nav" data-p="claude"><i data-ix="Code"></i>Claude Code</div>
-    <div class="nav" data-p="maestri"><i data-ix="Driver"></i>Maestri</div>
-    <div class="nav" data-p="cal"><i data-ix="Calendar"></i>Calendário</div>
-    <div class="nav" data-p="alertas"><i data-ix="Notification"></i>Alertas e atalhos</div>
-    <div class="nav" data-p="sistema"><i data-ix="Setting2"></i>Sistema</div>
+    <div class="nav on" data-p="geral" data-c="124,140,255" data-hex="#8f9dff" style="--nc:#8f9dff"><i data-ix="Element3"></i>Geral</div>
+    <div class="nav" data-p="modulos" data-c="191,90,242" data-hex="#bf5af2" style="--nc:#bf5af2"><i data-ix="Category"></i>Módulos</div>
+    <div class="nav" data-p="cmds" data-c="142,142,147" data-hex="#c7c7cc" style="--nc:#c7c7cc"><i data-ix="Code"></i>Comandos do TI</div>
+    <div class="nav" data-p="hub" data-c="45,212,191" data-hex="#2dd4bf" style="--nc:#2dd4bf"><i data-ix="Home2"></i>Medsystem Hub</div>
+    <div class="nav" data-p="notch" data-c="10,132,255" data-hex="#0a84ff" style="--nc:#0a84ff"><i data-ix="Monitor"></i>Notch</div>
+    <div class="nav" data-p="prov" data-c="255,214,10" data-hex="#ffd60a" style="--nc:#ffd60a"><i data-ix="Cpu"></i>Provedores</div>
+    <div class="nav" data-p="claude" data-c="255,159,10" data-hex="#ff9f0a" style="--nc:#ff9f0a"><i data-ix="Code"></i>Claude Code</div>
+    <div class="nav" data-p="maestri" data-c="175,82,222" data-hex="#af52de" style="--nc:#af52de"><i data-ix="Driver"></i>Maestri</div>
+    <div class="nav" data-p="cal" data-c="255,55,95" data-hex="#ff375f" style="--nc:#ff375f"><i data-ix="Calendar"></i>Calendário</div>
+    <div class="nav" data-p="alertas" data-c="255,69,58" data-hex="#ff453a" style="--nc:#ff453a"><i data-ix="Notification"></i>Alertas e atalhos</div>
+    <div class="nav" data-p="sistema" data-c="100,210,255" data-hex="#64d2ff" style="--nc:#64d2ff"><i data-ix="Setting2"></i>Sistema</div>
     <div class="foot" id="ver"></div>
   </aside>
   <main>
@@ -357,7 +369,14 @@
 const api = window.sidenotch;
 const $ = (s) => document.querySelector(s);
 document.querySelectorAll('[data-ix]').forEach((el) => { el.innerHTML = (window.IX || {})[el.dataset.ix] || ''; });
-document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { document.querySelectorAll('.nav').forEach((x) => x.classList.toggle('on', x === n)); document.querySelectorAll('.page').forEach((p) => p.classList.toggle('on', p.dataset.p === n.dataset.p)); });
+const HUE = { geral: 0, modulos: 60, cmds: -30, hub: -70, notch: -20, prov: 120, claude: 150, maestri: 40, cal: 170, alertas: 130, sistema: -40 };
+function applyPageColor(n) {
+  if (!n || !n.dataset.c) return;
+  document.documentElement.style.setProperty('--pg-rgb', n.dataset.c);
+  document.documentElement.style.setProperty('--pg-hue', (HUE[n.dataset.p] || 0) + 'deg');
+}
+document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { document.querySelectorAll('.nav').forEach((x) => x.classList.toggle('on', x === n)); document.querySelectorAll('.page').forEach((p) => p.classList.toggle('on', p.dataset.p === n.dataset.p)); applyPageColor(n); });
+applyPageColor(document.querySelector('.nav.on'));
 
 // ---------- Módulos (loja): liga/desliga funções; cada uma sabe onde mora nas configurações ----------
 const MODULES = [
@@ -640,5 +659,6 @@ api.onSettings((s) => { settings = s; $('#dnd').checked = !!s.dnd; const d = s.d
 api.getUpdate().then(() => {}); load();
 </script>
 <script src="glass.js"></script>
+<script src="traffic.js"></script>
 </body>
 </html>

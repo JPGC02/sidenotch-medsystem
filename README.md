@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.14.2.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.14.3.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.14.2.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.14.3.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -133,6 +133,8 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 - **Vidro (glass.css/glass.js)**: as janelas (Configurações, Quadro, Tarefas e Editor de captura) usam o mesmo sistema — luz por trás (aurora suave que respira), vidro com `blur + saturate`, **borda dupla** (filete claro em cima, sombra embaixo), grão fino contra o aspecto plástico e um **reflexo especular que segue o mouse** no painel sob o cursor. Cai para um fundo sólido quando o Windows está sem transparência, e respeita "reduzir animações".
 - **Módulos** (Configurações → Módulos): cada função do app em uma linha com ícone colorido, descrição e switch — Hub, Quadro do time, Foco e tarefas, Conversas, Capturas, Área de transferência, Calendário, Música, Sistema, Apps, Uso das IAs, Aprovações, Maestri e Clima. Desligar tira a aba do notch **e** para o serviço por trás (menos memória e menos consulta); o link "ajustes" leva direto à página daquele módulo.
 - **Busca** no topo da navegação (ou <kbd>Ctrl+F</kbd>): filtra as páginas e destaca os ajustes que casam com o termo.
+- **Cor por aba**: cada página das Configurações tem um tom (Hub verde-água, Módulos roxo, Notch azul, Provedores amarelo…) que tinge a aurora de fundo, o item ativo, o título, o botão Salvar e os switches.
+- **Janelas com semáforo estilo macOS** (`traffic.js`): fechar · minimizar · maximizar no canto superior esquerdo, símbolos só no hover, cinza quando a janela perde o foco; duplo clique na faixa de arrasto maximiza. Vale para Configurações, Quadro, Tarefas e Editor.
 
 ## Ferramentas do dia a dia (1.13)
 - **Bandeja de arquivos** (`Ctrl+Shift+B` ou botão *Receber arrasto*): o Windows não entrega eventos de mouse a janelas atravessáveis durante um arrasto, então abre-se um **alvo de soltura** logo abaixo da notch (janelinha própria, 25 s, `Esc` cancela) e você solta o arquivo nele — a notch continua atravessável, então o mouse nunca trava. Arraste arquivos para o notch — eles ficam pousados ali (referência, nada é copiado) e podem ser **arrastados de volta** para WhatsApp, e-mail, ClickUp. Cada cartão tem *link* (sobe para o bucket `bandeja` e copia uma **URL assinada de 7 dias**), abrir na pasta, fixar e remover. Some sozinho da lista o arquivo que você apagou ou moveu.
@@ -144,7 +146,7 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.14.2 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.14.3 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

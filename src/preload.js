@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   setIgnoreMouse: (v) => ipcRenderer.send('bar:ignore-mouse', v),
   setBarHeight: (h) => ipcRenderer.send('bar:height', h),
   setFocusable: (v) => ipcRenderer.send('bar:focusable', v),
+  winCtl: (a) => ipcRenderer.send('win:ctl', a),
   drag: (phase) => ipcRenderer.send('bar:drag', phase),
   openSettings: () => ipcRenderer.send('app:open-settings'),
   openUrl: (u) => ipcRenderer.send('app:open-url', u),

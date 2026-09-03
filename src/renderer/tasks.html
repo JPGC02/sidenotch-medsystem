@@ -12,7 +12,7 @@
   html, body { height: 100%; }
   body { background: transparent; color: var(--fg); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-size: 13px; overflow: hidden; user-select: none; }
   body.solid { background: linear-gradient(160deg, #17171d, #0f0f13); }
-  #drag { position: fixed; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; z-index: 5; }
+  #drag { position: fixed; top: 0; left: 90px; right: 0; height: 36px; -webkit-app-region: drag; z-index: 5; }
   #app { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 18px; gap: 12px; }
   header { display: flex; align-items: center; gap: 10px; }
   h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; } header .sp { flex: 1; }
@@ -249,5 +249,6 @@ api.onFocus((st) => { if (st) { fx = st; renderFx(); } });
 (async () => { hub = await api.hubGet(); fx = await api.focusGet() || fx; await api.focusRefresh().then((s) => { if (s) fx = s; }).catch(() => {}); render(); })();
 </script>
 <script src="glass.js"></script>
+<script src="traffic.js"></script>
 </body>
 </html>

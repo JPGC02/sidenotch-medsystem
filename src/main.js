@@ -289,7 +289,7 @@ function openBoardWindow() {
   const d = targetDisplay();
   boardWin = new BrowserWindow({
     width: Math.min(1360, d.workArea.width - 60), height: Math.min(780, d.workArea.height - 60),
-    title: 'Quadro · Sistemas', show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#f4f4f6', height: 36 },
+    title: 'Quadro · Sistemas', show: false, titleBarStyle: 'hidden',
     ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
@@ -512,7 +512,7 @@ function openTasksWindow() {
   const d = targetDisplay();
   tasksWin = new BrowserWindow({
     width: Math.min(1040, d.workArea.width - 80), height: Math.min(660, d.workArea.height - 80),
-    title: 'Tarefas', show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#f4f4f6', height: 36 },
+    title: 'Tarefas', show: false, titleBarStyle: 'hidden',
     ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
@@ -578,7 +578,7 @@ function openSettings() {
   settingsWin = new BrowserWindow({
     width: 860, height: 700, minWidth: 700, minHeight: 520, title: 'SideNotch — Configurações', autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icon.png'),
-    titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#f4f4f6', height: 36 },
+    titleBarStyle: 'hidden',
     ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
@@ -789,6 +789,13 @@ ipcMain.handle('nlp:parse', (_e, text) => parseTask(text));
 ipcMain.handle('hub:chat-send', async (_e, convId, text) => {
   try { await hub.sendChat(convId, text); return { ok: true, state: hub.state() }; }
   catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+// controles de janela estilo Apple (os botões ficam no HTML de cada janela)
+ipcMain.on('win:ctl', (e, action) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w) return;
+  if (action === 'close') w.close();
+  else if (action === 'min') w.minimize();
+  else if (action === 'max') { if (w.isMaximized()) w.unmaximize(); else w.maximize(); }
 });
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
