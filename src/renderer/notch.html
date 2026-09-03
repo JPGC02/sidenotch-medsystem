@@ -191,6 +191,11 @@
   .bn-ic svg { width: 20px; height: 20px; color: #fff; } .login .logo svg { width: 30px; height: 30px; color: #fff; }
   .pillbtn svg { stroke: none; } a svg { width: 12px; height: 12px; vertical-align: -2px; } .tab svg { fill: none; stroke: none; width: 20px; height: 20px; }
   #mini .seg svg { stroke: none; width: 14px; height: 14px; } button.icon svg { fill: none; width: 18px; height: 18px; } .ctrls button.icon svg { fill: currentColor; }
+  /* svg sem classe precisa de tamanho explícito (senão sai em 300×150 e some do botão) */
+  #nDel svg { width: 16px; height: 16px; } .nitem .del svg { width: 13px; height: 13px; }
+  .nitem { display: flex; align-items: center; gap: 6px; } .nitem .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nitem .del { opacity: 0; color: var(--muted); display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; flex: 0 0 20px; }
+  .nitem:hover .del { opacity: 1; } .nitem .del:hover { background: rgba(255,69,58,.18); color: #ff453a; }
   .empty svg { stroke: none; } .art svg { fill: none; color: var(--acc); }
   /* toques Apple no restante */
   .card { border-radius: 18px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.05); }
@@ -365,7 +370,7 @@ function viewNotes() {
   const items = n.items || [];
   const done = items.filter((i) => i.done).length;
   const icon = (x) => x.type === 'checklist' ? '☑ ' : '';
-  return `<div class="notes"><div><div class="row" style="margin-bottom:6px"><button id="nAdd" class="grow">+ Nota</button><button id="nAddCk" class="grow" title="Nova lista de tarefas">+ Lista</button><button id="nDel" title="Apagar">${I.trash}</button></div><div class="nlist">${docs.notes.map((x) => `<div class="nitem ${x.id === curNote ? 'on' : ''}" data-n="${x.id}">${icon(x)}${esc(x.title || (x.text || '').split('\n')[0] || 'Sem título')}</div>`).join('')}</div></div>
+  return `<div class="notes"><div><div class="row" style="margin-bottom:6px"><button id="nAdd" class="grow">+ Nota</button><button id="nAddCk" class="grow" title="Nova lista de tarefas">+ Lista</button><button id="nDel" class="icon" style="width:32px;height:32px;flex:0 0 32px" title="Apagar nota">${I.trash}</button></div><div class="nlist">${docs.notes.map((x) => `<div class="nitem ${x.id === curNote ? 'on' : ''}" data-n="${x.id}"><span class="nm">${icon(x)}${esc(x.title || (x.text || '').split('\n')[0] || 'Sem título')}</span><span class="del" data-del="${x.id}" title="Apagar">${I.trash}</span></div>`).join('')}</div></div>
     <div class="npane">
       <div class="row"><input id="nTitle" class="grow" placeholder="Título" value="${esc(n.title || '')}"><div class="seg"><button id="segT" class="${isCk ? '' : 'on'}">Texto</button><button id="segC" class="${isCk ? 'on' : ''}">Checklist</button></div></div>
       ${isCk ? `<div class="muted">${done}/${items.length} concluídas</div><div class="ck" id="ck">${items.map((it, i) => `<div class="ci ${it.done ? 'done' : ''}" data-i="${i}"><input type="checkbox" ${it.done ? 'checked' : ''}><input type="text" value="${esc(it.text)}" placeholder="Tarefa"><span class="x" title="Remover">×</span></div>`).join('')}</div><div class="row"><input id="ckNew" class="grow" placeholder="Nova tarefa… (Enter)"><button id="ckAdd">+</button></div>`
@@ -375,10 +380,12 @@ function viewNotes() {
 function bindNotes() {
   const cur = () => docs.notes.find((x) => x.id === curNote);
   document.querySelectorAll('[data-n]').forEach((el) => el.onclick = () => { curNote = el.dataset.n; renderView(); });
+  const delNote = (id) => { docs.notes = docs.notes.filter((x) => x.id !== id); if (!docs.notes.length) docs.notes.push({ id: 'n' + Date.now().toString(36), type: 'text', title: '', text: '', items: [], updatedAt: Date.now() }); if (curNote === id) curNote = docs.notes[0].id; saveDocs(); renderView(); };
+  document.querySelectorAll('[data-del]').forEach((el) => el.onclick = (e) => { e.stopPropagation(); delNote(el.dataset.del); });
   const newNote = (type) => { const id = 'n' + Date.now().toString(36); docs.notes.unshift({ id, type, title: '', text: '', items: [], updatedAt: Date.now() }); curNote = id; saveDocs(); renderView(); api.setFocusable(true); setTimeout(() => { const f = $(type === 'checklist' ? '#ckNew' : '#nText'); f && f.focus(); }, 40); };
   $('#nAdd').onclick = () => newNote('text'); $('#nAddCk').onclick = () => newNote('checklist');
-  $('#nDel').onclick = () => { docs.notes = docs.notes.filter((x) => x.id !== curNote); if (!docs.notes.length) docs.notes.push({ id: 'n' + Date.now().toString(36), type: 'text', title: '', text: '', items: [], updatedAt: Date.now() }); curNote = docs.notes[0].id; saveDocs(); renderView(); };
-  const refreshList = () => { const n = cur(); document.querySelectorAll('[data-n]').forEach((el) => { if (el.dataset.n === curNote) el.textContent = (n.type === 'checklist' ? '☑ ' : '') + (n.title || (n.text || '').split('\n')[0] || 'Sem título'); }); };
+  $('#nDel').onclick = () => delNote(curNote);
+  const refreshList = () => { const n = cur(); document.querySelectorAll('[data-n]').forEach((el) => { if (el.dataset.n === curNote) { const nm = el.querySelector('.nm'); if (nm) nm.textContent = (n.type === 'checklist' ? '☑ ' : '') + (n.title || (n.text || '').split('\n')[0] || 'Sem título'); } }); };
   $('#nTitle').oninput = () => { const n = cur(); n.title = $('#nTitle').value.slice(0, 80); n.updatedAt = Date.now(); clearTimeout(noteTimer); noteTimer = setTimeout(() => { saveDocs(); refreshList(); }, 400); };
   $('#segT').onclick = () => { const n = cur(); if (n.type === 'checklist') { n.type = 'text'; if (!n.text && (n.items || []).length) n.text = n.items.map((i) => (i.done ? '[x] ' : '[ ] ') + i.text).join('\n'); saveDocs(); renderView(); } };
   $('#segC').onclick = () => { const n = cur(); if (n.type !== 'checklist') { n.type = 'checklist'; if (!(n.items || []).length && n.text) n.items = n.text.split('\n').filter(Boolean).map((l) => ({ text: l.replace(/^\[( |x)\]\s*/i, ''), done: /^\[x\]/i.test(l) })); n.items = n.items || []; saveDocs(); renderView(); } };
