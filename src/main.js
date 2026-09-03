@@ -13,10 +13,11 @@ const { Weather } = require('./weather');
 const { Docs } = require('./docs');
 const { HubClient } = require('./hub');
 const { ClipboardHistory } = require('./clipboard');
+const { QuickAccess } = require('./quickaccess');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa;
 const webappWins = new Map();
 let lastUsage = [];
 
@@ -52,6 +53,7 @@ app.whenReady().then(() => {
   startServer();
   startMaestri();
   startHub();
+  qa = new QuickAccess({ userData: app.getPath('userData'), getSettings: () => store.get(), hub, notify: (n) => server && server._notify(n), broadcast });
   registerShortcuts();
   updater = new Updater({ onState: (st) => { broadcast('update', st); buildTrayMenu(); } });
   updater.start(store.get().update.auto);
@@ -184,6 +186,7 @@ function startHub() {
     let WS = null; try { WS = require('ws'); } catch { /* sem realtime: só polling */ }
     const h = store.get().hub || {};
     hub = new HubClient({ dir: app.getPath('userData'), secret, WebSocket: WS, url: h.url || undefined, anon: h.anon || undefined, site: h.site || undefined, getCfg: () => store.get().hub || {} });
+    if (qa) qa.hubRef(hub);
     hub.on('change', () => { const st = hub.state(); broadcast('hub', st); updateTrayTooltip(); if (calendar) { calendar.setExtra(st.agenda || []); broadcast('calendar', calendar.state()); } });
     // WhatsApp: mensagem / transferência / atribuição → cartão + banner (estilo WhatsApp) + toast
     hub.on('chat', (ev) => {
@@ -366,6 +369,8 @@ function registerShortcuts() {
   reg(sc.toggle, () => { if (bar) { if (!bar.isVisible()) bar.show(); bar.webContents.send('bar:toggle'); } });
   reg(sc.approve, () => { const p = server && server.list()[0]; if (p && p.kind === 'permission') server.decide(p.id, 'allow'); });
   reg(sc.deny, () => { const p = server && server.list()[0]; if (p) server.decide(p.id, 'deny'); });
+  reg(sc.capture || 'CommandOrControl+Shift+X', () => qa && qa.captureArea());
+  reg(sc.captures, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'caps'); } });
   reg(sc.clip, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'clip'); } });
   reg(sc.hub, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'hub'); } });
 }
@@ -384,6 +389,7 @@ function buildTrayMenu() {
   const st = updater ? updater.state : { status: 'idle' };
   const upLabel = st.status === 'downloaded' ? `Instalar atualização ${st.available}` : st.status === 'available' ? `Baixar atualização ${st.available}` : st.status === 'downloading' ? `Baixando… ${st.progress || 0}%` : 'Verificar atualizações';
   tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Capturar área…', click: () => qa && qa.captureArea() },
     { label: 'Atualizar uso agora', click: () => refresh(true) },
     { label: 'Não perturbe', type: 'checkbox', checked: !!store.get().dnd, click: (mi) => setDnd(mi.checked) },
     { label: 'Configurações…', click: openSettings },
@@ -443,6 +449,7 @@ ipcMain.handle('settings:save', (_e, patch) => {
   if (patch && patch.calendar) startCalendar();
   if (patch && patch.weather) { weather.loc = null; startWeather(); }
   if (patch && patch.hub) startHub();
+  if (patch && patch.quickaccess && qa && qa.stack && !qa.stack.isDestroyed()) { qa.stack.close(); }
   if (patch && patch.clipboard && clipHist) { clipHist.max = Number(store.get().clipboard.max) || 60; if (store.get().clipboard.enabled !== false) clipHist.start(); else clipHist.stop(); }
   broadcast('settings', store.get());
   resetCache();

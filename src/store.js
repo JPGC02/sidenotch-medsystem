@@ -43,7 +43,8 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '' },
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H' },
+  quickaccess: { side: 'left', ttlSec: 0 },   // pilha de capturas: canto (left/right) e auto-dismiss em segundos (0 = nunca)
   clipboard: { enabled: true, max: 60 },   // histórico da área de transferência (aba no notch)   // ex.: "CommandOrControl+Shift+Space"
   update: { auto: true },
   maestri: {                  // Maestri Wire (https://www.themaestri.app/pt-br/docs/wire)

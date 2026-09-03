@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Selecionar área</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; cursor: crosshair; font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif; }
+  /* sem escurecer o fundo: só o retângulo branco fino e o rótulo W × H */
+  #rect { position: absolute; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.35); display: none; pointer-events: none; }
+  #lbl { position: absolute; background: #0A0B0C; color: #ECEEF1; font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; padding: 3px 7px; border-radius: 6px; display: none; pointer-events: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  #hint { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); background: #0A0B0C; color: #ECEEF1; font-size: 12px; padding: 7px 14px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.45); opacity: .95; }
+  #hint kbd { font-family: "JetBrains Mono", monospace; background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 4px; }
+  #cross-h, #cross-v { position: absolute; background: rgba(255,255,255,.35); pointer-events: none; }
+  #cross-h { left: 0; right: 0; height: 1px; } #cross-v { top: 0; bottom: 0; width: 1px; }
+</style>
+</head>
+<body>
+<div id="cross-h"></div><div id="cross-v"></div>
+<div id="rect"></div><div id="lbl"></div>
+<div id="hint">Arraste para capturar a área · <kbd>Esc</kbd> cancela</div>
+<script>
+const api = window.sidenotch;
+let start = null, cur = null;
+const rect = document.getElementById('rect'), lbl = document.getElementById('lbl'), ch = document.getElementById('cross-h'), cv = document.getElementById('cross-v'), hint = document.getElementById('hint');
+const norm = () => ({ x: Math.min(start.x, cur.x), y: Math.min(start.y, cur.y), w: Math.abs(cur.x - start.x), h: Math.abs(cur.y - start.y) });
+function draw() {
+  if (!start) return;
+  const r = norm();
+  rect.style.display = 'block'; Object.assign(rect.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  lbl.style.display = 'block'; lbl.textContent = `${r.w} × ${r.h}`;
+  const below = r.y + r.h + 8 + 22 < innerHeight;
+  lbl.style.left = Math.max(4, Math.min(r.x, innerWidth - lbl.offsetWidth - 4)) + 'px'; lbl.style.top = (below ? r.y + r.h + 8 : Math.max(4, r.y - 26)) + 'px';
+}
+document.addEventListener('mousemove', (e) => { ch.style.top = e.clientY + 'px'; cv.style.left = e.clientX + 'px'; if (start) { cur = { x: e.clientX, y: e.clientY }; draw(); } });
+document.addEventListener('mousedown', (e) => { if (e.button !== 0) return; start = cur = { x: e.clientX, y: e.clientY }; hint.style.display = 'none'; ch.style.display = cv.style.display = 'none'; draw(); });
+document.addEventListener('mouseup', async (e) => { if (!start) return; cur = { x: e.clientX, y: e.clientY }; const r = norm(); start = null; if (r.w < 3 || r.h < 3) { rect.style.display = lbl.style.display = 'none'; hint.style.display = ''; ch.style.display = cv.style.display = ''; return; } await api.qaSelectDone(r); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') api.qaSelectCancel(); });
+document.addEventListener('contextmenu', (e) => { e.preventDefault(); api.qaSelectCancel(); });
+</script>
+</body>
+</html>

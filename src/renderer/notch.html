@@ -172,6 +172,13 @@
   .clip .ft .sp { flex: 1; } .clip .act { opacity: 0; display: flex; gap: 2px; } .clip:hover .act { opacity: 1; }
   .clip .act button { width: 24px; height: 24px; padding: 0; border-radius: 50%; background: var(--fill); display: grid; place-items: center; } .clip .act button svg { width: 13px; height: 13px; } .clip.pinned .act .pn { color: #ffd60a; }
   .clip .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; vertical-align: -2px; margin-right: 4px; border: 1px solid rgba(255,255,255,.2); }
+  /* capturas */
+  .caps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .cap { position: relative; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.055); cursor: pointer; aspect-ratio: 4/3; }
+  .cap img { width: 100%; height: 100%; object-fit: cover; display: block; } .cap:hover img { filter: brightness(.7); }
+  .cap .ft { position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 7px; font-size: 10px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.7)); display: flex; justify-content: space-between; }
+  .cap .badge { position: absolute; top: 5px; left: 5px; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: rgba(10,132,255,.85); color: #fff; } .cap .badge.pin { background: #E0B44C; color: #241a00; left: auto; right: 5px; }
+  .cap .x { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; display: none; place-items: center; font-size: 12px; } .cap:hover .x { display: grid; } .cap.pinned .x { display: none; }
   /* banner (Dynamic Island) de notificação na pastilha fechada */
   body.banner #mini { height: 62px; padding: 0 16px; gap: 12px; justify-content: flex-start; }
   body.banner #pill { border-radius: 0 0 24px 24px; }
@@ -208,17 +215,17 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const IX = window.IX || {};
 const I = {
-  music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
+  music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
-const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['clip', 'Área de transferência'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
 const tabsForState = () => { TABS = TABS_ALL.filter(([id]) => id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)); if (!TABS.some((t) => t[0] === tab)) tab = 'hub'; };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
-let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false, clips = [], clipQ = '', clipCopied = null;
+let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false, clips = [], clipQ = '', clipCopied = null, caps = [], capsQ = '';
 
 const fmtB = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : b > 1e3 ? Math.round(b / 1e3) + ' KB' : Math.round(b) + ' B';
 const fmtRate = (b) => b > 1e6 ? (b / 1e6).toFixed(1) + ' MB/s' : (b / 1e3).toFixed(0) + ' KB/s';
@@ -264,6 +271,7 @@ function renderView() {
   if (tab === 'hub') { v.innerHTML = viewHub(); bindHub(); }
   else if (tab === 'chat') { v.innerHTML = viewChat(); bindChat(); }
   else if (tab === 'clip') { v.innerHTML = viewClip(); bindClip(); }
+  else if (tab === 'caps') { v.innerHTML = viewCaps(); bindCaps(); }
   else if (tab === 'music') v.innerHTML = viewMusic();
   else if (tab === 'sys') v.innerHTML = viewSys();
   else if (tab === 'apps') { v.innerHTML = viewApps(); bindApps(); }
@@ -631,6 +639,21 @@ function bindClip() {
   document.querySelectorAll('[data-del]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); refresh(await api.clipRemove(b.dataset.del)); });
 }
 
+// capturas (Quick Access): histórico com busca por texto OCR; clique traz de volta para a pilha
+function viewCaps() {
+  const q = capsQ.trim().toLowerCase();
+  const list = caps.filter((c) => !q || (c.text || '').toLowerCase().includes(q));
+  return `<div class="row" style="margin-bottom:10px;gap:8px"><div class="search grow" style="margin:0">${I.search}<input id="capsQ" placeholder="Buscar pelo texto da captura (OCR)…" value="${esc(capsQ)}"></div><button class="pillbtn blue" id="capNew">${I.add} Capturar área</button></div>
+    <div class="lst" style="max-height:430px">${list.length ? `<div class="caps">${list.slice(0, 60).map((c) => `<div class="cap ${c.pinned ? 'pinned' : ''}" data-cap="${c.id}" title="${esc((c.text || '').slice(0, 200) || 'Clique para trazer de volta · duplo clique edita')}"><img src="${c.thumb}">${c.annotated ? '<span class="badge">editada</span>' : ''}${c.pinned ? '<span class="badge pin">fixada</span>' : ''}<span class="x" data-capdel="${c.id}" title="Apagar">×</span><div class="ft"><span>${c.w}×${c.h}</span><span>${ago(c.at)}</span></div></div>`).join('')}</div>` : `<div class="empty">${I.caps}Nenhuma captura ainda.<div class="muted" style="margin-top:4px">Atalho ${esc((settings.shortcuts && settings.shortcuts.capture) || 'Ctrl+Shift+X')}: arraste na tela e a captura entra na pilha do canto — copiar, salvar, editar, enviar link ou ler o texto.</div></div>`}</div>`;
+}
+function bindCaps() {
+  const refresh = () => { const v = $('#view'); const q = $('#capsQ'); const keep = q && document.activeElement === q; const pos = keep ? q.selectionStart : 0; v.innerHTML = viewCaps(); bindCaps(); if (keep) { const nq = $('#capsQ'); api.setFocusable(true); nq.focus(); nq.setSelectionRange(pos, pos); } fitPill(); };
+  $('#capsQ').oninput = () => { capsQ = $('#capsQ').value; refresh(); };
+  $('#capNew').onclick = () => { setOpen(false); setTimeout(() => api.qaCapture(), 150); };
+  document.querySelectorAll('[data-cap]').forEach((el) => { el.onclick = (e) => { if (e.target.dataset.capdel) return; api.qaRestore(el.dataset.cap); }; el.ondblclick = () => api.qaEdit(el.dataset.cap); });
+  document.querySelectorAll('[data-capdel]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); caps = await api.qaRemove(b.dataset.capdel); refresh(); });
+}
+
 // banner estilo Dynamic Island na pastilha fechada
 let bannerTimer = null;
 function showBanner(n) {
@@ -673,7 +696,7 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], chat: [640, 0], clip: [640, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -697,7 +720,7 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
 
 (async () => {
   settings = await api.getSettings(); tab = (settings.notch && settings.notch.tab) || 'music'; if (!TABS.some((t) => t[0] === tab)) tab = 'music';
-  hub = await api.hubGet(); clips = (await api.clipList()) || []; sys = await api.getSystem(); cal = await api.getCalendar(); docs = await api.getDocs(); approvals = await api.getApprovals(); webapps = await api.listWebApps();
+  hub = await api.hubGet(); clips = (await api.clipList()) || []; caps = (await api.qaList()) || []; sys = await api.getSystem(); cal = await api.getCalendar(); docs = await api.getDocs(); approvals = await api.getApprovals(); webapps = await api.listWebApps();
   renderMini();
   let musicKey = '';
   api.onSystem((s) => { sys = s; renderMini(); if (!document.body.classList.contains('open')) return; if (tab === 'sys') renderView(); if (tab === 'music') { const m = s.media; const k = m ? `${m.title}|${m.artist}|${m.playing}|${!!m.art}` : ''; if (k !== musicKey) { musicKey = k; renderView(); } } });
@@ -706,6 +729,7 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onSettings((s) => { settings = s; renderMini(); });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
   api.onSound(playSound);
+  api.onCaptures((l) => { caps = l || []; if (tab === 'caps' && document.body.classList.contains('open') && !typing()) renderView(); });
   api.onClipboard((l) => { clips = l || []; if (tab === 'clip' && document.body.classList.contains('open') && !typing()) renderView(); });
   api.onNotify((n) => { if ((n.type === 'hub' || n.type === 'chat') && !(settings.dnd)) showBanner(n); });
   api.onNotchOpen((t) => { tab = t || 'hub'; renderTabs(); setOpen(true); renderView(); setTimeout(() => { const q = $('#hbQ'); if (q) { api.setFocusable(true); q.focus(); q.select(); } }, 60); });

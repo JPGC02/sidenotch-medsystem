@@ -1,0 +1,18 @@
+const assert = require('assert'); const fs = require('fs'); const os = require('os'); const path = require('path');
+const { Captures } = require('../src/captures');
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'caps-'));
+const c = new Captures(dir);
+const png = Buffer.from('89504e470d0a1a0a', 'hex');
+const a = c.add(png, { w: 120, h: 80, source: 'area' });
+assert.ok(fs.existsSync(c.file(a.id))); assert.strictEqual(c.items.length, 1); assert.strictEqual(a.w, 120);
+const b = c.add(png, { w: 10, h: 10 }); assert.strictEqual(c.items[0].id, b.id, 'mais recente primeiro');
+c.update(a.id, { text: 'OS 84044 SANTA CASA', pinned: true });
+assert.strictEqual(c.search('84044').length, 1); assert.strictEqual(c.search('xyz').length, 0); assert.strictEqual(c.search('').length, 2);
+c.setAnnotations(a.id, [{ type: 'rect', x1: .1, y1: .1, x2: .5, y2: .5 }], Buffer.from('anno'));
+assert.ok(c.get(a.id).annotated); assert.strictEqual(c.annotations(a.id).length, 1); assert.ok(c.best(a.id).endsWith('-annotated.png'), 'anotada vira a melhor imagem'); assert.ok(c.best(b.id).endsWith(b.id + '.png'));
+c.setAnnotations(a.id, [], null); assert.strictEqual(c.get(a.id).annotated, false);
+const l = c.list(); assert.ok(l[0].thumb.startsWith('file:///') && l[0].file);
+const c2 = new Captures(dir); assert.strictEqual(c2.items.length, 2, 'índice persistido');
+c.clear(true); assert.strictEqual(c.items.length, 1); assert.ok(!fs.existsSync(c.file(b.id))); assert.ok(fs.existsSync(c.file(a.id)), 'fixada fica');
+c.remove(a.id); assert.strictEqual(c.items.length, 0); assert.ok(!fs.existsSync(c.file(a.id)));
+console.log('capturas OK');

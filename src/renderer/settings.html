@@ -137,6 +137,11 @@
         <div class="r"><div class="l"><b>Contadores na pastilha fechada</b></div><label class="sw"><input id="ntHub" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Atalhos na barra lateral</b><small>quantos formulários aparecem no dock (3 a 6); clique direito num tile do notch fixa</small></div><input id="hbDock" type="number" min="3" max="6"></div>
         <div class="r"><div class="l"><b>Consulta de segurança a cada</b><small>segundos (o tempo real cobre o resto)</small></div><input id="hbPoll" type="number" min="30" max="900"></div>
+        <h2>Capturas (Quick Access)</h2>
+        <div class="r"><div class="l"><b>Capturar área</b><small>atalho global; arraste na tela e o card entra na pilha do canto</small></div><input id="scCap" type="text" placeholder="CommandOrControl+Shift+X"></div>
+        <div class="r"><div class="l"><b>Histórico de capturas</b><small>abre o notch na aba Capturas (busca por texto OCR)</small></div><input id="scCaps" type="text" placeholder="CommandOrControl+Shift+H"></div>
+        <div class="r"><div class="l"><b>Canto da pilha</b></div><select id="qaSide"><option value="left">Inferior esquerdo</option><option value="right">Inferior direito</option></select></div>
+        <div class="r"><div class="l"><b>Fechar cards sozinho após</b><small>segundos; 0 = nunca (fixados nunca fecham; a barra pausa com o mouse em cima)</small></div><input id="qaTtl" type="number" min="0" max="600"></div>
         <h2>Área de transferência</h2>
         <div class="r"><div class="l"><b>Guardar histórico do que você copia</b><small>texto, links e imagens (Ctrl+C) — aba no notch, como o Win+V</small></div><label class="sw"><input id="clipOn" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Máximo de itens</b></div><input id="clipMax" type="number" min="10" max="300"></div>
@@ -164,7 +169,7 @@
       <h1>Notch</h1><p class="lead">Pastilha no topo do monitor: Hub, tarefas e notas, calendário, apps, música e sistema.</p>
       <section>
         <p class="help" style="padding:8px 0">Ativar, monitor e deslocamento do notch ficam em <b>Geral → Dock do topo</b>.</p>
-        <div class="r"><div class="l"><b>Aba inicial</b></div><select id="ntTab"><option value="hub">Medsystem Hub</option><option value="chat">Conversas</option><option value="clip">Área de transferência</option><option value="music">Música</option><option value="sys">Sistema</option><option value="apps">Apps</option><option value="notes">Tarefas e notas</option><option value="canvas">Canvas</option><option value="cal">Calendário</option></select></div>
+        <div class="r"><div class="l"><b>Aba inicial</b></div><select id="ntTab"><option value="hub">Medsystem Hub</option><option value="chat">Conversas</option><option value="clip">Área de transferência</option><option value="caps">Capturas</option><option value="music">Música</option><option value="sys">Sistema</option><option value="apps">Apps</option><option value="notes">Tarefas e notas</option><option value="canvas">Canvas</option><option value="cal">Calendário</option></select></div>
         <h2>Na pastilha fechada</h2>
         <div class="r"><div class="l"><b>Música tocando</b></div><label class="sw"><input id="ntMusic" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>CPU e memória</b></div><label class="sw"><input id="ntSys" type="checkbox"><span></span></label></div>
@@ -314,7 +319,8 @@ function collect() {
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
-    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim() },
+    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim() },
+    quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0) },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
     hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
     update: { auto: $('#upAuto').checked },
@@ -346,7 +352,7 @@ async function load() {
   $('#apEnabled').checked = !!a.enabled; $('#apPort').value = a.port || 47322; $('#apTimeout').value = a.timeoutSec || 110; $('#apSound').checked = !!a.sound;
   $('#nDone').checked = !!n.done; $('#nWaiting').checked = !!n.waiting; $('#nDenied').checked = !!n.denied; $('#nToast').checked = !!n.toast; $('#nDismiss').value = n.autoDismissSec ?? 20;
   $('#alEnabled').checked = !!al.enabled; $('#alTh').value = (al.thresholds || [80, 95]).join(', '); $('#alReset').checked = !!al.onReset;
-  $('#scToggle').value = sc.toggle || ''; $('#scApprove').value = sc.approve || ''; $('#scDeny').value = sc.deny || ''; $('#scHub').value = sc.hub || ''; $('#scClip').value = sc.clip || ''; const cb = settings.clipboard || {}; $('#clipOn').checked = cb.enabled !== false; $('#clipMax').value = cb.max || 60;
+  $('#scToggle').value = sc.toggle || ''; $('#scApprove').value = sc.approve || ''; $('#scDeny').value = sc.deny || ''; $('#scHub').value = sc.hub || ''; $('#scClip').value = sc.clip || ''; $('#scCap').value = sc.capture ?? 'CommandOrControl+Shift+X'; $('#scCaps').value = sc.captures ?? 'CommandOrControl+Shift+H'; const qa = settings.quickaccess || {}; $('#qaSide').value = qa.side || 'left'; $('#qaTtl').value = qa.ttlSec || 0; const cb = settings.clipboard || {}; $('#clipOn').checked = cb.enabled !== false; $('#clipMax').value = cb.max || 60;
   const hb = settings.hub || {}; dockSel = (hb.dock || []).slice(); customSc = JSON.parse(JSON.stringify(hb.custom || [])); $('#hbEnabled').checked = hb.enabled !== false; $('#hbNotify').checked = hb.notify !== false; $('#hbToast').checked = hb.toast !== false; $('#hbSound').checked = hb.sound !== false; $('#hbRead').checked = hb.markReadOnOpen !== false; $('#hbPoll').value = hb.pollSeconds || 90; $('#hbDock').value = hb.dockCount || 5; $('#hbChat').checked = hb.chatNotify !== false; $('#hbSndP').value = hb.soundPreset || 'pop'; $('#hbSndC').value = hb.soundChat || 'message'; $('#hbVol').value = hb.volume ?? 0.6; $('#hbSndF').value = hb.soundFile || ''; $('#sbAi').checked = !!(settings.sidebar && settings.sidebar.aiTools); $('#hbUrl').value = hb.url || ''; $('#hbSite').value = hb.site || '';
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   renderHub(await api.hubGet());
