@@ -482,7 +482,7 @@ function registerShortcuts() {
   reg(sc.focus || 'CommandOrControl+Shift+F', () => { if (!focus) return; if (focus.state().active) focus.toggle(); else openTasksWindow(); });
   reg(sc.tasks, () => openTasksWindow());
   reg(sc.board, () => openBoardWindow());
-  reg(sc.files, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); } });
+  reg(sc.files, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); setDropMode(true); } });
 }
 
 // ---------- Janela de Tarefas (mês + dia, foco por tarefa) ----------
@@ -520,7 +520,7 @@ function buildTrayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Capturar área…', click: () => qa && qa.captureArea() },
     { label: 'Tarefas e foco…', click: () => openTasksWindow() },
-    { label: 'Bandeja de arquivos…', click: () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); } } },
+    { label: 'Bandeja de arquivos…', click: () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); setDropMode(true); } } },
     ...(hub && hub.hasBoard && hub.hasBoard() ? [{ label: 'Quadro de Sistemas…', click: () => openBoardWindow() }] : []),
     ...(focus && focus.state().active ? [{ label: focus.state().running ? `Pausar foco (${Math.ceil(focus.state().remaining / 60)} min)` : 'Retomar foco', click: () => focus.toggle() }, { label: 'Encerrar foco', click: () => focus.stop('user') }] : []),
     { label: 'Atualizar uso agora', click: () => refresh(true) },
@@ -697,6 +697,18 @@ ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub
 ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 // ---------- bandeja de arquivos ----------
+// Durante um arrasto o Windows não manda mousemove para a janela; sem isso a notch continuaria
+// atravessável e nunca receberia o "drop". O modo bandeja deixa a janela clicável por um tempo.
+let dropTimer = null;
+function setDropMode(on, secs = 30) {
+  if (!notch || notch.isDestroyed()) return;
+  clearTimeout(dropTimer);
+  notch.setIgnoreMouseEvents(!on, { forward: true });
+  if (on && !notch.isVisible()) notch.show();
+  notch.webContents.send('files:drop-mode', !!on);
+  if (on) dropTimer = setTimeout(() => setDropMode(false), secs * 1000);
+}
+ipcMain.on('files:drop-mode', (_e, on) => setDropMode(!!on));
 ipcMain.handle('files:list', () => filetray ? filetray.prune() : []);
 ipcMain.handle('files:add', (_e, paths) => { if (!filetray) return []; filetray.add(paths); return filetray.list(); });
 ipcMain.handle('files:pick', async () => {

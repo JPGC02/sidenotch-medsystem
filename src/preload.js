@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('sidenotch', {
   getSettings: () => ipcRenderer.invoke('settings:get'),
@@ -101,6 +101,10 @@ contextBridge.exposeInMainWorld('sidenotch', {
   filesReveal: (id) => ipcRenderer.invoke('files:reveal', id),
   filesLink: (id) => ipcRenderer.invoke('files:link', id),
   filesDrag: (id) => ipcRenderer.send('files:drag', id),
+  // Electron 32 tirou File.path; o caminho real do arquivo solto vem daqui
+  pathForFile: (f) => { try { return webUtils.getPathForFile(f); } catch { return (f && f.path) || ''; } },
+  dropMode: (on) => ipcRenderer.send('files:drop-mode', !!on),
+  onDropMode: (cb) => ipcRenderer.on('files:drop-mode', (_e, on) => cb(on)),
   onFiles: (cb) => ipcRenderer.on('files', (_e, l) => cb(l)),
   // comandos do TI
   cmdList: () => ipcRenderer.invoke('cmd:list'),

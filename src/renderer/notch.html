@@ -45,7 +45,8 @@
 
   /* bandeja de arquivos */
   #drop { border: 1.5px dashed rgba(255,255,255,.18); border-radius: 16px; padding: 14px; text-align: center; color: var(--muted); font-size: 11.5px; margin-bottom: 10px; transition: background .15s, border-color .15s; }
-  body.dragging #drop { border-color: var(--blue); background: rgba(10,132,255,.12); color: #cfe4ff; }
+  body.dragging #drop, body.dropmode #drop { border-color: var(--blue); background: rgba(10,132,255,.12); color: #cfe4ff; }
+  body.dropmode #pill { box-shadow: inset 0 -2px 0 var(--blue), 0 8px 30px rgba(0,0,0,.55), 0 2px 18px rgba(10,132,255,.35); }
   .fitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--fill); cursor: grab; }
   .fitem:hover { background: var(--fill2); } .fitem.miss { opacity: .5; } .fitem.pin { box-shadow: inset 2px 0 0 #ffd60a; }
   .fico { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 10px; font-weight: 700; flex: 0 0 34px; color: #fff; letter-spacing: .3px; }
@@ -308,7 +309,7 @@ const tabsForState = () => {
   if (!TABS.some((t) => t[0] === tab)) tab = TABS[0][0];
 };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
-let files = [], cmds = [], cmdOut = null, chatReply = null, nlParsed = null, nlHint = '';
+let files = [], cmds = [], cmdOut = null, chatReply = null, nlParsed = null, nlHint = '', dropMode = false;
 // mesma descrição do parser (o main devolve só os campos)
 function nlDescribe(p) {
   if (!p) return '';
@@ -685,14 +686,16 @@ function viewFiles() {
         <button data-fx2="${esc(f.id)}" title="Tirar da bandeja">${I.trash}</button>
       </div></div>`;
   return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Solte arquivos aqui e arraste de volta para onde precisar. O link vale 7 dias.</span>
+      <button class="pillbtn ${dropMode ? 'blue' : ''}" id="flWait">${I.down} ${dropMode ? 'Esperando arquivo…' : 'Receber arrasto'}</button>
       <button class="pillbtn" id="flAdd">${I.add} Adicionar</button>${files.length ? `<button class="pillbtn" id="flClear">Limpar</button>` : ''}</div>
-    <div id="drop">Arraste arquivos para cá — eles ficam à mão até você tirar</div>
+    <div id="drop">${dropMode ? '<b style="color:#7fc0ff">Pronto — solte o arquivo aqui</b><br><span style="font-size:10.5px">a notch fica aberta por 30 s</span>' : 'Clique em <b>Receber arrasto</b> (ou Ctrl+Shift+B) e arraste o arquivo para cá'}</div>
     <div class="lst" style="max-height:380px">${files.length ? (pin.length ? `<div class="sec-h"><span>Fixados</span></div><div class="glist">${pin.map(item).join('')}</div>` : '') + `<div class="glist">${rest.map(item).join('')}</div>` : '<div class="empty">Bandeja vazia.</div>'}</div>
     <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center">${msgFiles || 'Dica: arraste um cartão daqui direto para o WhatsApp, e-mail ou ClickUp.'}</div>`;
 }
 let msgFiles = '';
 function bindFiles() {
   const add = $('#flAdd'); if (add) add.onclick = async () => { files = await api.filesPick(); renderView(); };
+  const wait = $('#flWait'); if (wait) wait.onclick = () => { dropMode = !dropMode; api.dropMode(dropMode); document.body.classList.toggle('dropmode', dropMode); renderView(); };
   const clr = $('#flClear'); if (clr) clr.onclick = async () => { files = await api.filesClear(); renderView(); };
   document.querySelectorAll('[data-f]').forEach((el) => {
     el.addEventListener('dragstart', (e) => { e.preventDefault(); api.filesDrag(el.dataset.f); });
@@ -1042,9 +1045,9 @@ function setOpen(v) {
   if (v) fitPill(); else { $('#pill').style.height = ''; api.setFocusable(false); renderMini(); }
 }
 const root = $('#root');
-root.addEventListener('mousemove', (e) => { const ui = e.target.closest('#pill, #hit'); api.setIgnoreMouse(!ui); if (ui) { clearTimeout(openTimer); setOpen(true); } });
-document.addEventListener('mouseleave', () => { api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 350); });
-root.addEventListener('mouseover', (e) => { if (!e.target.closest('#pill, #hit')) openTimer = setTimeout(() => setOpen(false), 350); });
+root.addEventListener('mousemove', (e) => { const ui = e.target.closest('#pill, #hit'); if (!dropMode) api.setIgnoreMouse(!ui); if (ui) { clearTimeout(openTimer); setOpen(true); } });
+document.addEventListener('mouseleave', () => { if (dropMode) return; api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 350); });
+root.addEventListener('mouseover', (e) => { if (dropMode) return; if (!e.target.closest('#pill, #hit')) openTimer = setTimeout(() => setOpen(false), 350); });
 document.addEventListener('focusout', () => setTimeout(() => { if (!typing()) api.setFocusable(false); }, 50));
 // janela é não-focável por padrão (não rouba foco); ao clicar num campo, torna focável antes de o foco acontecer
 document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(INPUT|TEXTAREA)/.test(t.tagName) || t.isContentEditable)) { api.setFocusable(true); setTimeout(() => t.focus(), 30); } }, true);
@@ -1061,16 +1064,22 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onFiles((l) => { files = l || []; if (tab === 'files' && document.body.classList.contains('open')) renderView(); });
   api.filesList().then((l) => { files = l || []; });
   api.cmdList().then((l) => { cmds = l || []; });
-  // arrastar arquivo de qualquer lugar para dentro do notch aberto
-  document.addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('dragging'); });
+  // arrastar arquivo de fora para dentro da notch (só funciona com o modo bandeja armado — veja dropMode)
+  document.addEventListener('dragenter', (e) => { e.preventDefault(); document.body.classList.add('dragging'); if (!dropMode) { dropMode = true; api.dropMode(true); } if (tab !== 'files') { tab = 'files'; renderTabs(); } setOpen(true); renderView(); });
+  document.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; document.body.classList.add('dragging'); });
   document.addEventListener('dragleave', (e) => { if (e.relatedTarget === null) document.body.classList.remove('dragging'); });
   document.addEventListener('drop', async (e) => {
     e.preventDefault(); document.body.classList.remove('dragging');
-    const paths = [...(e.dataTransfer.files || [])].map((f) => f.path).filter(Boolean);
-    if (!paths.length) return;
+    const paths = [...(e.dataTransfer.files || [])].map((f) => api.pathForFile(f)).filter(Boolean);
+    if (!paths.length) { msgFiles = 'Não consegui ler o arquivo arrastado.'; renderView(); return; }
     files = await api.filesAdd(paths);
+    msgFiles = `✓ ${paths.length} arquivo(s) na bandeja`;
     tab = 'files'; renderTabs(); setOpen(true); renderView();
+    setTimeout(() => { dropMode = false; api.dropMode(false); }, 400);
   });
+  // Esc sai do modo bandeja (e a notch volta a ser atravessável na hora)
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dropMode) { dropMode = false; api.dropMode(false); document.body.classList.remove('dropmode', 'dragging'); renderView(); } });
+  api.onDropMode((on) => { dropMode = !!on; document.body.classList.toggle('dropmode', dropMode); if (on) { clearTimeout(openTimer); setOpen(true); } renderView(); });
   api.onFocus((st) => { if (!st) return; fx = st; renderMini(); if (document.body.classList.contains('open') && tab === 'notes' && notesMode === 'tasks' && !typing()) renderView(); });
   api.focusGet().then((st) => { if (st) { fx = st; renderMini(); } });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
