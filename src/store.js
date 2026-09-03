@@ -43,7 +43,9 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H' },
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '' },
+  // foco (pomodoro) nas tarefas do Hub
+  focus: { minutes: 25, breakMinutes: 5, autoStatus: true, chime: true, pill: true, streak: true },
   quickaccess: { side: 'left', ttlSec: 0 },   // pilha de capturas: canto (left/right) e auto-dismiss em segundos (0 = nunca)
   clipboard: { enabled: true, max: 60 },   // histórico da área de transferência (aba no notch)   // ex.: "CommandOrControl+Shift+Space"
   update: { auto: true },

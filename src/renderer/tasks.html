@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tarefas · SideNotch Medsystem</title>
+<style>
+  /* mesmo sistema visual das Configurações: acrílico do Windows 11, painéis de vidro, raio 20 */
+  :root { --fg: #f4f4f6; --muted: #9a9aa4; --blue: #0A84FF; --ok: #30d158; --bad: #ff453a; --warn: #ff9f0a;
+    --glass: rgba(255,255,255,.06); --glass2: rgba(255,255,255,.1); --line: rgba(255,255,255,.09); --ink: rgba(0,0,0,.28); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: transparent; color: var(--fg); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-size: 13px; overflow: hidden; user-select: none; }
+  body.solid { background: linear-gradient(160deg, #17171d, #0f0f13); }
+  #drag { position: fixed; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; z-index: 5; }
+  #app { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 18px; gap: 12px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; } header .sp { flex: 1; }
+  .muted { color: var(--muted); } .grow { flex: 1; min-width: 0; }
+  button { border: 0; border-radius: 10px; padding: 8px 13px; font: inherit; font-weight: 600; cursor: pointer; background: var(--glass2); color: var(--fg); }
+  button:hover { background: rgba(255,255,255,.16); } button.pri { background: var(--blue); color: #fff; } button:disabled { opacity: .5; cursor: default; }
+  button.icon { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; border-radius: 50%; } button.icon svg { width: 15px; height: 15px; }
+  input, select, textarea { background: rgba(0,0,0,.32); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 11px; font: inherit; font-size: 12.5px; user-select: text; }
+  input:focus, select:focus, textarea:focus { outline: 1px solid var(--blue); }
+  #main { flex: 1; min-height: 0; display: grid; grid-template-columns: 330px 1fr; gap: 14px; }
+  .panel { background: var(--glass); border: 1px solid var(--line); border-radius: 20px; backdrop-filter: blur(20px); padding: 16px; min-height: 0; display: flex; flex-direction: column; }
+  /* calendário */
+  .cal-h { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; } .cal-h .m { font-weight: 600; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal .wd { text-align: center; font-size: 10.5px; color: var(--muted); padding-bottom: 4px; }
+  .cal .d { position: relative; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 12px; cursor: pointer; color: #e6e6ea; }
+  .cal .d:hover { background: var(--glass2); } .cal .d.off { color: #55555e; } .cal .d.today { box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+  .cal .d.sel { background: var(--blue); color: #fff; font-weight: 700; }
+  .cal .d .n { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+  .cal .d .n i { width: 4px; height: 4px; border-radius: 50%; background: var(--blue); } .cal .d .n i.late { background: var(--bad); } .cal .d.sel .n i { background: #fff; }
+  .legend { margin-top: auto; padding-top: 12px; font-size: 10.5px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+  .kpi { display: flex; gap: 8px; margin-top: 12px; } .kpi div { flex: 1; background: var(--glass2); border-radius: 12px; padding: 9px 10px; }
+  .kpi b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; } .kpi span { font-size: 10.5px; color: var(--muted); }
+  /* lista do dia */
+  .day-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .seg { display: flex; background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+  .seg button { border-radius: 999px; padding: 5px 12px; font-size: 11.5px; background: transparent; } .seg button.on { background: var(--blue); color: #fff; }
+  #list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 7px; scrollbar-width: thin; padding-right: 4px; }
+  .row { display: flex; align-items: center; gap: 10px; background: var(--glass2); border: 1px solid transparent; border-radius: 14px; padding: 10px 12px; }
+  .row.focusing { border-color: rgba(10,132,255,.5); background: linear-gradient(135deg, rgba(10,132,255,.16), rgba(255,255,255,.06)); }
+  .ck { width: 20px; height: 20px; border-radius: 50%; border: 1.6px solid rgba(255,255,255,.35); flex: 0 0 20px; cursor: pointer; display: grid; place-items: center; }
+  .ck:hover { border-color: var(--ok); } .ck svg { width: 12px; height: 12px; opacity: 0; color: var(--ok); } .ck:hover svg { opacity: .6; }
+  .ti { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,.1); border-radius: 999px; padding: 2px 7px; font-size: 10px; color: #d5d5da; }
+  .chip svg { width: 11px; height: 11px; } .chip.late { background: rgba(255,69,58,.2); color: #ffb4ae; } .chip.pr-urgent { background: rgba(255,69,58,.2); color: #ffb4ae; } .chip.pr-high { background: rgba(255,159,10,.2); color: #ffd79a; }
+  .acts { display: flex; gap: 6px; } .acts button { width: 28px; height: 28px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+  .acts button svg { width: 14px; height: 14px; } .acts .go { background: var(--blue); color: #fff; } .acts .go.on { background: var(--bad); }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 12px; }
+  /* barra de foco */
+  #fx { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, rgba(10,132,255,.18), rgba(10,132,255,.05)); border: 1px solid rgba(10,132,255,.32); border-radius: 16px; padding: 11px 14px; }
+  #fx.hide { display: none; } #fx .tm { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.6px; }
+  #fx .nm { font-size: 12.5px; font-weight: 600; } #fx .sub { font-size: 11px; color: var(--muted); }
+  #fx .ring svg { transform: rotate(-90deg); } #fx .ring circle { fill: none; stroke-width: 3.4; }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.6); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  /* nova tarefa */
+  #form { display: none; gap: 8px; margin-bottom: 10px; } #form.on { display: flex; flex-wrap: wrap; }
+  #form input[type=text] { flex: 1; min-width: 200px; } #form .msg { font-size: 11px; color: var(--muted); width: 100%; }
+</style>
+</head>
+<body>
+<div id="drag"></div>
+<div id="app">
+  <header>
+    <h1>Tarefas</h1><span class="muted" id="sub">—</span>
+    <span class="sp"></span>
+    <button id="new" class="pri">+ Nova tarefa</button>
+    <button id="hub">Abrir no Hub</button>
+  </header>
+  <div id="fx" class="hide"></div>
+  <div id="main">
+    <div class="panel">
+      <div class="cal-h"><button class="icon" id="prev"></button><span class="m grow" id="month"></span><button class="icon" id="next"></button><button id="today" style="padding:6px 10px;font-size:11.5px">Hoje</button></div>
+      <div class="cal" id="cal"></div>
+      <div class="kpi"><div><b id="kOpen">0</b><span>abertas</span></div><div><b id="kLate">0</b><span>atrasadas</span></div><div><b id="kMin">0</b><span>min hoje</span></div></div>
+      <div class="legend"><span>Clique num dia para filtrar. Pontos azuis = tarefas com prazo; vermelhos = atrasadas.</span><span id="streak"></span></div>
+    </div>
+    <div class="panel">
+      <div class="day-h"><span class="m grow" id="dayLbl">Hoje</span><div class="seg"><button data-f="day" class="on">Dia</button><button data-f="all">Todas</button><button data-f="none">Sem prazo</button></div></div>
+      <div id="form">
+        <input type="text" id="fTitle" placeholder="O que precisa ser feito?" maxlength="255">
+        <input type="date" id="fDue"><input type="number" id="fEst" min="5" max="480" step="5" placeholder="min" style="width:80px">
+        <select id="fPri"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option><option value="urgent">Crítica</option></select>
+        <button class="pri" id="fSave">Criar</button><button id="fCancel">Cancelar</button><div class="msg" id="fMsg"></div>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="iconsax.js"></script>
+<script>
+const api = window.sidenotch; const IX = window.IX || {};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const I = { play: IX.PlayBold, pause: IX.PauseBold, stop: IX.StopCircle, tick: IX.TickCircle, trash: IX.Trash, edit: IX.Edit2, timer: IX.Timer1, flame: IX.Flash, left: IX.ArrowLeft2, right: IX.ArrowRight2, cal: IX.Calendar, at: IX.Monitor };
+const mmss = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.round(Math.max(0, s) % 60)).padStart(2, '0')}`;
+const PRI = { low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Crítica' };
+if (new URLSearchParams(location.search).get('solid')) document.body.classList.add('solid');
+
+let hub = null, fx = { active: false }, view = new Date(), sel = ymd(new Date()), filter = 'day', busy = '';
+function ymd(d) { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; }
+function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(el._t); el._t = setTimeout(() => el.style.opacity = 0, 1600); }
+const tasks = () => (hub && hub.tasks) || [];
+
+// ---------- calendário ----------
+function renderCal() {
+  const y = view.getFullYear(), m = view.getMonth();
+  $('#month').textContent = view.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^./, (c) => c.toUpperCase());
+  const first = new Date(y, m, 1); const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7));
+  const counts = {}; const late = {}; const today = ymd(new Date());
+  for (const t of tasks()) { if (!t.due_date) continue; const k = String(t.due_date).slice(0, 10); counts[k] = (counts[k] || 0) + 1; if (k < today) late[k] = true; }
+  let h = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d) => `<div class="wd">${d}</div>`).join('');
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i); const k = ymd(d);
+    const n = counts[k] || 0;
+    h += `<div class="d ${d.getMonth() === m ? '' : 'off'} ${k === today ? 'today' : ''} ${k === sel ? 'sel' : ''}" data-d="${k}">${d.getDate()}
+      ${n ? `<span class="n">${Array.from({ length: Math.min(3, n) }).map(() => `<i class="${late[k] ? 'late' : ''}"></i>`).join('')}</span>` : ''}</div>`;
+    if (i >= 34 && d.getMonth() !== m) break;
+  }
+  $('#cal').innerHTML = h;
+  document.querySelectorAll('[data-d]').forEach((el) => el.onclick = () => { sel = el.dataset.d; filter = 'day'; document.querySelectorAll('[data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === 'day')); render(); });
+  const open = tasks().length, lateN = tasks().filter((t) => t.due_date && String(t.due_date).slice(0, 10) < today).length;
+  $('#kOpen').textContent = open; $('#kLate').textContent = lateN;
+  $('#kMin').textContent = Math.round((fx.todaySeconds || 0) / 60);
+  $('#streak').innerHTML = fx.streak ? `🔥 Sequência de ${fx.streak} dia(s) com foco.` : 'Comece um ciclo de foco para abrir sua sequência.';
+}
+
+// ---------- lista ----------
+function rows() {
+  const t = tasks();
+  if (filter === 'all') return t;
+  if (filter === 'none') return t.filter((x) => !x.due_date);
+  return t.filter((x) => x.due_date && String(x.due_date).slice(0, 10) === sel);
+}
+function render() {
+  $('#sub').textContent = hub && hub.linked ? `${tasks().length} aberta(s)${busy ? ' · ' + busy : ''}` : 'Vincule o Medsystem Hub no notch para ver suas tarefas.';
+  $('#dayLbl').textContent = filter === 'all' ? 'Todas as tarefas' : filter === 'none' ? 'Sem prazo' : new Date(sel + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
+  const list = rows(); const today = ymd(new Date());
+  $('#list').innerHTML = list.length ? list.map((t) => {
+    const k = t.due_date ? String(t.due_date).slice(0, 10) : '';
+    const isLate = k && k < today; const on = fx.active && fx.taskId === t.id;
+    const est = t.estimateMin ? `${t.estimateMin}m` : '';
+    const done = t.focusSeconds ? `${Math.round(t.focusSeconds / 60)}m focados` : '';
+    return `<div class="row ${on && fx.running ? 'focusing' : ''}">
+      <span class="ck" data-done="${esc(t.id)}" title="Concluir">${I.tick}</span>
+      <div class="grow"><div class="ti" title="${esc(t.description || '')}">${esc(t.title)}</div>
+      <div class="ms">${t.description ? esc(t.description) + ' · ' : ''}<span class="chip pr-${t.priority}">${PRI[t.priority] || t.priority}</span>
+        ${k ? ` <span class="chip ${isLate ? 'late' : ''}">${I.cal} ${new Date(k + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}</span>` : ''}
+        ${est ? ` <span class="chip">${I.timer} ${est}</span>` : ''}${done ? ` <span class="chip">${done}</span>` : ''}
+        ${t.label ? ` <span class="chip">${esc(t.label)}</span>` : ''}</div></div>
+      <div class="acts">
+        <button class="go ${on && fx.running ? 'on' : ''}" data-go="${esc(t.id)}" title="${on && fx.running ? 'Pausar foco' : 'Focar'}">${on && fx.running ? I.pause : I.play}</button>
+        ${t.source === 'at' ? '' : `<button data-edit="${esc(t.id)}" title="Editar prazo/estimativa">${I.edit}</button><button data-del="${esc(t.id)}" title="Apagar">${I.trash}</button>`}
+      </div></div>`;
+  }).join('') : `<div class="empty">${hub && hub.linked ? 'Nada para este filtro.' : 'Sem conexão com o Hub.'}</div>`;
+  bindRows(); renderFx(); renderCal();
+}
+function renderFx() {
+  const box = $('#fx');
+  if (!fx.active) { box.className = 'hide'; box.innerHTML = ''; return; }
+  box.className = '';
+  const r = 17, c = 2 * Math.PI * r;
+  box.innerHTML = `<div class="ring"><svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="${r}" stroke="rgba(255,255,255,.16)"></circle><circle cx="20" cy="20" r="${r}" stroke="${fx.running ? '#0A84FF' : '#ff9f0a'}" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - (fx.progress || 0))).toFixed(1)}"></circle></svg></div>
+    <div><div class="tm">${mmss(fx.remaining)}</div></div>
+    <div class="grow"><div class="nm">${esc(fx.title || 'Foco')}</div><div class="sub">${fx.running ? 'em andamento' : 'pausado'} · ciclo de ${Math.round((fx.planned || 1500) / 60)} min${fx.streak ? ' · 🔥 ' + fx.streak + 'd' : ''}</div></div>
+    <button class="icon" id="fxT" title="${fx.running ? 'Pausar' : 'Retomar'}" style="background:${fx.running ? '#ff453a' : 'var(--blue)'};color:#fff">${fx.running ? I.pause : I.play}</button>
+    <button class="icon" id="fxS" title="Encerrar e gravar">${I.stop}</button>`;
+  $('#fxT').onclick = async () => { fx = await api.focusToggle(null) || fx; render(); };
+  $('#fxS').onclick = async () => { fx = await api.focusStop() || fx; toast('Sessão gravada no Hub.'); render(); };
+}
+function bindRows() {
+  document.querySelectorAll('[data-go]').forEach((b) => b.onclick = async () => {
+    const id = b.dataset.go; const t = tasks().find((x) => x.id === id);
+    fx = await api.focusToggle({ id, title: t ? t.title : 'Foco', minutes: t && t.estimateMin ? t.estimateMin : undefined }) || fx;
+    render();
+  });
+  document.querySelectorAll('[data-done]').forEach((b) => b.onclick = async () => { b.style.opacity = .4; await api.focusComplete(b.dataset.done); hub = await api.hubGet(); fx = await api.focusGet() || fx; toast('Tarefa concluída.'); render(); });
+  document.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+    const r = await api.hubTaskDelete(b.dataset.del); if (!r.ok) { toast(r.error); return; } hub = r.state; toast('Tarefa apagada.'); render();
+  });
+  document.querySelectorAll('[data-edit]').forEach((b) => b.onclick = async () => {
+    const id = b.dataset.edit; const t = tasks().find((x) => x.id === id); if (!t) return;
+    const due = prompt('Prazo (AAAA-MM-DD, vazio remove):', t.due_date || ''); if (due === null) return;
+    const est = prompt('Estimativa em minutos (vazio remove):', t.estimateMin || ''); if (est === null) return;
+    const r = await api.hubTaskUpdate(id, { due_date: due.trim() || null }); if (!r.ok) { toast(r.error); return; }
+    const r2 = await api.hubTaskEstimate(id, est.trim() ? Number(est) : null);
+    hub = (r2 && r2.state) || r.state; toast('Tarefa atualizada.'); render();
+  });
+}
+
+// ---------- nova tarefa ----------
+$('#new').onclick = () => { const f = $('#form'); f.classList.toggle('on'); if (f.classList.contains('on')) { $('#fDue').value = filter === 'day' ? sel : ''; $('#fTitle').focus(); } };
+$('#fCancel').onclick = () => { $('#form').classList.remove('on'); $('#fMsg').textContent = ''; };
+$('#fSave').onclick = async () => {
+  const title = $('#fTitle').value.trim(); if (!title) { $('#fMsg').textContent = 'Dê um título.'; return; }
+  $('#fSave').disabled = true; $('#fMsg').textContent = 'Criando…';
+  const r = await api.hubCreateTask({ title, due_date: $('#fDue').value || null, priority: $('#fPri').value });
+  $('#fSave').disabled = false;
+  if (!r.ok) { $('#fMsg').textContent = r.error; return; }
+  if (r.task && $('#fEst').value) await api.hubTaskEstimate(r.task.id, Number($('#fEst').value));
+  hub = await api.hubGet(); $('#fTitle').value = ''; $('#fEst').value = ''; $('#fMsg').textContent = ''; $('#form').classList.remove('on');
+  toast('Tarefa criada.'); render();
+};
+$('#fTitle').onkeydown = (e) => { if (e.key === 'Enter') $('#fSave').click(); if (e.key === 'Escape') $('#fCancel').click(); };
+$('#prev').innerHTML = I.left; $('#next').innerHTML = I.right;
+$('#prev').onclick = () => { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); renderCal(); };
+$('#next').onclick = () => { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); renderCal(); };
+$('#today').onclick = () => { view = new Date(); sel = ymd(new Date()); filter = 'day'; document.querySelectorAll('[data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === 'day')); render(); };
+$('#hub').onclick = () => api.hubOpen('/tarefas');
+document.querySelectorAll('[data-f]').forEach((b) => b.onclick = () => { filter = b.dataset.f; document.querySelectorAll('[data-f]').forEach((x) => x.classList.toggle('on', x === b)); render(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#form').classList.contains('on')) window.close(); });
+
+api.onHub((h) => { hub = h; render(); });
+api.onFocus((st) => { if (st) { fx = st; renderFx(); } });
+(async () => { hub = await api.hubGet(); fx = await api.focusGet() || fx; await api.focusRefresh().then((s) => { if (s) fx = s; }).catch(() => {}); render(); })();
+</script>
+</body>
+</html>

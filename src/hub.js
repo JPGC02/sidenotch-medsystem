@@ -288,6 +288,51 @@ class HubClient extends EventEmitter {
     return t;
   }
 
+  // ---------- foco (pomodoro) ----------
+  // grava a sessão e soma o tempo na própria tarefa (RPC focus_log)
+  async logFocus({ taskId, seconds, planned, completed, startedAt, title }) {
+    const secs = Math.max(0, Math.round(seconds || 0)); if (secs < 5) return null;
+    const at = String(taskId || '').startsWith('at:');
+    return this.rpc('focus_log', {
+      p_task_id: taskId ? (at ? taskId.slice(3) : taskId) : null,
+      p_task_kind: taskId ? (at ? 'at' : 'task') : 'free',
+      p_task_title: title ? String(title).slice(0, 200) : null,
+      p_seconds: secs, p_planned_seconds: Math.max(60, Math.round(planned || 1500)), p_completed: !!completed,
+      p_started_at: new Date(startedAt || Date.now() - secs * 1000).toISOString()
+    });
+  }
+  // dias com foco (heatmap) + streak atual
+  async focusSummary(days = 84) {
+    const r = await this.rpc('focus_summary', { p_days: days });
+    const s = Array.isArray(r) ? r[0] : r;
+    return s && typeof s === 'object' ? { days: s.days || [], streak: s.streak || 0, today: s.today || 0, total: s.total || 0 } : { days: [], streak: 0, today: 0, total: 0 };
+  }
+  // estimativa em minutos que aparece no chip da tarefa
+  async setTaskEstimate(id, minutes) {
+    if (String(id).startsWith('at:')) return false;
+    const m = minutes == null ? null : Math.max(1, Math.min(600, Math.round(minutes)));
+    await this.rest('PATCH', `tasks?id=eq.${id}&or=(assignee_id.eq.${this.session.user.id},created_by.eq.${this.session.user.id})`, { focus_estimate_min: m }, { Prefer: 'return=minimal' });
+    const t = this.tasks.find((x) => x.id === id); if (t) t.focus_estimate_min = m;
+    this._emitIfChanged(); return true;
+  }
+  async deleteTask(id) {
+    if (String(id).startsWith('at:')) throw new Error('OS da AT não pode ser apagada aqui');
+    await this.rest('DELETE', `tasks?id=eq.${id}&created_by=eq.${this.session.user.id}`, undefined, { Prefer: 'return=minimal' });
+    this.tasks = this.tasks.filter((t) => t.id !== id); this._emitIfChanged(); return true;
+  }
+  async updateTask(id, { title, description, due_date, priority }) {
+    if (String(id).startsWith('at:')) throw new Error('OS da AT não pode ser editada aqui');
+    const patch = {};
+    if (title != null) patch.title = String(title).trim().slice(0, 255);
+    if (description != null) patch.description = String(description).slice(0, 4000) || null;
+    if (due_date !== undefined) patch.due_date = due_date || null;
+    if (priority && ['low', 'medium', 'high', 'urgent'].includes(priority)) patch.priority = priority;
+    if (!Object.keys(patch).length) return false;
+    await this.rest('PATCH', `tasks?id=eq.${id}&or=(assignee_id.eq.${this.session.user.id},created_by.eq.${this.session.user.id})`, patch, { Prefer: 'return=minimal' });
+    const t = this.tasks.find((x) => x.id === id); if (t) Object.assign(t, patch);
+    this._emitIfChanged(); return true;
+  }
+
   // agenda do Hub: eventos em que sou participante/criador + calendários pessoal, do setor e da empresa (mesma lógica de /agenda)
   async loadAgenda() {
     const uid = this.session.user.id; const sec = this.profile && this.profile.sector ? this.profile.sector.id : null;
@@ -448,7 +493,7 @@ class HubClient extends EventEmitter {
       linked: this.linked(), connected: this.connected, realtime: this.realtime, error: this.error, site: this.site,
       profile: this.profile ? { name: this.profile.name, email: this.profile.email, sector: this.profile.sector && this.profile.sector.name, role: this.profile.role.name || this.profile.role.slug, modules: this.profile.modules } : null,
       notifications: this.notifications, unread: unread.length,
-      tasks: this.tasks, overdue,
+      tasks: this.tasks.map((t) => ({ ...t, focusSeconds: t.focus_seconds || 0, estimateMin: t.focus_estimate_min || null })), overdue,
       agenda: this.agenda,
       chats: this.chats, chatUnread: this.chats.reduce((a, c) => a + (c.unread || 0), 0), chatTransfers: this.chats.filter((c) => c.transferred && c.unassigned).length, hasWhatsapp: this.instances.length > 0 || this.chats.length > 0,
       shortcuts: this.shortcuts(), catalog: this.catalog()

@@ -14,10 +14,11 @@ const { Docs } = require('./docs');
 const { HubClient } = require('./hub');
 const { ClipboardHistory } = require('./clipboard');
 const { QuickAccess } = require('./quickaccess');
+const { Focus } = require('./focus');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin;
 const webappWins = new Map();
 let lastUsage = [];
 
@@ -54,6 +55,7 @@ app.whenReady().then(() => {
   startMaestri();
   startHub();
   qa = new QuickAccess({ userData: app.getPath('userData'), getSettings: () => store.get(), hub, notify: (n) => server && server._notify(n), broadcast });
+  startFocus();
   registerShortcuts();
   updater = new Updater({ onState: (st) => { broadcast('update', st); buildTrayMenu(); } });
   updater.start(store.get().update.auto);
@@ -63,7 +65,7 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => openSettings());
 app.on('window-all-closed', (e) => e.preventDefault());
-app.on('will-quit', () => { globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
 
 // ---------- Notch (topo) ----------
 const NOTCH_W = 960, NOTCH_H = 560;
@@ -203,6 +205,18 @@ function startHub() {
   }
   const h = store.get().hub || {};
   if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 60); else hub.stop();
+  if (focus) { focus.hubRef(hub); focus.flush(); }
+}
+// ---------- Foco (pomodoro nas tarefas do Hub) ----------
+function startFocus() {
+  focus = new Focus({ userData: app.getPath('userData'), hub, getSettings: () => store.get(), notify: (n) => {
+    server && server._notify({ type: 'focus', title: n.title, text: n.text, project: 'Foco' });
+    const cfg = store.get().hub || {}; if ((store.get().focus || {}).chime !== false) playSound(cfg.soundPreset || 'chime', cfg);
+  } });
+  focus.on('change', () => { const st = focus.state(); broadcast('focus', st); updateTrayTooltip(); buildTrayMenu(); });
+  focus.on('tick', (st) => broadcast('focus', st));
+  focus.flush();
+  setInterval(() => focus && focus.flush(), 5 * 60 * 1000);
 }
 // som das notificações do Hub: sintetizado no renderer do notch (Web Audio) ou arquivo do usuário; 'windows' = beep do sistema
 function playSound(preset, cfg = {}) {
@@ -238,7 +252,7 @@ function broadcastApprovals() { broadcast('approvals', approvalsState()); update
 
 function onNotify(n) {
   const cfg = store.get().notifications;
-  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true }[n.type];
+  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true, focus: true }[n.type];
   if (!want) { server.feed = server.feed.filter((x) => x.id !== n.id); return; }
   broadcast('notify', n);
   if (store.get().dnd) return;
@@ -358,7 +372,7 @@ function scheduleRefresh() {
 }
 
 function broadcast(ch, payload) {
-  for (const w of [bars.hub, bars.ai, notch, settingsWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
+  for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
 }
 
 // ---------- Atalhos globais ----------
@@ -373,6 +387,27 @@ function registerShortcuts() {
   reg(sc.captures, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'caps'); } });
   reg(sc.clip, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'clip'); } });
   reg(sc.hub, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'hub'); } });
+  reg(sc.focus || 'CommandOrControl+Shift+F', () => { if (!focus) return; if (focus.state().active) focus.toggle(); else openTasksWindow(); });
+  reg(sc.tasks, () => openTasksWindow());
+}
+
+// ---------- Janela de Tarefas (mês + dia, foco por tarefa) ----------
+function openTasksWindow() {
+  if (tasksWin && !tasksWin.isDestroyed()) { tasksWin.show(); tasksWin.focus(); return tasksWin; }
+  const win11 = process.platform === 'win32' && Number((require('os').release().split('.')[2]) || 0) >= 22000;
+  const d = targetDisplay();
+  tasksWin = new BrowserWindow({
+    width: Math.min(1040, d.workArea.width - 80), height: Math.min(660, d.workArea.height - 80),
+    title: 'Tarefas', show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#f4f4f6', height: 36 },
+    ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+  });
+  tasksWin.setMenu(null);
+  tasksWin.loadFile(path.join(__dirname, 'renderer', 'tasks.html'), { query: win11 ? {} : { solid: '1' } });
+  tasksWin.once('ready-to-show', () => { app.focus({ steal: true }); tasksWin.show(); tasksWin.focus(); });
+  tasksWin.on('closed', () => { tasksWin = null; });
+  return tasksWin;
 }
 
 // ---------- Bandeja ----------
@@ -390,6 +425,8 @@ function buildTrayMenu() {
   const upLabel = st.status === 'downloaded' ? `Instalar atualização ${st.available}` : st.status === 'available' ? `Baixar atualização ${st.available}` : st.status === 'downloading' ? `Baixando… ${st.progress || 0}%` : 'Verificar atualizações';
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Capturar área…', click: () => qa && qa.captureArea() },
+    { label: 'Tarefas e foco…', click: () => openTasksWindow() },
+    ...(focus && focus.state().active ? [{ label: focus.state().running ? `Pausar foco (${Math.ceil(focus.state().remaining / 60)} min)` : 'Retomar foco', click: () => focus.toggle() }, { label: 'Encerrar foco', click: () => focus.stop('user') }] : []),
     { label: 'Atualizar uso agora', click: () => refresh(true) },
     { label: 'Não perturbe', type: 'checkbox', checked: !!store.get().dnd, click: (mi) => setDnd(mi.checked) },
     { label: 'Configurações…', click: openSettings },
@@ -412,6 +449,7 @@ function updateTrayTooltip() {
   const n = server ? server.pending.size : 0;
   if (n) lines.unshift(`⚠ ${n} aprovação(ões) pendente(s) do Claude Code`);
   if (hub && hub.session) { const st = hub.state(); if (st.unread) lines.unshift(`🔔 Hub: ${st.unread} notificação(ões) não lida(s)`); if (st.tasks.length) lines.unshift(`✅ Hub: ${st.tasks.length} tarefa(s) aberta(s)${st.overdue ? ', ' + st.overdue + ' atrasada(s)' : ''}`); }
+  if (focus) { const f = focus.state(); if (f.active) lines.unshift(`⏱ Foco: ${String(Math.floor(f.remaining / 60)).padStart(2, '0')}:${String(f.remaining % 60).padStart(2, '0')} · ${f.title}`); }
   if (store.get().dnd) lines.unshift('🔕 Não perturbe');
   tray.setToolTip(['SideNotch', ...lines].join('\n') || 'SideNotch');
 }
@@ -521,5 +559,17 @@ ipcMain.handle('hub:task', async (_e, id, status) => { try { await hub.setTaskSt
 ipcMain.handle('hub:open', (_e, link, notifId) => { openHubLink(link, notifId); return true; });
 ipcMain.handle('hub:check-path', (_e, p) => ({ allowed: hub ? hub.allowedPath(p) : false, ...(hub ? hub.moduleForPath(p) : {}) }));
 ipcMain.handle('hub:create-task', async (_e, t) => { try { const r = await hub.createTask(t || {}); return { ok: true, task: r, state: hub.state() }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
+// ---------- foco ----------
+ipcMain.handle('focus:get', () => focus ? focus.state() : null);
+ipcMain.handle('focus:start', (_e, task) => focus ? focus.start(task || {}) : null);
+ipcMain.handle('focus:toggle', (_e, task) => focus ? focus.toggle(task || null) : null);
+ipcMain.handle('focus:pause', () => focus ? focus.pause() : null);
+ipcMain.handle('focus:stop', () => focus ? focus.stop('user') : null);
+ipcMain.handle('focus:complete', async (_e, id) => { if (!focus) return null; await focus.complete(id); return focus.state(); });
+ipcMain.handle('focus:refresh', async () => { if (!focus) return null; await focus.flush(); await focus.refresh(); return focus.state(); });
+ipcMain.handle('hub:task-estimate', async (_e, id, min) => { try { await hub.setTaskEstimate(id, min); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('hub:task-update', async (_e, id, patch) => { try { await hub.updateTask(id, patch || {}); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('hub:task-delete', async (_e, id) => { try { await hub.deleteTask(id); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('tasks:open', () => { openTasksWindow(); return true; });
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });

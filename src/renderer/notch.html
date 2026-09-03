@@ -30,6 +30,38 @@
   body.alert.open #pill::before { background: radial-gradient(circle at 0 100%, transparent 25.5px, var(--warn) 26px, var(--warn) 28px, var(--bg) 28.5px); }
   body.alert.open #pill::after  { background: radial-gradient(circle at 100% 100%, transparent 25.5px, var(--warn) 26px, var(--warn) 28px, var(--bg) 28.5px); }
 
+  /* foco: a linha de progresso azul percorre a base da pastilha e tinge as mordidas (mesmo truque do alerta) */
+  #fxline { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: linear-gradient(90deg, #0a84ff, #4da2ff); border-radius: 0 3px 3px 0; box-shadow: 0 0 10px rgba(10,132,255,.55); transition: width .9s linear; opacity: 0; z-index: 3; }
+  body.focusing #fxline { opacity: 1; }
+  body.focusing.paused #fxline { background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 10px rgba(245,158,11,.5); }
+  body.focusing:not(.alert) #pill { box-shadow: inset 0 -1px 0 rgba(10,132,255,.35), 0 8px 30px rgba(0,0,0,.55), 0 2px 18px rgba(10,132,255,.28); }
+  body.focusing:not(.alert) #pill::before { background: radial-gradient(circle at 0 100%, transparent 17.5px, #0a84ff 18px, #0a84ff 20px, var(--bg) 20.5px); }
+  body.focusing:not(.alert) #pill::after  { background: radial-gradient(circle at 100% 100%, transparent 17.5px, #0a84ff 18px, #0a84ff 20px, var(--bg) 20.5px); }
+  body.focusing:not(.alert).open #pill::before { background: radial-gradient(circle at 0 100%, transparent 25.5px, #0a84ff 26px, #0a84ff 28px, var(--bg) 28.5px); }
+  body.focusing:not(.alert).open #pill::after  { background: radial-gradient(circle at 100% 100%, transparent 25.5px, #0a84ff 26px, #0a84ff 28px, var(--bg) 28.5px); }
+  #mini .fx { color: #eaf3ff; font-weight: 700; } #mini .fx b { font-variant-numeric: tabular-nums; letter-spacing: .4px; font-size: 12.5px; }
+  #mini .fx .nm { color: var(--muted); font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #mini .fx .st { color: #ff9f0a; font-weight: 700; }
+
+  /* To Do + Journey Streak (foco) */
+  .fxgrid { display: grid; grid-template-columns: 1fr 300px; gap: 12px; align-items: start; }
+  @media (max-width: 780px) { .fxgrid { grid-template-columns: 1fr; } }
+  .fxnow { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg, rgba(10,132,255,.16), rgba(10,132,255,.05)); border: 1px solid rgba(10,132,255,.3); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+  .fxnow .tm { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+  .fxnow .nm { font-size: 12px; color: #d8d8dd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fxnow .sub { font-size: 10.5px; color: var(--muted); }
+  .fxring { position: relative; width: 34px; height: 34px; flex: 0 0 34px; }
+  .fxring svg { transform: rotate(-90deg); } .fxring circle { fill: none; stroke-width: 3.2; }
+  .fxbtn { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; padding: 0; flex: 0 0 30px; }
+  .fxbtn.play { background: var(--blue); color: #fff; } .fxbtn.pause { background: #ff453a; color: #fff; } .fxbtn svg { width: 14px; height: 14px; }
+  .streak { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .streak .hd { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #d8d8dd; margin-bottom: 10px; } .streak .hd svg { width: 14px; height: 14px; } .streak .hd .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .heat { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 3px; }
+  .heat i { width: 11px; height: 11px; border-radius: 3px; background: rgba(255,255,255,.07); }
+  .heat i.l1 { background: rgba(10,132,255,.35); } .heat i.l2 { background: rgba(10,132,255,.6); } .heat i.l3 { background: #0a84ff; } .heat i.today { outline: 1px solid rgba(255,255,255,.5); outline-offset: 1px; }
+  .streak .ft { display: flex; gap: 10px; margin-top: 10px; font-size: 10.5px; color: var(--muted); }
+  .tk-actions .fxb { background: var(--blue); color: #fff; } .tk-actions .fxb.on { background: #ff453a; }
+
   /* estado fechado */
   #mini { position: absolute; inset: 0; height: 30px; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 14px; font-size: 11.5px; white-space: nowrap; transition: opacity .15s; }
   body.open #mini { opacity: 0; pointer-events: none; }
@@ -211,7 +243,7 @@
   <div id="pill"><div id="clip">
     <div id="mini"></div>
     <div id="panel"><div id="tabs"></div><div id="view"></div></div>
-  </div></div>
+  </div><div id="fxline"></div></div>
 </div>
 <script src="iconsax.js"></script>
 <script>
@@ -222,6 +254,7 @@ const IX = window.IX || {};
 const I = {
   music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
+  timer: IX.Timer1 || IX.Clock, flame: IX.Flash, stop: IX.StopCircle, expand: IX.Maximize4, edit: IX.Edit2, pausec: IX.PauseCircle, playc: IX.PlayCircle,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
@@ -229,6 +262,8 @@ const TABS_ALL = [['hub', 'Medsystem Hub'], ['chat', 'Conversas (WhatsApp)'], ['
 let TABS = TABS_ALL;
 const tabsForState = () => { TABS = TABS_ALL.filter(([id]) => id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)); if (!TABS.some((t) => t[0] === tab)) tab = 'hub'; };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
+let fx = { active: false, running: false, remaining: 1500, planned: 1500, elapsed: 0, progress: 0, title: null, taskId: null, streak: 0, days: [], todaySeconds: 0, minutes: 25 };
+const mmss = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.round(Math.max(0, s) % 60)).padStart(2, '0')}`;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
 let hub = null, hubQ = '', hubBusy = '', notesMode = 'tasks', newTaskOpen = false, clips = [], clipQ = '', clipCopied = null, caps = [], capsQ = '';
 
@@ -254,12 +289,28 @@ function renderMini() {
   if (n) h += `<div class="seg" style="color:var(--warn)">⚠ ${n}</div>`;
   if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; if (hub.chatUnread) h += `<div class="seg" style="color:#4ade80">${I.chat}${hub.chatUnread}</div>`; }
   if (sh.clock !== false) h = `<div class="seg clock"><b>${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>` + h;
+  // foco em andamento vem primeiro: ⏱ mm:ss · tarefa (+ streak)
+  if (fx.active && (settings.focus || {}).pill !== false) {
+    h = `<div class="seg fx">${I.timer}<b>${mmss(fx.remaining)}</b>${fx.running ? '' : '<span class="st">pausado</span>'}</div>` + h
+      + `<div class="seg fx"><span class="nm">${esc(fx.title || '')}</span></div>`
+      + (fx.streak ? `<div class="seg fx" title="Sequência de dias com foco" style="color:#ff9f0a">${I.flame}${fx.streak}d</div>` : '');
+  }
   if (sh.weather !== false && wx && wx.ok) h += `<div class="seg" title="${esc(wx.desc || '')}${wx.label ? ' · ' + esc(wx.label) : ''}"><span class="wi">${wx.icon}</span>${wx.temp}°</div>`;
   if (!h) h = `<div class="seg muted">SideNotch</div>`;
   box.innerHTML = h;
   const w = Math.min(600, Math.max(220, box.scrollWidth + 20));
   if (!document.body.classList.contains('open')) $('#pill').style.width = w + 'px';
   document.body.classList.toggle('alert', n > 0);
+  paintFocus();
+}
+// a linha azul acompanha a base da pastilha (a largura da pastilha muda, então recalcula sempre)
+function paintFocus() {
+  const on = fx.active && (settings.focus || {}).pill !== false;
+  document.body.classList.toggle('focusing', on);
+  document.body.classList.toggle('paused', on && !fx.running);
+  const el = $('#fxline'); if (!el) return;
+  const w = $('#pill').getBoundingClientRect().width || 240;
+  el.style.width = on ? Math.round(w * Math.max(0, Math.min(1, fx.progress))) + 'px' : '0px';
 }
 
 // ---------- aberto ----------
@@ -551,6 +602,48 @@ function viewHub() {
   h += `<div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center">${esc(p.email || '')} · <a id="hbSync" style="cursor:pointer">${I.refresh} atualizar</a> · <a id="hbOut" style="cursor:pointer">${I.logout} desvincular</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
   return h;
 }
+// ---------- foco ----------
+function fxRing(p, color = '#0a84ff') {
+  const r = 14.5, c = 2 * Math.PI * r;
+  return `<div class="fxring"><svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="${r}" stroke="rgba(255,255,255,.14)"></circle><circle cx="17" cy="17" r="${r}" stroke="${color}" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - Math.max(0, Math.min(1, p)))).toFixed(1)}"></circle></svg></div>`;
+}
+function viewFocusNow() {
+  if (!fx.active) return '';
+  const pct = Math.round(fx.progress * 100);
+  return `<div class="fxnow">${fxRing(fx.progress, fx.running ? '#0a84ff' : '#f59e0b')}
+    <div class="grow" style="min-width:0"><div class="row" style="gap:8px"><span class="tm">${mmss(fx.remaining)}</span><span class="sub">${pct}% de ${Math.round(fx.planned / 60)} min</span></div>
+    <div class="nm">${esc(fx.title || 'Foco livre')}</div></div>
+    <button class="fxbtn ${fx.running ? 'pause' : 'play'}" id="fxToggle" title="${fx.running ? 'Pausar' : 'Retomar'}">${fx.running ? I.pause : I.play}</button>
+    <button class="fxbtn" id="fxStop" title="Encerrar e gravar">${I.stop}</button></div>`;
+}
+function viewStreak() {
+  if ((settings.focus || {}).streak === false) return '';
+  const byDay = Object.fromEntries((fx.days || []).map((d) => [String(d.day).slice(0, 10), d.seconds]));
+  const cells = []; const today = new Date(); today.setHours(12, 0, 0, 0);
+  const start = new Date(today); start.setDate(start.getDate() - 69);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));   // começa numa segunda
+  for (let i = 0; i < 77; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const key = d.toISOString().slice(0, 10); const secs = byDay[key] || 0;
+    const lvl = secs >= 5400 ? 'l3' : secs >= 1800 ? 'l2' : secs > 0 ? 'l1' : '';
+    const isToday = key === today.toISOString().slice(0, 10);
+    cells.push(`<i class="${lvl}${isToday ? ' today' : ''}" title="${d.toLocaleDateString('pt-BR')}${secs ? ' · ' + Math.round(secs / 60) + ' min' : ''}"></i>`);
+  }
+  const hoje = Math.round((fx.todaySeconds || 0) / 60);
+  return `<div class="streak"><div class="hd">${I.flame}<span>Journey Streak</span><span class="n">${fx.streak || 0}d</span></div>
+    <div class="heat">${cells.join('')}</div>
+    <div class="ft"><span>Hoje: <b style="color:#eaf3ff">${hoje} min</b></span><span class="grow"></span><span>ciclo ${fx.minutes || 25} min</span></div></div>`;
+}
+function bindFocus() {
+  const tg = $('#fxToggle'); if (tg) tg.onclick = async (e) => { e.stopPropagation(); fx = await api.focusToggle(null) || fx; renderMini(); renderView(); };
+  const st = $('#fxStop'); if (st) st.onclick = async (e) => { e.stopPropagation(); fx = await api.focusStop() || fx; renderMini(); renderView(); };
+  document.querySelectorAll('[data-fx]').forEach((b) => b.onclick = async (e) => {
+    e.stopPropagation(); const id = b.dataset.fx; const t = (hub.tasks || []).find((x) => x.id === id);
+    fx = await api.focusToggle({ id, title: t ? t.title : 'Foco', minutes: t && t.estimateMin ? t.estimateMin : undefined }) || fx;
+    renderMini(); renderView();
+  });
+  const op = $('#fxPanel'); if (op) op.onclick = () => api.openTasks();
+}
 function taskRow(t) {
   const today = day0(Date.now());
   const due = t.due_date ? new Date(t.due_date + 'T12:00') : null; const late = due && day0(due) < today;
@@ -558,7 +651,7 @@ function taskRow(t) {
   return `<div class="grow-item" data-tkrow="${esc(t.id)}"><div class="lead" style="background:${late ? 'rgba(255,69,58,.18)' : 'var(--fill)'}">${t.source === 'at' ? I.monitor : I.check}</div>
     <div class="grow" style="min-width:0"><div class="ti" data-tk="${esc(t.link || '')}" title="${esc(t.description || '')}">${esc(t.title)}</div>
     <div class="ms" style="-webkit-line-clamp:1">${t.description ? esc(t.description) + ' · ' : ''}<span class="chip pr-${t.priority}">${PRI_N[t.priority] || t.priority}</span>${t.label ? ` <span class="chip">${esc(t.label)}</span>` : ''}${dueS ? ` <span class="chip ${late ? 'late' : ''}" style="${late ? '' : 'background:var(--fill);color:#d1d1d6'}">${late ? 'atrasada · ' : ''}${dueS}</span>` : ''}${t.status === 'in_progress' ? ' <span class="chip" style="background:rgba(48,209,88,.16);color:#30d158">em andamento</span>' : ''}</div></div>
-    <div class="tk-actions">${t.status !== 'in_progress' ? `<button data-ts="${esc(t.id)}:in_progress" title="Iniciar">${I.play}</button>` : ''}<button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">${I.tick}</button></div></div>`;
+    <div class="tk-actions"><button class="fxb ${fx.active && fx.taskId === t.id && fx.running ? 'on' : ''}" data-fx="${esc(t.id)}" title="${fx.active && fx.taskId === t.id && fx.running ? 'Pausar foco' : 'Focar nesta tarefa'}">${fx.active && fx.taskId === t.id && fx.running ? I.pause : I.play}</button><button class="ok" data-ts="${esc(t.id)}:completed" title="Concluir">${I.tick}</button></div></div>`;
 }
 function viewTasks() {
   if (!hub || !hub.linked) return `<div class="empty">Vincule o Medsystem Hub (aba 🏠) para ver suas tarefas aqui.</div>`;
@@ -568,10 +661,16 @@ function viewTasks() {
   const rest = tks.filter((t) => !late.includes(t) && !todayT.includes(t));
   const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="glist">${arr.map(taskRow).join('')}</div>` : '';
   const form = newTaskOpen ? `<div class="tform"><input id="ntTitle" placeholder="O que precisa ser feito?" maxlength="255"><input id="ntDue" type="date"><select id="ntPri"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option><option value="urgent">Crítica</option></select><textarea id="ntDesc" placeholder="Detalhes (opcional)"></textarea><div class="acts"><span class="muted" id="ntMsg"></span><button id="ntCancel">Cancelar</button><button class="pri" id="ntSave">Criar tarefa</button></div></div>` : '';
-  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Tarefas atribuídas a você e as OS do Fluxo da AT.</span><button class="pillbtn blue" id="ntNew">${I.add} Nova tarefa</button></div>${form}<div class="lst" style="max-height:${newTaskOpen ? 300 : 420}px">${tks.length ? grp('Atrasadas', late) + grp('Hoje', todayT) + grp('Próximas / sem prazo', rest) : '<div class="empty">Nada pendente 🎉</div>'}</div>
-    <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center"><a id="hbTasks2" style="cursor:pointer;color:var(--blue)">Abrir central de tarefas no Hub</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
+  const lists = tks.length ? grp('Atrasadas', late) + grp('Hoje', todayT) + grp('Próximas / sem prazo', rest) : '<div class="empty">Nenhuma tarefa aberta. 🎉</div>';
+  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Tarefas atribuídas a você e as OS do Fluxo da AT.</span>
+      <button class="pillbtn" id="fxPanel" title="Abrir o painel com calendário">${I.expand} Painel</button>
+      <button class="pillbtn blue" id="ntNew">${I.add} Nova tarefa</button></div>
+    ${viewFocusNow()}${form}
+    <div class="fxgrid"><div class="lst" style="max-height:${newTaskOpen ? 290 : 400}px">${lists}</div>${viewStreak()}</div>
+    <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center"><a id="hbTasks2" style="cursor:pointer;color:var(--blue)">Abrir central de tarefas no Hub</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`
 }
 function bindTasks() {
+  bindFocus();
   const setHub = (r) => { if (r && r.state) hub = r.state; renderTabs(); renderView(); };
   document.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); const [id, st] = b.dataset.ts.split(/:(?=[a-z_]+$)/); b.disabled = true; const r = await api.hubTask(id, st); if (!r.ok) { hubBusy = r.error; renderView(); } else setHub(r); });
   document.querySelectorAll('[data-tk]').forEach((el) => el.onclick = () => api.hubOpen(el.dataset.tk || '/tarefas'));
@@ -734,6 +833,8 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
+  api.onFocus((st) => { if (!st) return; fx = st; renderMini(); if (document.body.classList.contains('open') && tab === 'notes' && notesMode === 'tasks' && !typing()) renderView(); });
+  api.focusGet().then((st) => { if (st) { fx = st; renderMini(); } });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });
   api.onSound(playSound);
   api.onCaptures((l) => { caps = l || []; if (tab === 'caps' && document.body.classList.contains('open') && !typing()) renderView(); });
