@@ -6,11 +6,13 @@
   function render(ctx, shapes, W, H, img, selIdx = -1) {
     for (let i = 0; i < shapes.length; i++) {
       const s = shapes[i]; const x1 = s.x1 * W, y1 = s.y1 * H, x2 = s.x2 * W, y2 = s.y2 * H;
-      ctx.save(); ctx.lineWidth = lw(W); ctx.strokeStyle = s.color || RED; ctx.fillStyle = s.color || RED; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.save(); ctx.lineWidth = lw(W) * (s.width || 1); ctx.strokeStyle = s.color || RED; ctx.fillStyle = s.color || RED; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       if (s.type === 'rect') { ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); }
+      else if (s.type === 'line') { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+      else if (s.type === 'ellipse') { ctx.beginPath(); ctx.ellipse((x1 + x2) / 2, (y1 + y2) / 2, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2); ctx.stroke(); }
       else if (s.type === 'arrow') {
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-        const a = Math.atan2(y2 - y1, x2 - x1), h = lw(W) * 4.5;
+        const a = Math.atan2(y2 - y1, x2 - x1), h = lw(W) * (s.width || 1) * 4.5;
         ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - h * Math.cos(a - 0.45), y2 - h * Math.sin(a - 0.45)); ctx.lineTo(x2 - h * Math.cos(a + 0.45), y2 - h * Math.sin(a + 0.45)); ctx.closePath(); ctx.fill();
       } else if (s.type === 'blur' && img) {
         const rx = Math.min(x1, x2), ry = Math.min(y1, y2), rw = Math.abs(x2 - x1), rh = Math.abs(y2 - y1);

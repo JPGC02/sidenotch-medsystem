@@ -145,7 +145,8 @@ class QuickAccess {
     ipcMain.handle('qa:edit', (_e, id) => { this.openEditor(id); return true; });
     ipcMain.handle('qa:list', () => this.caps.list());
     ipcMain.handle('qa:search', (_e, q) => this.caps.search(q).map((i) => this._card(i)));
-    ipcMain.handle('qa:remove', (_e, id) => { this.caps.remove(id); return this.caps.list(); });
+    ipcMain.handle('qa:remove', (_e, id) => { this.caps.remove(id); if (this.stack && !this.stack.isDestroyed()) this.stack.webContents.send('qa:remove', id); return this.caps.list(); });
+    ipcMain.on('qa:log', (_e, msg) => { try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), new Date().toISOString() + ' ' + msg + '\n'); } catch { /* ignore */ } });
     ipcMain.handle('qa:restore', (_e, id) => this.restore(id));
     ipcMain.handle('qa:capture', () => { this.captureArea(); return true; });
     ipcMain.handle('qa:open-file', (_e, id) => { const it = this.caps.get(id); if (it) shell.openPath(this.caps.best(id)); return !!it; });
