@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.10.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.11.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.10.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.11.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -119,11 +119,21 @@ Pomodoro ligado às tarefas do Medsystem Hub, no espírito do notch da Apple:
 - **Onde fica o tempo**: cada sessão vai para `focus_sessions` no Supabase (RLS por usuário) via RPC `focus_log`, que **soma o tempo em `tasks.focus_seconds`** (ou `at_os_tarefa.focus_seconds`) — o Hub web vê o mesmo número. Sem internet a sessão espera em `focus.json` e sobe depois. Streak e heatmap vêm da RPC `focus_summary`.
 - Iniciar um ciclo marca a tarefa como *em andamento* no Hub (opcional). Duração, pausa, som, timer na pastilha e streak em Configurações → Medsystem Hub → Foco.
 
+## Quadro do time de Sistemas (1.11)
+A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sistemas_ideias`):
+- **Resumo no notch**: placar (sem dono · em dev · paradas · bloqueadas · novas 24h · entregues 7d), **Agora** (quem está focando em quê, com WIP por pessoa), **Travas** e a **movimentação do time** em tempo real. Na pastilha fechada aparece `em dev · ⚠travados`.
+- **Janela do quadro** (`Ctrl+Shift+K`): Kanban com 6 colunas e **arrastar para mover**, modo **por pessoa** (swimlanes), busca, filtros (bug/ideia, meus/sem dono), e por cartão: *Assumir/Focar*, *Entregar*, *Travar/Liberar* (bloqueio exige motivo).
+- **Notificações do time**: cada evento de outra pessoa (assumiu, moveu, bloqueou, entregou, comentou) chega no banner do topo — via Realtime de `sistemas_ideias` e `sistemas_ideia_historico`.
+- **Cobranças automáticas** (1× por dia cada): cartão sem dono há +24 h, em desenvolvimento sem evento há +2 dias, bloqueado, SLA de bug estourado, WIP acima do limite (padrão 2) e novas entradas na fila.
+- **Brief 9h e fechamento 18h**: resumo automático do quadro no notch (horários configuráveis).
+- **Foco integrado**: dar play num cartão **assume o cartão**, marca *em desenvolvimento* e conta o tempo em `sistemas_ideias.focus_seconds` — a linha *Agora* usa as sessões abertas de `focus_sessions`.
+- Tudo pelas RPCs `sistemas_board`, `sistemas_feed`, `sistemas_alerts`, `sistemas_take`, `sistemas_move`, `sistemas_block` (todas checam `is_sistemas_operacao`). Ajustes em Configurações → Medsystem Hub → Quadro do time.
+
 ## Maestri (Wire)
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.10.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.11.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

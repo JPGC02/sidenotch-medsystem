@@ -43,7 +43,9 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '' },
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K' },
+  // quadro do time de Sistemas (Kanban + cobranças + brief)
+  board: { enabled: true, notifyMoves: true, notifyStuck: true, notifyNew: true, brief: true, briefManha: '09:00', briefTarde: '18:00', sound: true, wip: 2, semDonoHoras: 24, paradoDias: 2, swimlanes: false, takeOnFocus: true },
   // foco (pomodoro) nas tarefas do Hub
   focus: { minutes: 25, breakMinutes: 5, autoStatus: true, chime: true, pill: true, streak: true },
   quickaccess: { side: 'left', ttlSec: 0 },   // pilha de capturas: canto (left/right) e auto-dismiss em segundos (0 = nunca)

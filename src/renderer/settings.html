@@ -137,6 +137,18 @@
         <div class="r"><div class="l"><b>Contadores na pastilha fechada</b></div><label class="sw"><input id="ntHub" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Atalhos na barra lateral</b><small>quantos formulários aparecem no dock (3 a 6); clique direito num tile do notch fixa</small></div><input id="hbDock" type="number" min="3" max="6"></div>
         <div class="r"><div class="l"><b>Consulta de segurança a cada</b><small>segundos (o tempo real cobre o resto)</small></div><input id="hbPoll" type="number" min="30" max="900"></div>
+        <h2>Quadro do time (Sistemas)</h2>
+        <div class="r"><div class="l"><b>Acompanhar o quadro</b><small>aba no notch + janela do Kanban; só aparece para quem tem o módulo Sistemas</small></div><label class="sw"><input id="bdOn" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Avisar movimentação do time</b><small>assumiu, moveu de coluna, bloqueou, entregou — em tempo real</small></div><label class="sw"><input id="bdMoves" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Avisar travas e cobranças</b><small>sem dono, parado, bloqueado, SLA estourado e WIP acima do limite (1× por dia cada)</small></div><label class="sw"><input id="bdStuck" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Avisar novas entradas na fila</b></div><label class="sw"><input id="bdNew" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Brief da manhã e fechamento</b><small>resumo do quadro no início e no fim do dia</small></div><label class="sw"><input id="bdBrief" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Horários do brief</b><small>manhã e tarde (HH:MM)</small></div><div style="display:flex;gap:6px"><input id="bdM" type="text" style="width:70px" placeholder="09:00"><input id="bdT" type="text" style="width:70px" placeholder="18:00"></div></div>
+        <div class="r"><div class="l"><b>Limite de cartões em desenvolvimento</b><small>WIP por pessoa; acima disso o app avisa</small></div><input id="bdWip" type="number" min="1" max="10"></div>
+        <div class="r"><div class="l"><b>Cobrar cartão sem dono após</b><small>horas</small></div><input id="bdSem" type="number" min="1" max="240"></div>
+        <div class="r"><div class="l"><b>Cobrar cartão parado após</b><small>dias sem nenhum evento</small></div><input id="bdPar" type="number" min="1" max="30"></div>
+        <div class="r"><div class="l"><b>Dar play assume o cartão</b><small>iniciar foco vira dono e joga em “em desenvolvimento”</small></div><label class="sw"><input id="bdTake" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Atalho: abrir o quadro</b></div><input id="scBoard" type="text" placeholder="CommandOrControl+Shift+K"></div>
         <h2>Foco (pomodoro nas tarefas)</h2>
         <div class="r"><div class="l"><b>Duração do ciclo</b><small>minutos; a estimativa da tarefa, quando existir, manda</small></div><input id="fxMin" type="number" min="5" max="180"></div>
         <div class="r"><div class="l"><b>Pausa sugerida</b><small>minutos avisados ao fim do ciclo</small></div><input id="fxBrk" type="number" min="1" max="60"></div>
@@ -328,8 +340,9 @@ function collect() {
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
-    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim() },
+    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim() },
     quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0) },
+    board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
     hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
@@ -367,7 +380,10 @@ async function load() {
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   const fxs = settings.focus || {}; $('#fxMin').value = fxs.minutes || 25; $('#fxBrk').value = fxs.breakMinutes || 5;
   $('#fxPill').checked = fxs.pill !== false; $('#fxStreak').checked = fxs.streak !== false; $('#fxAuto').checked = fxs.autoStatus !== false; $('#fxChime').checked = fxs.chime !== false;
-  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || '';
+  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K';
+  const bd = settings.board || {}; $('#bdOn').checked = bd.enabled !== false; $('#bdMoves').checked = bd.notifyMoves !== false; $('#bdStuck').checked = bd.notifyStuck !== false;
+  $('#bdNew').checked = bd.notifyNew !== false; $('#bdBrief').checked = bd.brief !== false; $('#bdM').value = bd.briefManha || '09:00'; $('#bdT').value = bd.briefTarde || '18:00';
+  $('#bdWip').value = bd.wip || 2; $('#bdSem').value = bd.semDonoHoras || 24; $('#bdPar').value = bd.paradoDias || 2; $('#bdTake').checked = bd.takeOnFocus !== false;
   renderHub(await api.hubGet());
   $('#upAuto').checked = !!(settings.update && settings.update.auto);
   const m = settings.maestri || {}; $('#mHost').value = m.host || '127.0.0.1'; $('#mPort').value = m.port || 7434; $('#mPoll').value = m.pollSeconds || 4; $('#mAttn').checked = m.notifyAttention !== false;

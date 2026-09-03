@@ -34,9 +34,9 @@ class Focus extends EventEmitter {
     const { planned } = this._cfg();
     if (this.cur && this.cur.taskId === (t.id || null)) { if (!this.cur.running) return this.resume(); return this.state(); }
     if (this.cur) this.stop('switch');
-    this.cur = { taskId: t.id || null, title: t.title || 'Foco', kind: String(t.id || '').startsWith('at:') ? 'at' : (t.id ? 'task' : 'free'), planned: Math.max(60, Math.round((t.minutes ? t.minutes * 60 : planned))), startedAt: Date.now(), elapsed: 0, running: true, lastAt: Date.now(), break: false };
+    this.cur = { taskId: t.id || null, title: t.title || 'Foco', kind: t.kind || (String(t.id || '').startsWith('at:') ? 'at' : (t.id ? 'task' : 'free')), planned: Math.max(60, Math.round((t.minutes ? t.minutes * 60 : planned))), startedAt: Date.now(), elapsed: 0, running: true, lastAt: Date.now(), break: false };
     this._tick(true);
-    if (t.id && this._cfg().autoStatus) this._setStatus(t.id, 'in_progress');
+    if (t.id && this._cfg().autoStatus) this._setStatus(t.id, 'in_progress', this.cur.kind);
     this.emit('change', this.state());
     return this.state();
   }
@@ -52,14 +52,17 @@ class Focus extends EventEmitter {
     if (!this.cur) return this.state();
     this._accrue();
     const s = this.cur; this.cur = null; this._stopTimer();
-    if (s.elapsed >= 5) { this.pending.push({ taskId: s.taskId, title: s.title, seconds: Math.round(s.elapsed), planned: s.planned, completed: reason === 'done', startedAt: s.startedAt }); this._save(); this.flush(); }
+    if (s.elapsed >= 5) { this.pending.push({ taskId: s.taskId, kind: s.kind, title: s.title, seconds: Math.round(s.elapsed), planned: s.planned, completed: reason === 'done', startedAt: s.startedAt }); this._save(); this.flush(); }
     this.emit('change', this.state());
     return this.state();
   }
-  async complete(taskId) {   // concluir a tarefa (círculo do To Do)
+  async complete(taskId, kind) {   // concluir a tarefa (círculo do To Do) ou entregar o cartão do quadro
     const id = taskId || (this.cur && this.cur.taskId);
+    const k = kind || (this.cur && this.cur.taskId === id ? this.cur.kind : null);
     if (this.cur && this.cur.taskId === id) this.stop('done');
-    if (id && this.hub) await this.hub.setTaskStatus(id, 'completed').catch(() => {});
+    if (!id || !this.hub) return this.state();
+    if (k === 'ideia') await (this.hub.boardMove ? this.hub.boardMove(id, 'entregue').catch(() => {}) : Promise.resolve());
+    else await this.hub.setTaskStatus(id, 'completed').catch(() => {});
     return this.state();
   }
 
@@ -80,7 +83,12 @@ class Focus extends EventEmitter {
       this.emit('tick', this.state());
     }, TICK);
   }
-  _setStatus(id, status) { if (this.hub && this.hub.linked && this.hub.linked()) this.hub.setTaskStatus(id, status).catch(() => {}); }
+  // no quadro de Sistemas, dar play assume o cartão e o joga em "em desenvolvimento"
+  _setStatus(id, status, kind) {
+    if (!this.hub || !this.hub.linked || !this.hub.linked()) return;
+    if (kind === 'ideia') { if (this.hub.boardTake) this.hub.boardTake(id, true).catch(() => {}); return; }
+    this.hub.setTaskStatus(id, status).catch(() => {});
+  }
 
   // ---------- sincronização ----------
   async flush() {
@@ -109,6 +117,7 @@ class Focus extends EventEmitter {
       active: !!c,
       running: !!(c && c.running),
       taskId: c ? c.taskId : null,
+      kind: c ? c.kind : null,
       title: c ? c.title : null,
       planned: c ? c.planned : cfg.planned,
       elapsed: Math.min(c ? c.planned : cfg.planned, Math.round(elapsed)),

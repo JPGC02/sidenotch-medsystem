@@ -18,7 +18,9 @@ const { Focus } = require('./focus');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer;
+const briefDone = { manha: '', tarde: '' };   // aaaa-mm-dd do último brief enviado
+const alertSent = new Map();                  // chave do alerta → quando cobrou (não repete no mesmo dia)
 const webappWins = new Map();
 let lastUsage = [];
 
@@ -56,6 +58,7 @@ app.whenReady().then(() => {
   startHub();
   qa = new QuickAccess({ userData: app.getPath('userData'), getSettings: () => store.get(), hub, notify: (n) => server && server._notify(n), broadcast });
   startFocus();
+  startBoard();
   registerShortcuts();
   updater = new Updater({ onState: (st) => { broadcast('update', st); buildTrayMenu(); } });
   updater.start(store.get().update.auto);
@@ -198,6 +201,14 @@ function startHub() {
       const title = ev.kind === 'message' ? `${c.name}${c.sector ? ' · ' + c.sector : ''}` : ev.kind === 'transfer' ? `↪ ${c.name}` : `👤 ${c.name}`;
       server && server._notify({ type: 'chat', kind: ev.kind, title, text: (ev.text || '').slice(0, 300), link: c.link, chatId: c.id, avatar: c.avatar || null, project: 'WhatsApp' });
     });
+    // quadro de Sistemas: movimentação do time em tempo real
+    hub.on('board', (ev) => {
+      const cfg = store.get().board || {};
+      if (cfg.enabled === false || cfg.notifyMoves === false) return;
+      const t = boardEventText(ev); if (!t) return;
+      server && server._notify({ type: 'board', title: t.title, text: t.text, link: ev.ideiaId ? `/sistemas/ideias?id=${ev.ideiaId}` : '/sistemas/ideias', project: 'Sistemas' });
+      if ((store.get().board || {}).sound !== false) { const h = store.get().hub || {}; playSound(h.soundPreset || 'ping', h); }
+    });
     hub.on('notification', (n) => {
       if ((store.get().hub || {}).notify === false) return;
       server && server._notify({ type: 'hub', title: n.titulo || 'Medsystem Hub', text: (n.mensagem || '').slice(0, 300), link: n.link || '', hubNotifId: n.id, project: 'Medsystem Hub' });
@@ -207,6 +218,81 @@ function startHub() {
   if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 60); else hub.stop();
   if (focus) { focus.hubRef(hub); focus.flush(); }
 }
+// ---------- Quadro do time de Sistemas ----------
+const ACAO_TXT = { assumiu: 'assumiu', mudou_status: 'moveu', bloqueou: 'bloqueou', desbloqueou: 'desbloqueou', comentou: 'comentou em', criou: 'criou', entregou: 'entregou' };
+const COL_TXT = { recebida: 'Recebidas', em_triagem: 'Triagem', em_priorizacao: 'Priorização', aprovada: 'Aprovadas', em_desenvolvimento: 'Em desenvolvimento', entregue: 'Entregue', arquivada: 'Arquivada', recusada: 'Recusada' };
+function boardEventText(ev) {
+  const card = ev.numero ? `#${ev.numero}${ev.titulo ? ' · ' + String(ev.titulo).slice(0, 60) : ''}` : 'um cartão';
+  const acao = ACAO_TXT[ev.acao] || ev.acao;
+  const para = ev.para && ev.para.status ? COL_TXT[ev.para.status] || ev.para.status : null;
+  if (ev.acao === 'mudou_status' && para) return { title: `${ev.quem} → ${para}`, text: card };
+  if (ev.acao === 'bloqueou') return { title: `${ev.quem} bloqueou`, text: `${card}${ev.detalhes ? ' — ' + ev.detalhes : ''}` };
+  return { title: `${ev.quem} ${acao}`, text: card };
+}
+function startBoard() {
+  clearInterval(boardTimer);
+  boardTimer = setInterval(() => { checkBoardAlerts(); checkBriefs(); }, 5 * 60 * 1000);
+  setTimeout(() => { checkBoardAlerts(); checkBriefs(); }, 20000);
+}
+// cobranças: sem dono, parado, bloqueado, SLA, WIP — no máximo uma vez por dia por item
+async function checkBoardAlerts() {
+  const cfg = store.get().board || {};
+  if (cfg.enabled === false || cfg.notifyStuck === false || !hub || !hub.hasBoard || !hub.hasBoard()) return;
+  const a = await hub.loadBoardAlerts({ semDonoHoras: Number(cfg.semDonoHoras) || 24, paradoDias: Number(cfg.paradoDias) || 2, wip: Number(cfg.wip) || 2 }).catch(() => null);
+  if (!a) return;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const once = (key, fn) => { const k = key + '|' + hoje; if (alertSent.get(k)) return; alertSent.set(k, Date.now()); fn(); };
+  const notify = (title, text, link) => server && server._notify({ type: 'board', title, text, link: link || '/sistemas/ideias', project: 'Sistemas' });
+  if ((a.semDono || []).length) once('semdono:' + a.semDono.length, () => notify(`⏳ ${a.semDono.length} cartão(ões) sem dono`, a.semDono.slice(0, 3).map((x) => `#${x.n} ${x.titulo}`).join(' · ')));
+  for (const x of (a.paradas || []).slice(0, 5)) once('parada:' + x.id, () => notify(`🛑 #${x.n} parada há ${x.dias}d`, `${x.titulo}${x.quem ? ' — ' + x.quem : ''}`, `/sistemas/ideias?id=${x.id}`));
+  for (const x of (a.bloqueadas || []).slice(0, 5)) once('bloq:' + x.id, () => notify(`⛔ #${x.n} bloqueada`, `${x.motivo || 'sem motivo'}${x.quem ? ' — ' + x.quem : ''}`, `/sistemas/ideias?id=${x.id}`));
+  for (const x of (a.sla || []).slice(0, 5)) once('sla:' + x.id, () => notify(`⚠ SLA de ${x.tipo} estourado`, `#${x.n} ${x.titulo}`, `/sistemas/ideias?id=${x.id}`));
+  for (const w of (a.wip || [])) once('wip:' + w.id, () => notify(`📌 ${w.name} com ${w.wip} em andamento`, `Acima do limite de ${Number(cfg.wip) || 2} — vale terminar antes de puxar mais.`));
+  if (a.filaNova && cfg.notifyNew !== false) once('fila:' + a.filaNova, () => notify(`📥 ${a.filaNova} nova(s) na fila`, 'Entraram nas últimas 24 h e ainda estão em Recebidas.'));
+  broadcast('hub', hub.state());
+}
+// brief da manhã e fechamento do dia
+async function checkBriefs() {
+  const cfg = store.get().board || {};
+  if (cfg.enabled === false || cfg.brief === false || !hub || !hub.hasBoard || !hub.hasBoard()) return;
+  const now = new Date(); const hoje = now.toISOString().slice(0, 10); const hhmm = now.getHours() * 60 + now.getMinutes();
+  const parse = (v, d) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : d; };
+  const manha = parse(cfg.briefManha, 9 * 60), tarde = parse(cfg.briefTarde, 18 * 60);
+  const janela = 20;   // tolerância: o app pode estar dormindo na hora exata
+  const due = (alvo) => hhmm >= alvo && hhmm < alvo + janela;
+  if (due(manha) && briefDone.manha !== hoje) { briefDone.manha = hoje; await sendBrief('manha'); }
+  if (due(tarde) && briefDone.tarde !== hoje) { briefDone.tarde = hoje; await sendBrief('tarde'); }
+}
+async function sendBrief(kind) {
+  await hub.loadBoard().catch(() => {});
+  const st = (hub.board && hub.board.stats) || {};
+  const feed = (hub.boardFeed || []).filter((e) => Date.now() - new Date(e.at || e.created_at).getTime() < 12 * 3600 * 1000);
+  const movidas = feed.filter((e) => e.acao === 'mudou_status').length;
+  const txt = kind === 'manha'
+    ? `${st.novas24h || 0} nova(s) · ${st.semDono || 0} sem dono · ${st.emDev || 0} em dev · ${st.paradas || 0} parada(s)`
+    : `${movidas} movimento(s) hoje · ${st.entregues7d || 0} entregue(s) na semana · ${st.bloqueadas || 0} bloqueada(s)`;
+  server && server._notify({ type: 'board', title: kind === 'manha' ? '☀ Quadro de Sistemas — hoje' : '🌙 Fechamento do dia', text: txt, link: '/sistemas/ideias', project: 'Sistemas' });
+  broadcast('hub', hub.state());
+}
+// janela do quadro (Kanban completo)
+function openBoardWindow() {
+  if (boardWin && !boardWin.isDestroyed()) { boardWin.show(); boardWin.focus(); return boardWin; }
+  const win11 = process.platform === 'win32' && Number((require('os').release().split('.')[2]) || 0) >= 22000;
+  const d = targetDisplay();
+  boardWin = new BrowserWindow({
+    width: Math.min(1360, d.workArea.width - 60), height: Math.min(780, d.workArea.height - 60),
+    title: 'Quadro · Sistemas', show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#00000000', symbolColor: '#f4f4f6', height: 36 },
+    ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
+    icon: path.join(__dirname, 'assets', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+  });
+  boardWin.setMenu(null);
+  boardWin.loadFile(path.join(__dirname, 'renderer', 'board.html'), { query: win11 ? {} : { solid: '1' } });
+  boardWin.once('ready-to-show', () => { app.focus({ steal: true }); boardWin.show(); boardWin.focus(); });
+  boardWin.on('closed', () => { boardWin = null; });
+  return boardWin;
+}
+
 // ---------- Foco (pomodoro nas tarefas do Hub) ----------
 function startFocus() {
   focus = new Focus({ userData: app.getPath('userData'), hub, getSettings: () => store.get(), notify: (n) => {
@@ -252,7 +338,7 @@ function broadcastApprovals() { broadcast('approvals', approvalsState()); update
 
 function onNotify(n) {
   const cfg = store.get().notifications;
-  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true, focus: true }[n.type];
+  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true, focus: true, board: true }[n.type];
   if (!want) { server.feed = server.feed.filter((x) => x.id !== n.id); return; }
   broadcast('notify', n);
   if (store.get().dnd) return;
@@ -372,7 +458,7 @@ function scheduleRefresh() {
 }
 
 function broadcast(ch, payload) {
-  for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
+  for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin, boardWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
 }
 
 // ---------- Atalhos globais ----------
@@ -389,6 +475,7 @@ function registerShortcuts() {
   reg(sc.hub, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'hub'); } });
   reg(sc.focus || 'CommandOrControl+Shift+F', () => { if (!focus) return; if (focus.state().active) focus.toggle(); else openTasksWindow(); });
   reg(sc.tasks, () => openTasksWindow());
+  reg(sc.board, () => openBoardWindow());
 }
 
 // ---------- Janela de Tarefas (mês + dia, foco por tarefa) ----------
@@ -426,6 +513,7 @@ function buildTrayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Capturar área…', click: () => qa && qa.captureArea() },
     { label: 'Tarefas e foco…', click: () => openTasksWindow() },
+    ...(hub && hub.hasBoard && hub.hasBoard() ? [{ label: 'Quadro de Sistemas…', click: () => openBoardWindow() }] : []),
     ...(focus && focus.state().active ? [{ label: focus.state().running ? `Pausar foco (${Math.ceil(focus.state().remaining / 60)} min)` : 'Retomar foco', click: () => focus.toggle() }, { label: 'Encerrar foco', click: () => focus.stop('user') }] : []),
     { label: 'Atualizar uso agora', click: () => refresh(true) },
     { label: 'Não perturbe', type: 'checkbox', checked: !!store.get().dnd, click: (mi) => setDnd(mi.checked) },
@@ -565,11 +653,20 @@ ipcMain.handle('focus:start', (_e, task) => focus ? focus.start(task || {}) : nu
 ipcMain.handle('focus:toggle', (_e, task) => focus ? focus.toggle(task || null) : null);
 ipcMain.handle('focus:pause', () => focus ? focus.pause() : null);
 ipcMain.handle('focus:stop', () => focus ? focus.stop('user') : null);
-ipcMain.handle('focus:complete', async (_e, id) => { if (!focus) return null; await focus.complete(id); return focus.state(); });
+ipcMain.handle('focus:complete', async (_e, id, kind) => { if (!focus) return null; await focus.complete(id, kind); return focus.state(); });
 ipcMain.handle('focus:refresh', async () => { if (!focus) return null; await focus.flush(); await focus.refresh(); return focus.state(); });
 ipcMain.handle('hub:task-estimate', async (_e, id, min) => { try { await hub.setTaskEstimate(id, min); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('hub:task-update', async (_e, id, patch) => { try { await hub.updateTask(id, patch || {}); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('hub:task-delete', async (_e, id) => { try { await hub.deleteTask(id); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('tasks:open', () => { openTasksWindow(); return true; });
+// ---------- quadro de Sistemas ----------
+ipcMain.handle('board:open', () => { openBoardWindow(); return true; });
+ipcMain.handle('board:get', async (_e, force) => { if (!hub || !hub.hasBoard()) return null; if (force) await hub.loadBoard().catch(() => {}); return { board: hub.board, feed: hub.boardFeed, alerts: hub.boardAlerts, people: hub.board && hub.board.people }; });
+ipcMain.handle('board:feed', async (_e, n) => { if (!hub || !hub.hasBoard()) return []; return hub.loadBoardFeed(n || 40).catch(() => []); });
+ipcMain.handle('board:alerts', async () => { const cfg = store.get().board || {}; if (!hub || !hub.hasBoard()) return null; return hub.loadBoardAlerts({ semDonoHoras: cfg.semDonoHoras, paradoDias: cfg.paradoDias, wip: cfg.wip }).catch(() => null); });
+ipcMain.handle('board:take', async (_e, id, startDev) => { try { await hub.boardTake(id, startDev !== false); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub.boardMove(id, status, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });

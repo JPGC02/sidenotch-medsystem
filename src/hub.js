@@ -103,6 +103,7 @@ class HubClient extends EventEmitter {
     this.web = null;               // 2ª sessão (família de refresh token própria) injetada na janela do Hub para não pedir login de novo
     this.profile = null;           // { name, email, sector:{slug,name}, role:{slug,level}, modules:[] }
     this.notifications = []; this.tasks = []; this.agenda = []; this.chats = []; this.instances = []; this.error = null; this.connected = false; this.realtime = 'off';
+    this.board = null; this.boardFeed = []; this.boardAlerts = null; this.boardAt = 0;
     this.ws = null; this.hb = null; this.refreshTimer = null; this.pollTimer = null; this.ref = 0; this.lastSig = '';
     this.sessionFile = this.dir ? path.join(this.dir, 'hub-session.bin') : null;
   }
@@ -256,12 +257,16 @@ class HubClient extends EventEmitter {
     return all;
   }
   async sync() {
-    try { await Promise.all([this.loadNotifications(), this.loadTasks(), this.loadAgenda().catch(() => {}), this.loadChats().catch(() => {})]); this.error = null; this.connected = true; }
+    try {
+      await Promise.all([this.loadNotifications(), this.loadTasks(), this.loadAgenda().catch(() => {}), this.loadChats().catch(() => {}),
+        this.hasBoard() ? Promise.all([this.loadBoard().catch(() => {}), this.loadBoardFeed().catch(() => {}), this.loadBoardAlerts().catch(() => {})]) : Promise.resolve()]);
+      this.error = null; this.connected = true;
+    }
     catch (e) { this.error = String(e.message || e); this.connected = false; }
     this._emitIfChanged();
   }
   _emitIfChanged() {
-    const sig = JSON.stringify([this.notifications.map((n) => n.id + n.lida), this.tasks.map((t) => t.id + t.status), this.agenda.map((e) => e.id + e.start), this.chats.map((c) => c.id + c.unread + c.at + (c.mine ? 1 : 0)), this.error, this.realtime]);
+    const sig = JSON.stringify([this.notifications.map((n) => n.id + n.lida), this.tasks.map((t) => t.id + t.status), this.board && (this.board.cards || []).map((c) => c.id + c.status + (c.responsavel_id || '') + (c.bloqueado ? 1 : 0)), (this.boardFeed || []).length && this.boardFeed[0].id, this.agenda.map((e) => e.id + e.start), this.chats.map((c) => c.id + c.unread + c.at + (c.mine ? 1 : 0)), this.error, this.realtime]);
     if (sig !== this.lastSig) { this.lastSig = sig; this.emit('change'); }
   }
   async markRead(id) {
@@ -290,12 +295,12 @@ class HubClient extends EventEmitter {
 
   // ---------- foco (pomodoro) ----------
   // grava a sessão e soma o tempo na própria tarefa (RPC focus_log)
-  async logFocus({ taskId, seconds, planned, completed, startedAt, title }) {
+  async logFocus({ taskId, seconds, planned, completed, startedAt, title, kind }) {
     const secs = Math.max(0, Math.round(seconds || 0)); if (secs < 5) return null;
     const at = String(taskId || '').startsWith('at:');
     return this.rpc('focus_log', {
       p_task_id: taskId ? (at ? taskId.slice(3) : taskId) : null,
-      p_task_kind: taskId ? (at ? 'at' : 'task') : 'free',
+      p_task_kind: taskId ? (kind || (at ? 'at' : 'task')) : 'free',
       p_task_title: title ? String(title).slice(0, 200) : null,
       p_seconds: secs, p_planned_seconds: Math.max(60, Math.round(planned || 1500)), p_completed: !!completed,
       p_started_at: new Date(startedAt || Date.now() - secs * 1000).toISOString()
@@ -394,6 +399,12 @@ class HubClient extends EventEmitter {
       send(`realtime:sidenotch-at-${uid}`, 'phx_join', cfg([{ event: '*', schema: 'public', table: 'at_os_tarefa', filter: `responsavel=eq.${uid}` }]));
       // WhatsApp: mensagens recebidas e mudanças de conversa (transferências/atribuições) — filtragem por escopo é feita aqui
       send(`realtime:sidenotch-wa-${uid}`, 'phx_join', cfg([{ event: 'INSERT', schema: 'public', table: 'whatsapp_messages' }, { event: 'UPDATE', schema: 'public', table: 'whatsapp_conversations' }]));
+      // quadro do time de Sistemas: cartões, histórico (quem fez o quê) e atribuições
+      if (this.hasBoard()) send(`realtime:sidenotch-sis-${uid}`, 'phx_join', cfg([
+        { event: '*', schema: 'public', table: 'sistemas_ideias' },
+        { event: 'INSERT', schema: 'public', table: 'sistemas_ideia_historico' },
+        { event: '*', schema: 'public', table: 'sistemas_ideia_atribuicoes' }
+      ]));
       clearInterval(this.hb); this.hb = setInterval(() => send('phoenix', 'heartbeat', {}), 25000);
     };
     ws.onmessage = (ev) => {
@@ -406,6 +417,8 @@ class HubClient extends EventEmitter {
           const n = d.record;
           if (!this.notifications.some((x) => x.id === n.id)) { this.notifications.unshift(n); this.notifications = this.notifications.slice(0, 60); this.emit('notification', n); this._emitIfChanged(); }
         } else if (d.table === 'tasks' || d.table === 'at_os_tarefa') { this.loadTasks().then(() => this._emitIfChanged()).catch(() => {}); }
+        else if (d.table === 'sistemas_ideia_historico' && d.type === 'INSERT' && d.record) this._onBoardEvent(d.record);
+        else if (d.table === 'sistemas_ideias' || d.table === 'sistemas_ideia_atribuicoes') this._boardSoon(d);
         else if (d.table === 'whatsapp_messages' && d.type === 'INSERT' && d.record && !d.record.is_from_me) this._onWaMessage(d.record);
         else if (d.table === 'whatsapp_conversations' && d.type === 'UPDATE' && d.record) this._onWaConversation(d.record, d.old_record || {});
       }
@@ -484,6 +497,47 @@ class HubClient extends EventEmitter {
     const allowed = new Set(this.shortcuts().map((s) => s.id));
     return SHORTCUTS.map((s) => ({ id: s.id, name: s.name, path: s.path, ix: s.ix, kind: s.kind, module: s.module, allowed: allowed.has(s.id) }));
   }
+  // ---------- quadro do time de Sistemas ----------
+  hasBoard() { return !!(this.profile && (this.profile.modules || []).includes('sistemas')); }
+  async loadBoard() {
+    if (!this.hasBoard()) { this.board = null; return null; }
+    const r = await this.rpc('sistemas_board', { p_limit: 200 });
+    const b = Array.isArray(r) ? r[0] : r;
+    if (b && typeof b === 'object') { this.board = b; this.boardAt = Date.now(); }
+    return this.board;
+  }
+  async loadBoardAlerts(cfg = {}) {
+    if (!this.hasBoard()) return null;
+    const r = await this.rpc('sistemas_alerts', { p_sem_dono_horas: cfg.semDonoHoras || 24, p_parado_dias: cfg.paradoDias || 2, p_wip: cfg.wip || 2 });
+    const a = Array.isArray(r) ? r[0] : r;
+    if (a && typeof a === 'object') this.boardAlerts = a;
+    return this.boardAlerts;
+  }
+  async loadBoardFeed(limit = 40) {
+    if (!this.hasBoard()) return [];
+    const r = await this.rpc('sistemas_feed', { p_limit: limit, p_since: null });
+    this.boardFeed = Array.isArray(r) ? r : (r ? [r] : []);
+    if (this.boardFeed.length) this.feedSeen = this.boardFeed[0].created_at;
+    return this.boardFeed;
+  }
+  // uma atualização por rajada de eventos (arrastar um cartão dispara vários)
+  _boardSoon() { clearTimeout(this._bTimer); this._bTimer = setTimeout(() => this.loadBoard().then(() => this._emitIfChanged()).catch(() => {}), 800); }
+  // evento do time → cartão no feed + notificação (o main decide se avisa)
+  _onBoardEvent(h) {
+    if (!this.hasBoard()) return;
+    const mine = h.usuario_id === (this.session && this.session.user.id);
+    const ev = { id: h.id, at: h.created_at, acao: h.acao, quem: h.usuario_nome || 'alguém', quemId: h.usuario_id, ideiaId: h.ideia_id, detalhes: h.detalhes || '', de: h.de || null, para: h.para || null, mine };
+    this.boardFeed = [ev, ...(this.boardFeed || [])].slice(0, 60);
+    const card = (this.board && this.board.cards || []).find((c) => c.id === h.ideia_id);
+    if (card) { ev.numero = card.numero_sequencial; ev.titulo = card.titulo; ev.trilha = card.trilha; }
+    this._boardSoon();
+    if (!mine) this.emit('board', ev);
+    this._emitIfChanged();
+  }
+  async boardTake(id, startDev = true) { const r = await this.rpc('sistemas_take', { p_ideia: id, p_start_dev: !!startDev }); await this.loadBoard(); this._emitIfChanged(); return r; }
+  async boardMove(id, status, motivo) { const r = await this.rpc('sistemas_move', { p_ideia: id, p_status: status, p_motivo: motivo || null }); await this.loadBoard(); this._emitIfChanged(); return r; }
+  async boardBlock(id, on, motivo) { const r = await this.rpc('sistemas_block', { p_ideia: id, p_bloqueado: !!on, p_motivo: motivo || null }); await this.loadBoard(); this._emitIfChanged(); return r; }
+
   urlFor(link) { if (!link) return this.site; if (/^https?:/.test(link)) return link; return this.site + (link.startsWith('/') ? '' : '/') + link; }
   state() {
     const unread = this.notifications.filter((n) => !n.lida);
@@ -491,12 +545,13 @@ class HubClient extends EventEmitter {
     const overdue = this.tasks.filter((t) => t.due_date && new Date(t.due_date + 'T23:59:59') < today).length;
     return {
       linked: this.linked(), connected: this.connected, realtime: this.realtime, error: this.error, site: this.site,
-      profile: this.profile ? { name: this.profile.name, email: this.profile.email, sector: this.profile.sector && this.profile.sector.name, role: this.profile.role.name || this.profile.role.slug, modules: this.profile.modules } : null,
+      profile: this.profile ? { id: this.session && this.session.user && this.session.user.id, name: this.profile.name, email: this.profile.email, sector: this.profile.sector && this.profile.sector.name, role: this.profile.role.name || this.profile.role.slug, modules: this.profile.modules } : null,
       notifications: this.notifications, unread: unread.length,
       tasks: this.tasks.map((t) => ({ ...t, focusSeconds: t.focus_seconds || 0, estimateMin: t.focus_estimate_min || null })), overdue,
       agenda: this.agenda,
       chats: this.chats, chatUnread: this.chats.reduce((a, c) => a + (c.unread || 0), 0), chatTransfers: this.chats.filter((c) => c.transferred && c.unassigned).length, hasWhatsapp: this.instances.length > 0 || this.chats.length > 0,
-      shortcuts: this.shortcuts(), catalog: this.catalog()
+      shortcuts: this.shortcuts(), catalog: this.catalog(),
+      hasBoard: this.hasBoard(), board: this.board, boardFeed: (this.boardFeed || []).slice(0, 40), boardAlerts: this.boardAlerts
     };
   }
 }
