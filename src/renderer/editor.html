@@ -5,71 +5,80 @@
 <title>Editar captura</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  :root { --ink: #1c1c1e; --glass: rgba(44,44,46,.82); --glass2: rgba(255,255,255,.08); --line: rgba(255,255,255,.1); --fg: #f2f2f7; --mute: #8e8e93; --blue: #0A84FF; --fill: rgba(118,118,128,.24); }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: var(--ink); color: var(--fg); font-family: "Instrument Sans", -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 13px; overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none; }
-  #drag { position: absolute; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; z-index: 5; }
-  #title { position: absolute; top: 0; left: 0; height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 12px; color: var(--mute); pointer-events: none; z-index: 6; } #title i { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); display: inline-block; }
-  #stage { position: absolute; inset: 0; display: grid; place-items: center; padding: 108px 32px 72px; background: radial-gradient(circle at 50% 30%, #2a2a2e, #161618 70%); }
-  canvas { box-shadow: 0 30px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.06); border-radius: 8px; cursor: crosshair; max-width: 100%; max-height: 100%; }
-  canvas.sel { cursor: move; }
-  /* barra flutuante estilo macOS */
-  #bar { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 16px; background: var(--glass); backdrop-filter: blur(24px) saturate(160%); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); }
-  .tool { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; cursor: pointer; color: #d1d1d6; position: relative; }
-  .tool svg { width: 19px; height: 19px; } .tool:hover { background: var(--glass2); color: #fff; } .tool.on { background: var(--blue); color: #fff; box-shadow: 0 4px 12px rgba(10,132,255,.35); }
-  .tool .k { position: absolute; right: 4px; bottom: 2px; font-family: "JetBrains Mono", monospace; font-size: 8.5px; color: rgba(255,255,255,.45); } .tool.on .k { color: rgba(255,255,255,.7); }
-  .sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
-  /* cor */
-  #colors { display: flex; align-items: center; gap: 5px; padding: 0 4px; }
+  /* mesmo sistema visual das Configurações: acrílico do Windows 11, painéis de vidro, raio 20, Segoe UI Variable */
+  :root { --fg: #f4f4f6; --muted: #9a9aa4; --acc: #0A84FF; --ok: #34d399; --bad: #f87171;
+    --glass: rgba(255,255,255,.06); --glass2: rgba(255,255,255,.1); --line: rgba(255,255,255,.09); --ink: rgba(0,0,0,.28); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: transparent; color: var(--fg); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-size: 13px; overflow: hidden; user-select: none; }
+  body.solid { background: linear-gradient(160deg, #17171d, #0f0f13); }
+  #app { display: grid; grid-template-columns: 76px 1fr; height: 100%; }
+  #dragzone { position: fixed; top: 0; left: 0; right: 140px; height: 36px; -webkit-app-region: drag; z-index: 5; }
+  aside { padding: 44px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--ink); backdrop-filter: blur(30px); }
+  .tool { width: 46px; height: 42px; border-radius: 12px; display: grid; place-items: center; cursor: pointer; color: #d7d7dd; position: relative; }
+  .tool svg { width: 19px; height: 19px; } .tool:hover { background: var(--glass); } .tool.on { background: var(--acc); color: #fff; }
+  .tool .k { position: absolute; right: 6px; bottom: 3px; font-size: 8.5px; color: rgba(255,255,255,.45); font-family: Consolas, monospace; } .tool.on .k { color: rgba(255,255,255,.8); }
+  aside .sep { width: 32px; height: 1px; background: var(--line); margin: 6px 0; }
+  #colors { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 2px 0; }
   .sw { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); transition: transform .12s; } .sw:hover { transform: scale(1.12); } .sw.on { border-color: #fff; }
-  #pick { position: relative; width: 24px; height: 24px; border-radius: 50%; background: conic-gradient(#ff3b30, #ff9f0a, #ffd60a, #30d158, #0a84ff, #5e5ce6, #bf5af2, #ff3b30); cursor: pointer; box-shadow: inset 0 0 0 2px var(--ink); }
+  #pick { position: relative; width: 20px; height: 20px; border-radius: 50%; background: conic-gradient(#ff3b30, #ff9f0a, #ffd60a, #30d158, #0a84ff, #5e5ce6, #bf5af2, #ff3b30); cursor: pointer; }
   #pick input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-  /* espessura */
-  #size { display: flex; align-items: center; gap: 8px; padding: 0 8px; color: var(--mute); font-size: 11px; }
-  #size input[type=range] { width: 84px; accent-color: var(--blue); } #size .dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; transform: scale(.5); transition: transform .12s; }
-  /* rodapé */
-  #foot { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 16px; background: var(--glass); backdrop-filter: blur(24px) saturate(160%); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
-  #foot .meta { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--mute); padding: 0 10px; }
-  button { border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; background: var(--fill); color: var(--fg); } button.pri { background: var(--blue); color: #fff; } button:hover { filter: brightness(1.12); }
-  kbd { font-family: "JetBrains Mono", monospace; font-size: 10px; color: rgba(255,255,255,.55); margin-left: 6px; }
-  #textbox { position: fixed; display: none; background: rgba(28,28,30,.92); border: 1px solid var(--blue); border-radius: 10px; padding: 8px 10px; font: 600 14px "Instrument Sans", sans-serif; min-width: 140px; outline: 0; resize: none; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
-  #toast { position: absolute; top: 108px; left: 50%; transform: translateX(-50%); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--mute); opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #size { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; color: var(--muted); font-size: 10.5px; }
+  #size input[type=range] { width: 46px; accent-color: var(--acc); } #size .dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; transform: scale(.5); transition: transform .12s; }
+  aside .sp { flex: 1; }
+  main { display: flex; flex-direction: column; min-width: 0; padding: 44px 24px 20px; gap: 12px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -.3px; } header .meta { color: var(--muted); font-size: 12px; } header .sp { flex: 1; }
+  button { border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; background: var(--glass2); color: var(--fg); }
+  button:hover { background: rgba(255,255,255,.16); } button.pri { background: var(--acc); color: #fff; }
+  kbd { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 10.5px; margin-left: 6px; }
+  #stage { flex: 1; min-height: 0; background: var(--glass); border: 1px solid var(--line); border-radius: 20px; backdrop-filter: blur(20px); display: grid; place-items: center; padding: 20px; overflow: hidden; }
+  canvas { box-shadow: 0 20px 50px rgba(0,0,0,.5); border-radius: 6px; cursor: crosshair; max-width: 100%; max-height: 100%; }
+  canvas.sel { cursor: move; }
+  .help { font-size: 11.5px; color: var(--muted); }
+  #textbox { position: fixed; display: none; background: rgba(20,20,24,.94); border: 1px solid var(--acc); border-radius: 10px; padding: 8px 10px; font: 600 14px "Segoe UI Variable Text", "Segoe UI", sans-serif; min-width: 140px; outline: 0; resize: none; color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  #toast { position: fixed; top: 46px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.5); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--muted); opacity: 0; transition: opacity .2s; pointer-events: none; }
 </style>
 </head>
 <body>
-<div id="drag"></div><div id="title"><i></i>Editar captura</div>
-<div id="stage"><canvas id="cv"></canvas></div>
-<div id="bar">
-  <div class="tool on" data-t="select" title="Selecionar / mover (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 3l14 8-6 2-3 6z"/></svg><span class="k">V</span></div>
-  <div class="sep"></div>
-  <div class="tool" data-t="arrow" title="Seta (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5M10 5h9v9"/></svg><span class="k">A</span></div>
-  <div class="tool" data-t="line" title="Linha (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19L19 5"/></svg><span class="k">L</span></div>
-  <div class="tool" data-t="rect" title="Retângulo (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2.5"/></svg><span class="k">R</span></div>
-  <div class="tool" data-t="ellipse" title="Elipse (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg><span class="k">E</span></div>
-  <div class="tool" data-t="blur" title="Borrar (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5" opacity=".35"/><rect x="4" y="13" width="7" height="7" rx="1.5" opacity=".35"/></svg><span class="k">B</span></div>
-  <div class="tool" data-t="text" title="Texto (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg><span class="k">T</span></div>
-  <div class="sep"></div>
-  <div id="colors"><span class="sw on" data-c="#FF3B30" style="background:#FF3B30"></span><span class="sw" data-c="#FF9F0A" style="background:#FF9F0A"></span><span class="sw" data-c="#FFD60A" style="background:#FFD60A"></span><span class="sw" data-c="#30D158" style="background:#30D158"></span><span class="sw" data-c="#0A84FF" style="background:#0A84FF"></span><span class="sw" data-c="#BF5AF2" style="background:#BF5AF2"></span><span class="sw" data-c="#FFFFFF" style="background:#fff"></span><span class="sw" data-c="#000000" style="background:#000"></span><span id="pick" title="Outra cor"><input type="color" id="pickIn" value="#ff3b30"></span></div>
-  <div class="sep"></div>
-  <div id="size" title="Espessura da seta / linha / borda"><span class="dot" id="sizeDot"></span><input type="range" id="sizeIn" min="0.4" max="3" step="0.1" value="1"></div>
-  <div class="sep"></div>
-  <div class="tool" id="undo" title="Desfazer (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></div>
-  <div class="tool" id="redo" title="Refazer (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></div>
-  <div class="tool" id="del" title="Apagar selecionado (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div>
+<div id="dragzone"></div>
+<div id="app">
+  <aside>
+    <div class="tool on" data-t="select" title="Selecionar / mover (V)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 3l14 8-6 2-3 6z"/></svg><span class="k">V</span></div>
+    <div class="tool" data-t="arrow" title="Seta (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5M10 5h9v9"/></svg><span class="k">A</span></div>
+    <div class="tool" data-t="line" title="Linha (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 19L19 5"/></svg><span class="k">L</span></div>
+    <div class="tool" data-t="rect" title="Retângulo (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2.5"/></svg><span class="k">R</span></div>
+    <div class="tool" data-t="ellipse" title="Elipse (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg><span class="k">E</span></div>
+    <div class="tool" data-t="blur" title="Borrar (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5" opacity=".35"/><rect x="4" y="13" width="7" height="7" rx="1.5" opacity=".35"/></svg><span class="k">B</span></div>
+    <div class="tool" data-t="text" title="Texto (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg><span class="k">T</span></div>
+    <div class="sep"></div>
+    <div id="colors"><span class="sw on" data-c="#FF3B30" style="background:#FF3B30"></span><span class="sw" data-c="#FF9F0A" style="background:#FF9F0A"></span><span class="sw" data-c="#FFD60A" style="background:#FFD60A"></span><span class="sw" data-c="#30D158" style="background:#30D158"></span><span class="sw" data-c="#0A84FF" style="background:#0A84FF"></span><span class="sw" data-c="#BF5AF2" style="background:#BF5AF2"></span><span class="sw" data-c="#FFFFFF" style="background:#fff"></span><span class="sw" data-c="#000000" style="background:#000"></span><span id="pick" title="Outra cor"><input type="color" id="pickIn" value="#ff3b30"></span></div>
+    <div id="size" title="Espessura"><span class="dot" id="sizeDot"></span><input type="range" id="sizeIn" min="0.4" max="3" step="0.1" value="1"></div>
+    <div class="sep"></div>
+    <div class="tool" id="undo" title="Desfazer (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></div>
+    <div class="tool" id="redo" title="Refazer (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></div>
+    <div class="tool" id="del" title="Apagar selecionado (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div>
+    <div class="sp"></div>
+  </aside>
+  <main>
+    <header><h1>Editar captura</h1><span class="meta" id="meta"></span><span class="sp"></span><button id="cancel">Cancelar<kbd>Esc</kbd></button><button class="pri" id="save">Salvar<kbd>Ctrl+S</kbd></button></header>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div class="help">Arraste para desenhar · V seleciona e move · Shift trava linha reta · duplo clique num texto edita · as formas ficam guardadas e podem ser reeditadas.</div>
+  </main>
 </div>
-<div id="foot"><span class="meta" id="meta"></span><button id="cancel">Cancelar<kbd>Esc</kbd></button><button class="pri" id="save">Salvar<kbd>⌘S</kbd></button></div>
 <div id="toast"></div>
 <textarea id="textbox" rows="1"></textarea>
 <script src="annotations.js"></script>
 <script>
 const api = window.sidenotch; const A = window.Annotations;
 const id = new URLSearchParams(location.search).get('id');
+if (new URLSearchParams(location.search).get('solid')) document.body.classList.add('solid');
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), tb = document.getElementById('textbox');
 let img = null, shapes = [], undoStack = [], redoStack = [], tool = 'select', color = A.RED, width = 1, sel = -1, drag = null, scale = 1;
 const $ = (s) => document.querySelector(s);
 const DRAW = new Set(['arrow', 'line', 'rect', 'ellipse', 'blur']);
 
-function fit() { const st = document.getElementById('stage'); const maxW = st.clientWidth - 64, maxH = st.clientHeight - 180; scale = Math.min(1, maxW / img.width, maxH / img.height); cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale); draw(); }
+function fit() { const st = document.getElementById('stage'); const maxW = st.clientWidth - 40, maxH = st.clientHeight - 40; scale = Math.min(1, maxW / img.width, maxH / img.height); cv.width = Math.round(img.width * scale); cv.height = Math.round(img.height * scale); draw(); }
 function draw() { ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(img, 0, 0, cv.width, cv.height); A.render(ctx, shapes, cv.width, cv.height, img, sel); }
 function snap() { undoStack.push(JSON.stringify(shapes)); redoStack = []; if (undoStack.length > 100) undoStack.shift(); }
 function undo() { if (!undoStack.length) return; redoStack.push(JSON.stringify(shapes)); shapes = JSON.parse(undoStack.pop()); sel = -1; draw(); }
