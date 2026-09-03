@@ -155,7 +155,7 @@ const mmss = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}
 const initials = (n) => String(n || '?').split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
 const ago = (d) => { const s = (Date.now() - new Date(d).getTime()) / 1000; if (s < 60) return 'agora'; if (s < 3600) return Math.floor(s / 60) + ' min'; if (s < 86400) return Math.floor(s / 3600) + ' h'; return Math.floor(s / 86400) + ' d'; };
 
-let board = null, feed = [], alerts = null, fx = { active: false }, me = null, mode = 'col', q = '', fTrilha = '', fDono = '', drag = null;
+let board = null, feed = [], alerts = null, fx = { active: false }, me = null, mode = 'col', q = '', fTrilha = '', fDono = '', drag = null, team = [];
 function toast(t) { const el = $('#toast'); el.textContent = t; el.style.opacity = 1; clearTimeout(el._t); el._t = setTimeout(() => el.style.opacity = 0, 1800); }
 const cards = () => ((board && board.cards) || []).filter((c) => {
   if (fTrilha && c.trilha !== fTrilha) return false;
@@ -338,7 +338,8 @@ async function openCard(id) {
 function renderCard(d) {
   const c = d.card, hist = d.history || [], msgs = d.messages || [];
   // se a RPC não trouxer o time, usa o que o quadro já carregou
-  const people = (d.people && d.people.length ? d.people : ((board && board.people) || []));
+  // três fontes, nessa ordem: o cartão, a lista dedicada já carregada e o quadro
+  const people = (d.people && d.people.length ? d.people : (team.length ? team : ((board && board.people) || [])));
   const on = fx.active && fx.taskId === c.id;
   const dt = (v) => v ? new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '') : '—';
   const sec = (t, html) => html ? `<div class="msec"><h4>${t}</h4><div>${html}</div></div>` : '';
@@ -372,7 +373,15 @@ function renderCard(d) {
       </div>
     </div>`;
   $('#mClose').onclick = closeCard;
-  picker($('#mWho'), [{ v: '', t: '— sem dono —' }, ...people.map((p) => ({ v: p.id, t: p.name }))], c.responsavel_id || '', async (uid) => {
+  if (!people.length) {
+    $('#mWho').innerHTML = `<button type="button" id="mWhoLoad">carregar time…</button>`;
+    $('#mWhoLoad').onclick = async (e) => {
+      e.stopPropagation(); e.target.textContent = 'buscando…';
+      const r = await api.boardPeople(true);
+      if (r && r.ok && r.people.length) { team = r.people; openCard(c.id); }
+      else { e.target.textContent = 'ninguém encontrado'; toast((r && r.error) || 'A lista do time veio vazia — confira o setor das pessoas no Hub.'); }
+    };
+  } else picker($('#mWho'), [{ v: '', t: '— sem dono —' }, ...people.map((p) => ({ v: p.id, t: p.name }))], c.responsavel_id || '', async (uid) => {
     const r = await api.boardAssign(c.id, uid || null, false); if (!r.ok) { toast(r.error); return; }
     toast(uid ? 'Atribuído.' : 'Sem dono.'); await load(true); openCard(c.id);
   });
@@ -414,6 +423,7 @@ api.onHub((h) => { if (!h) return; me = h.profile && h.profile.id || me; if (h.b
 api.onFocus((st) => { if (st) { fx = st; renderBoard(); } });
 (async () => {
   const h = await api.hubGet(); me = (h && h.profile && h.profile.id) || null;
+  const tp = await api.boardPeople(false).catch(() => null); if (tp && tp.ok) team = tp.people || [];
   fx = await api.focusGet() || fx;
   const a = await api.boardAlerts().catch(() => null); if (a) alerts = a;
   await load(true);

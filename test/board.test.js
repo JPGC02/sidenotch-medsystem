@@ -31,6 +31,7 @@ const rpcs = {
   sistemas_take: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.responsavel_id = UID; if (args.p_start_dev) c.status = 'em_desenvolvimento'; return { ok: true }; },
   sistemas_move: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.status = args.p_status; return { ok: true }; },
   sistemas_assign: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.responsavel_id = args.p_user; db.calls.push(['assign', args]); return { ok: true }; },
+  sistemas_people: () => ([{ id: UID, name: 'JP Teste' }, { id: 'outro-uid', name: 'Ana Silva' }]),
   sistemas_card: (args) => ({ card: { ...db.cards.find((x) => x.id === args.p_ideia), descricao: 'desc' }, history: [{ id: 'h', acao: 'assumiu' }], messages: [], people: [{ id: UID, name: 'JP' }] }),
   sistemas_block: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.bloqueado = !!args.p_bloqueado; c.bloqueio_motivo = args.p_motivo; return { ok: true }; },
   focus_log: (args) => { db.calls.push(['focus_log', args]); return 'fs-1'; },
@@ -88,6 +89,9 @@ server.listen(0, async () => {
     assert.strictEqual(db.cards[1].responsavel_id, 'outro-uid', 'atribuiu a outra pessoa');
     const card = await hub.boardCard('i2');
     assert.strictEqual(card.card.descricao, 'desc', 'detalhes do cartão'); assert.strictEqual(card.people.length, 1);
+    const time = await hub.boardPeople(true);
+    assert.strictEqual(time.length, 2, 'lista dedicada do time');
+    assert.strictEqual((await hub.boardPeople(false))[0].name, 'JP Teste', 'cache de 5 min');
     await hub.boardBlock('i2', true, 'aguardando cliente');
     assert.strictEqual(db.cards[1].bloqueado, true, 'bloqueou');
     assert.strictEqual(db.cards[1].bloqueio_motivo, 'aguardando cliente', 'motivo gravado');

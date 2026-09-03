@@ -94,6 +94,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   boardBrief: (kind) => ipcRenderer.invoke('board:brief', kind),
   boardAssign: (id, userId, startDev) => ipcRenderer.invoke('board:assign', id, userId, startDev),
   boardCard: (id) => ipcRenderer.invoke('board:card', id),
+  boardPeople: (force) => ipcRenderer.invoke('board:people', force),
   // bandeja de arquivos
   filesList: () => ipcRenderer.invoke('files:list'),
   filesAdd: (paths) => ipcRenderer.invoke('files:add', paths),

@@ -722,7 +722,21 @@ ipcMain.handle('board:take', async (_e, id, startDev) => { try { await hub.board
 ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub.boardMove(id, status, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:assign', async (_e, id, userId, startDev) => { try { await hub.boardAssign(id, userId, startDev); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
-ipcMain.handle('board:card', async (_e, id) => { try { return { ok: true, data: await hub.boardCard(id) }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:card', async (_e, id) => {
+  try {
+    const data = await hub.boardCard(id);
+    // se o cartão vier sem o time, busca a lista dedicada (e registra para diagnóstico)
+    let people = (data && data.people) || [];
+    if (!people.length) { try { people = await hub.boardPeople(true); } catch (e) { people = []; }
+      if (data) data.people = people; }
+    try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), `${new Date().toISOString()} board:card people=${people.length} board.people=${((hub.board && hub.board.people) || []).length}\n`); } catch { /* ignore */ }
+    return { ok: true, data };
+  } catch (e) {
+    try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), `${new Date().toISOString()} board:card ERRO ${String(e.message || e)}\n`); } catch { /* ignore */ }
+    return { ok: false, error: String(e.message || e) };
+  }
+});
+ipcMain.handle('board:people', async (_e, force) => { try { return { ok: true, people: await hub.boardPeople(force) }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 // ---------- bandeja de arquivos ----------
 // Durante um arrasto o Windows não entrega mousemove a janelas atravessáveis, e deixar a notch inteira
