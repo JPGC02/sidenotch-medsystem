@@ -15,10 +15,13 @@ const { HubClient } = require('./hub');
 const { ClipboardHistory } = require('./clipboard');
 const { QuickAccess } = require('./quickaccess');
 const { Focus } = require('./focus');
+const { FileTray } = require('./files');
+const commands = require('./commands');
+const { parseTask } = require('./nlp');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray;
 const briefDone = { manha: '', tarde: '' };   // aaaa-mm-dd do último brief enviado
 const alertSent = new Map();                  // chave do alerta → quando cobrou (não repete no mesmo dia)
 const webappWins = new Map();
@@ -59,6 +62,9 @@ app.whenReady().then(() => {
   qa = new QuickAccess({ userData: app.getPath('userData'), getSettings: () => store.get(), hub, notify: (n) => server && server._notify(n), broadcast });
   startFocus();
   startBoard();
+  filetray = new FileTray(app.getPath('userData'));
+  filetray.on('change', (l) => broadcast('files', l));
+  if (!store.get().commands || !store.get().commands.length) store.set({ commands: commands.DEFAULTS });
   registerShortcuts();
   updater = new Updater({ onState: (st) => { broadcast('update', st); buildTrayMenu(); } });
   updater.start(store.get().update.auto);
@@ -476,6 +482,7 @@ function registerShortcuts() {
   reg(sc.focus || 'CommandOrControl+Shift+F', () => { if (!focus) return; if (focus.state().active) focus.toggle(); else openTasksWindow(); });
   reg(sc.tasks, () => openTasksWindow());
   reg(sc.board, () => openBoardWindow());
+  reg(sc.files, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); } });
 }
 
 // ---------- Janela de Tarefas (mês + dia, foco por tarefa) ----------
@@ -513,6 +520,7 @@ function buildTrayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Capturar área…', click: () => qa && qa.captureArea() },
     { label: 'Tarefas e foco…', click: () => openTasksWindow() },
+    { label: 'Bandeja de arquivos…', click: () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); } } },
     ...(hub && hub.hasBoard && hub.hasBoard() ? [{ label: 'Quadro de Sistemas…', click: () => openBoardWindow() }] : []),
     ...(focus && focus.state().active ? [{ label: focus.state().running ? `Pausar foco (${Math.ceil(focus.state().remaining / 60)} min)` : 'Retomar foco', click: () => focus.toggle() }, { label: 'Encerrar foco', click: () => focus.stop('user') }] : []),
     { label: 'Atualizar uso agora', click: () => refresh(true) },
@@ -571,7 +579,8 @@ const MODULE_PATHS = {
   hub: 'hub.enabled', board: 'board.enabled', focus: 'focus.pill', chat: 'hub.chatNotify',
   captures: 'quickaccess.enabled', clipboard: 'clipboard.enabled', calendar: 'calendar.enabled',
   music: 'notch.show.music', system: 'notch.show.system', apps: 'notch.show.apps',
-  providers: 'sidebar.aiTools', approvals: 'approvals.enabled', maestri: 'maestri.enabled', weather: 'weather.enabled'
+  providers: 'sidebar.aiTools', approvals: 'approvals.enabled', maestri: 'maestri.enabled', weather: 'weather.enabled',
+  files: 'notch.show.files', commands: 'notch.show.cmds'
 };
 function modulesPatch(mods) {
   const out = {};
@@ -687,5 +696,44 @@ ipcMain.handle('board:take', async (_e, id, startDev) => { try { await hub.board
 ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub.boardMove(id, status, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
+// ---------- bandeja de arquivos ----------
+ipcMain.handle('files:list', () => filetray ? filetray.prune() : []);
+ipcMain.handle('files:add', (_e, paths) => { if (!filetray) return []; filetray.add(paths); return filetray.list(); });
+ipcMain.handle('files:pick', async () => {
+  app.focus({ steal: true });
+  const r = await dialog.showOpenDialog({ title: 'Adicionar à bandeja', properties: ['openFile', 'multiSelections'] });
+  if (r.canceled || !r.filePaths.length) return filetray.list();
+  filetray.add(r.filePaths); return filetray.list();
+});
+ipcMain.handle('files:remove', (_e, id) => filetray.remove(id));
+ipcMain.handle('files:clear', () => filetray.clear());
+ipcMain.handle('files:pin', (_e, id) => filetray.pin(id));
+ipcMain.handle('files:open', (_e, id) => { const it = filetray.get(id); if (it) shell.openPath(it.path); return true; });
+ipcMain.handle('files:reveal', (_e, id) => { const it = filetray.get(id); if (it) shell.showItemInFolder(it.path); return true; });
+ipcMain.handle('files:link', async (_e, id) => {
+  try { const url = await filetray.upload(id, hub); clipboard.writeText(url); return { ok: true, url }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+ipcMain.on('files:drag', (e, id) => {
+  const it = filetray.get(id); if (!it) return;
+  try { e.sender.startDrag({ file: it.path, icon: iconFor(it) }); } catch { /* arquivo sumiu */ }
+});
+function iconFor(it) {
+  try {
+    if (it.kind === 'image') { const img = nativeImage.createFromPath(it.path); if (!img.isEmpty()) return img.resize({ width: 96 }); }
+  } catch { /* segue com o ícone padrão */ }
+  const p = path.join(__dirname, 'assets', 'icon.png');
+  try { return nativeImage.createFromPath(p).resize({ width: 64 }); } catch { return nativeImage.createEmpty(); }
+}
+// ---------- comandos do TI ----------
+ipcMain.handle('cmd:list', () => commands.normalize(store.get().commands || []));
+ipcMain.handle('cmd:run', async (_e, id) => commands.run(store.get().commands || [], id));
+ipcMain.handle('cmd:defaults', () => commands.DEFAULTS);
+// ---------- tarefa em linguagem natural ----------
+ipcMain.handle('nlp:parse', (_e, text) => parseTask(text));
+ipcMain.handle('hub:chat-send', async (_e, convId, text) => {
+  try { await hub.sendChat(convId, text); return { ok: true, state: hub.state() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
 ipcMain.on('app:quit', () => app.exit(0));
 ipcMain.on('app:open-url', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });

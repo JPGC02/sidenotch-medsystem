@@ -73,6 +73,11 @@
   .r.hit, .mod.hit, .prov.hit { box-shadow: inset 0 0 0 1px rgba(124,140,255,.5); border-radius: 12px; }
   h2.hit { color: #b9c2ff; }
   #srInfo { font-size: 11.5px; color: var(--muted); padding: 6px 2px 0; }
+  /* comandos do TI */
+  .cmdrow { display: grid; grid-template-columns: 150px 1fr 92px 74px 30px; gap: 8px; align-items: center; padding: 6px 0; }
+  .cmdrow input[type=text] { min-width: 0; width: 100%; }
+  .cmdrow .flags { display: flex; gap: 8px; align-items: center; font-size: 10.5px; color: var(--muted); }
+  .cmdrow .flags label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
   /* módulos (loja) */
   .mods { display: flex; flex-direction: column; }
   .mod { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-top: 1px solid var(--line); }
@@ -109,6 +114,7 @@
     <div class="nsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="navQ" type="text" placeholder="Buscar ajuste…" autocomplete="off"></div>
     <div class="nav on" data-p="geral"><i data-ix="Element3"></i>Geral</div>
     <div class="nav" data-p="modulos"><i data-ix="Category"></i>Módulos</div>
+    <div class="nav" data-p="cmds"><i data-ix="Code"></i>Comandos do TI</div>
     <div class="nav" data-p="hub"><i data-ix="Home2"></i>Medsystem Hub</div>
     <div class="nav" data-p="notch"><i data-ix="Monitor"></i>Notch</div>
     <div class="nav" data-p="prov"><i data-ix="Cpu"></i>Provedores</div>
@@ -154,6 +160,18 @@
       <h1>Módulos</h1><p class="lead">Ligue o que faz sentido para você; o resto some do notch e para de rodar.</p>
       <section><div class="mods" id="mods"></div></section>
       <p class="help" style="padding:0 4px">Desligar um módulo remove a aba do notch e para o serviço por trás dele (menos memória e menos consulta). Dá para religar a qualquer momento.</p>
+    </div>
+    <div class="page" data-p="cmds">
+      <h1>Comandos do TI</h1><p class="lead">Atalhos de PowerShell que aparecem na aba Comandos do notch. Só roda o que estiver salvo aqui.</p>
+      <section>
+        <div id="cmdList"></div>
+        <div class="actions"><button id="cmdAdd">+ Novo comando</button><button id="cmdReset">Restaurar sugestões</button><span class="help">Marque “confirmar” para pedir um OK antes de rodar; “admin” é só um aviso — o app não eleva privilégio.</span></div>
+      </section>
+      <section>
+        <h2>Bandeja de arquivos</h2>
+        <div class="r"><div class="l"><b>Atalho global da bandeja</b><small>abre o notch na aba Bandeja</small></div><input id="scFiles" type="text" placeholder="CommandOrControl+Shift+B"></div>
+        <div class="r"><div class="l"><b>Como funciona</b><small>arraste arquivos para o notch aberto; o cartão fica lá e pode ser arrastado para qualquer app. O botão de link sobe para o Storage do Hub e copia uma URL que vale 7 dias.</small></div></div>
+      </section>
     </div>
     <div class="page" data-p="hub">
       <h1>Medsystem Hub</h1><p class="lead">Notificações em tempo real, suas tarefas e atalhos dos formulários do Hub, direto no notch.</p>
@@ -341,6 +359,8 @@ const MODULES = [
   { id: 'providers', name: 'Uso das IAs', desc: 'Claude, Codex, Cursor e Gemini: consumo do plano na dock lateral.', ix: 'Flash', color: '#ffd60a', path: 'sidebar.aiTools', page: 'prov' },
   { id: 'approvals', name: 'Aprovações do Claude Code', desc: 'Servidor local que pede sua permissão antes de o agente agir.', ix: 'Code', color: '#8e8e93', path: 'approvals.enabled', page: 'claude' },
   { id: 'maestri', name: 'Maestri Wire', desc: 'Terminais pareados: avisos de atenção e resposta a prompts S/n.', ix: 'Driver', color: '#af52de', path: 'maestri.enabled', page: 'maestri' },
+  { id: 'files', name: 'Bandeja de arquivos', desc: 'Arraste arquivos para o notch, leve para outro app e gere link de 7 dias.', ix: 'Folder', color: '#ff9500', path: 'notch.show.files', page: 'cmds' },
+  { id: 'commands', name: 'Comandos do TI', desc: 'Atalhos de PowerShell com um clique e a saída no próprio notch.', ix: 'Code', color: '#48484e', path: 'notch.show.cmds', page: 'cmds' },
   { id: 'weather', name: 'Clima', desc: 'Temperatura e condição na pastilha fechada (Open-Meteo).', ix: 'Sun', color: '#ff9500', path: 'weather.enabled', page: 'notch' }
 ];
 const dig = (o, path) => path.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
@@ -360,6 +380,27 @@ function renderMods() {
   box.querySelectorAll('[data-modsw]').forEach((el) => el.onchange = () => { modState[el.dataset.modsw] = el.checked; renderMods(); });
   box.querySelectorAll('[data-goto]').forEach((el) => el.onclick = () => { const n = document.querySelector(`.nav[data-p="${el.dataset.goto}"]`); if (n) n.click(); });
 }
+
+// ---------- comandos do TI ----------
+let cmdList = [];
+function renderCmds() {
+  const box = $('#cmdList'); if (!box) return;
+  box.innerHTML = cmdList.map((c, i) => `<div class="cmdrow" data-ci="${i}">
+      <input type="text" data-cf="name" value="${(c.name || '').replace(/"/g, '&quot;')}" placeholder="Nome">
+      <input type="text" data-cf="cmd" value="${(c.cmd || '').replace(/"/g, '&quot;')}" placeholder="Comando PowerShell">
+      <input type="text" data-cf="color" value="${(c.color || '#8e8e93').replace(/"/g, '&quot;')}" placeholder="#cor">
+      <span class="flags"><label><input type="checkbox" data-cf="confirm" ${c.confirm ? 'checked' : ''}>ok</label><label><input type="checkbox" data-cf="admin" ${c.admin ? 'checked' : ''}>adm</label></span>
+      <button data-cdel="${i}" title="Remover" style="padding:4px 8px">✕</button></div>`).join('') || '<p class="help" style="padding:8px 0">Nenhum comando. Clique em “Restaurar sugestões” para começar.</p>';
+  box.querySelectorAll('[data-ci]').forEach((row) => {
+    const i = Number(row.dataset.ci);
+    row.querySelectorAll('[data-cf]').forEach((f) => f.onchange = () => {
+      cmdList[i][f.dataset.cf] = f.type === 'checkbox' ? f.checked : f.value;
+    });
+  });
+  box.querySelectorAll('[data-cdel]').forEach((b) => b.onclick = () => { cmdList.splice(Number(b.dataset.cdel), 1); renderCmds(); });
+}
+$('#cmdAdd').onclick = () => { cmdList.push({ id: 'c' + Date.now().toString(36), name: '', cmd: '', ix: 'Code', color: '#8e8e93' }); renderCmds(); };
+$('#cmdReset').onclick = async () => { cmdList = await api.cmdDefaults(); renderCmds(); };
 
 // ---------- busca: filtra a navegação e destaca os ajustes que casam ----------
 const navSearch = () => {
@@ -443,9 +484,10 @@ function collect() {
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
-    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim() },
+    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim(), files: $('#scFiles').value.trim() },
     quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0), enabled: modState.captures !== false },
     modules: { ...modState },
+    commands: cmdList.filter((c) => c.name && c.cmd).map((c, i) => ({ id: c.id || 'c' + i, name: c.name, cmd: c.cmd, ix: c.ix || 'Code', color: c.color || '#8e8e93', confirm: !!c.confirm, admin: !!c.admin })),
     board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
@@ -478,6 +520,7 @@ async function load() {
   const mods = settings.modules || {};
   modState = {}; for (const m of MODULES) { const v = mods[m.id]; modState[m.id] = v === undefined ? dig(settings, m.path) !== false : v !== false; }
   renderMods();
+  cmdList = JSON.parse(JSON.stringify(settings.commands || [])); renderCmds();
   $('#ntMusic').checked = !nt.show || nt.show.music !== false; $('#ntSys').checked = !nt.show || nt.show.system !== false; $('#ntCal').checked = !nt.show || nt.show.calendar !== false;
   const a = settings.approvals || {}, n = settings.notifications || {}, al = settings.alerts || {}, sc = settings.shortcuts || {};
   $('#apEnabled').checked = !!a.enabled; $('#apPort').value = a.port || 47322; $('#apTimeout').value = a.timeoutSec || 110; $('#apSound').checked = !!a.sound;
@@ -488,7 +531,7 @@ async function load() {
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   const fxs = settings.focus || {}; $('#fxMin').value = fxs.minutes || 25; $('#fxBrk').value = fxs.breakMinutes || 5;
   $('#fxPill').checked = fxs.pill !== false; $('#fxStreak').checked = fxs.streak !== false; $('#fxAuto').checked = fxs.autoStatus !== false; $('#fxChime').checked = fxs.chime !== false;
-  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K';
+  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K'; $('#scFiles').value = sc.files ?? 'CommandOrControl+Shift+B';
   const bd = settings.board || {}; $('#bdOn').checked = bd.enabled !== false; $('#bdMoves').checked = bd.notifyMoves !== false; $('#bdStuck').checked = bd.notifyStuck !== false;
   $('#bdNew').checked = bd.notifyNew !== false; $('#bdBrief').checked = bd.brief !== false; $('#bdM').value = bd.briefManha || '09:00'; $('#bdT').value = bd.briefTarde || '18:00';
   $('#bdWip').value = bd.wip || 2; $('#bdSem').value = bd.semDonoHoras || 24; $('#bdPar').value = bd.paradoDias || 2; $('#bdTake').checked = bd.takeOnFocus !== false;

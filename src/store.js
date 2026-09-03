@@ -43,7 +43,9 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K' },
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K', files: 'CommandOrControl+Shift+B' },
+  // comandos do TI (PowerShell) que aparecem na aba Comandos; a lista de fábrica entra na 1ª execução
+  commands: [],
   // loja de módulos: liga/desliga funções inteiras (a página Módulos das configurações)
   modules: {},
   // quadro do time de Sistemas (Kanban + cobranças + brief)
@@ -59,7 +61,7 @@ const DEFAULTS = {
   },
   notch: {                    // notch no topo do monitor (convive com a barra lateral)
     enabled: true, displayId: null, offsetX: 0,
-    show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true, apps: true, board: true },
+    show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true, apps: true, board: true, files: true, cmds: true },
     tab: 'hub'
   },
   sidebar: { enabled: true, aiTools: true },

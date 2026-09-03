@@ -43,6 +43,29 @@
   #mini .fx .nm { color: var(--muted); font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #mini .fx .st { color: #ff9f0a; font-weight: 700; }
 
+  /* bandeja de arquivos */
+  #drop { border: 1.5px dashed rgba(255,255,255,.18); border-radius: 16px; padding: 14px; text-align: center; color: var(--muted); font-size: 11.5px; margin-bottom: 10px; transition: background .15s, border-color .15s; }
+  body.dragging #drop { border-color: var(--blue); background: rgba(10,132,255,.12); color: #cfe4ff; }
+  .fitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--fill); cursor: grab; }
+  .fitem:hover { background: var(--fill2); } .fitem.miss { opacity: .5; } .fitem.pin { box-shadow: inset 2px 0 0 #ffd60a; }
+  .fico { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 10px; font-weight: 700; flex: 0 0 34px; color: #fff; letter-spacing: .3px; }
+  .fitem img.th { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; flex: 0 0 34px; }
+  .fnm { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fms { font-size: 10.5px; color: var(--muted); }
+  .facts { display: flex; gap: 5px; } .facts button { width: 26px; height: 26px; padding: 0; border-radius: 50%; display: grid; place-items: center; } .facts button svg { width: 13px; height: 13px; }
+  /* comandos do TI */
+  .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cbtn { display: flex; align-items: center; gap: 9px; padding: 10px; border-radius: 14px; background: var(--fill); cursor: pointer; border: 1px solid transparent; }
+  .cbtn:hover { background: var(--fill2); border-color: rgba(255,255,255,.12); } .cbtn .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: 0 0 30px; color: #fff; }
+  .cbtn .ic svg { width: 15px; height: 15px; } .cbtn .nm { font-size: 12px; font-weight: 600; } .cbtn .sub { font-size: 10px; color: var(--muted); }
+  #cout { margin-top: 10px; background: rgba(0,0,0,.42); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font-family: Consolas, "JetBrains Mono", monospace; font-size: 11px; white-space: pre-wrap; max-height: 260px; overflow: auto; color: #d7e2ee; }
+  #cout .hd { display: flex; align-items: center; gap: 8px; font-family: inherit; color: var(--muted); margin-bottom: 6px; font-size: 10.5px; }
+  #cout .err { color: #ff9f9a; }
+  /* resposta rápida do WhatsApp */
+  .reply { display: flex; gap: 6px; margin-top: 6px; }
+  .reply input { flex: 1; min-width: 0; font-size: 12px; }
+  .reply button { padding: 6px 10px; }
+
   /* quadro do time */
   .bkpis { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .bkpi { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; min-width: 74px; }
@@ -269,15 +292,15 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const IX = window.IX || {};
 const I = {
-  board: IX.Chart21, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
+  board: IX.Chart21, files: IX.Folder, cmds: IX.Code, send: IX.Send2, link: IX.Link, folder: IX.FolderOpen, down: IX.DocumentDownload, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
   timer: IX.Timer1 || IX.Clock, flame: IX.Flash, stop: IX.StopCircle, expand: IX.Maximize4, edit: IX.Edit2, pausec: IX.PauseCircle, playc: IX.PlayCircle,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
-const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['files', 'Bandeja de arquivos'], ['cmds', 'Comandos do TI'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
-const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus' };
+const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus', files: 'files', cmds: 'commands' };
 const modOn = (id) => { const m = (settings && settings.modules) || {}; const k = MOD_TAB[id]; return !k || m[k] !== false; };
 const tabsForState = () => {
   TABS = TABS_ALL.filter(([id]) => modOn(id) && (id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)) && (id !== 'board' || (hub && hub.linked && hub.hasBoard)));
@@ -285,6 +308,19 @@ const tabsForState = () => {
   if (!TABS.some((t) => t[0] === tab)) tab = TABS[0][0];
 };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
+let files = [], cmds = [], cmdOut = null, chatReply = null, nlParsed = null, nlHint = '';
+// mesma descrição do parser (o main devolve só os campos)
+function nlDescribe(p) {
+  if (!p) return '';
+  const bits = [];
+  if (p.due_date) { const d = new Date(p.due_date + 'T12:00'); const h = new Date(); h.setHours(12, 0, 0, 0);
+    const dif = Math.round((d - h) / 86400000);
+    bits.push(dif === 0 ? 'hoje' : dif === 1 ? 'amanhã' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')); }
+  if (p.time) bits.push(p.time);
+  if (p.priority) bits.push({ urgent: 'crítica', high: 'alta', low: 'baixa' }[p.priority]);
+  if (p.minutes) bits.push(p.minutes >= 60 ? `${(p.minutes / 60).toFixed(p.minutes % 60 ? 1 : 0)} h` : `${p.minutes} min`);
+  return bits.join(' · ');
+}
 let fx = { active: false, running: false, remaining: 1500, planned: 1500, elapsed: 0, progress: 0, title: null, taskId: null, streak: 0, days: [], todaySeconds: 0, minutes: 25 };
 const mmss = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.round(Math.max(0, s) % 60)).padStart(2, '0')}`;
 let installed = null, webapps = [], appQuery = '', loadingApps = false;
@@ -362,6 +398,8 @@ function renderView() {
   else if (tab === 'canvas') { v.innerHTML = viewCanvas(); bindCanvas(); }
   else if (tab === 'cal') { v.innerHTML = viewCal(); bindCal(); }
   else if (tab === 'board') { v.innerHTML = viewBoard(); bindBoard(); }
+  else if (tab === 'files') { v.innerHTML = viewFiles(); bindFiles(); }
+  else if (tab === 'cmds') { v.innerHTML = viewCmds(); bindCmds(); }
   if (tab === 'music') bindMusic();
   requestAnimationFrame(fitPill);
 }
@@ -630,6 +668,69 @@ function viewHub() {
   h += `<div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center">${esc(p.email || '')} · <a id="hbSync" style="cursor:pointer">${I.refresh} atualizar</a> · <a id="hbOut" style="cursor:pointer">${I.logout} desvincular</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`;
   return h;
 }
+// ---------- bandeja de arquivos ----------
+const FCOLOR = { image: '#30d158', pdf: '#ff453a', doc: '#0a84ff', sheet: '#34c759', slide: '#ff9f0a', zip: '#a2845e', video: '#bf5af2', audio: '#ff375f', text: '#8e8e93', file: '#636366' };
+const kb = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+function viewFiles() {
+  const pin = files.filter((f) => f.pinned), rest = files.filter((f) => !f.pinned);
+  const item = (f) => `<div class="fitem ${f.missing ? 'miss' : ''} ${f.pinned ? 'pin' : ''}" data-f="${esc(f.id)}" draggable="true" title="${esc(f.path)}">
+      ${f.kind === 'image' && !f.missing ? `<img class="th" src="file:///${esc(f.path.replace(/\\/g, '/'))}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fico',textContent:'IMG',style:'background:#30d158'}))">`
+        : `<span class="fico" style="background:${FCOLOR[f.kind] || '#636366'}">${esc((f.ext || f.kind).slice(0, 4).toUpperCase())}</span>`}
+      <div class="grow" style="min-width:0"><div class="fnm">${esc(f.name)}</div>
+      <div class="fms">${f.missing ? 'arquivo saiu do lugar' : kb(f.size)}${f.url ? ' · link ativo' : ''} · ${ago(f.at)}</div></div>
+      <div class="facts">
+        <button data-fl="${esc(f.id)}" title="Gerar link de 7 dias e copiar">${I.link}</button>
+        <button data-fo="${esc(f.id)}" title="Abrir">${I.folder}</button>
+        <button data-fp="${esc(f.id)}" title="Fixar" style="${f.pinned ? 'color:#ffd60a' : ''}">${I.tick}</button>
+        <button data-fx2="${esc(f.id)}" title="Tirar da bandeja">${I.trash}</button>
+      </div></div>`;
+  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Solte arquivos aqui e arraste de volta para onde precisar. O link vale 7 dias.</span>
+      <button class="pillbtn" id="flAdd">${I.add} Adicionar</button>${files.length ? `<button class="pillbtn" id="flClear">Limpar</button>` : ''}</div>
+    <div id="drop">Arraste arquivos para cá — eles ficam à mão até você tirar</div>
+    <div class="lst" style="max-height:380px">${files.length ? (pin.length ? `<div class="sec-h"><span>Fixados</span></div><div class="glist">${pin.map(item).join('')}</div>` : '') + `<div class="glist">${rest.map(item).join('')}</div>` : '<div class="empty">Bandeja vazia.</div>'}</div>
+    <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center">${msgFiles || 'Dica: arraste um cartão daqui direto para o WhatsApp, e-mail ou ClickUp.'}</div>`;
+}
+let msgFiles = '';
+function bindFiles() {
+  const add = $('#flAdd'); if (add) add.onclick = async () => { files = await api.filesPick(); renderView(); };
+  const clr = $('#flClear'); if (clr) clr.onclick = async () => { files = await api.filesClear(); renderView(); };
+  document.querySelectorAll('[data-f]').forEach((el) => {
+    el.addEventListener('dragstart', (e) => { e.preventDefault(); api.filesDrag(el.dataset.f); });
+    el.ondblclick = () => api.filesOpen(el.dataset.f);
+  });
+  document.querySelectorAll('[data-fl]').forEach((b) => b.onclick = async (e) => {
+    e.stopPropagation(); msgFiles = 'Enviando…'; renderView();
+    const r = await api.filesLink(b.dataset.fl);
+    msgFiles = r.ok ? '✓ link copiado (vale 7 dias)' : r.error;
+    files = await api.filesList(); renderView();
+  });
+  document.querySelectorAll('[data-fo]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); api.filesReveal(b.dataset.fo); });
+  document.querySelectorAll('[data-fp]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); await api.filesPin(b.dataset.fp); files = await api.filesList(); renderView(); });
+  document.querySelectorAll('[data-fx2]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); files = await api.filesRemove(b.dataset.fx2); renderView(); });
+}
+
+// ---------- comandos do TI ----------
+function viewCmds() {
+  const out = cmdOut;
+  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Comandos que você cadastrou nas configurações. Nada roda fora da lista.</span>
+      <button class="pillbtn" id="cmSet">${I.gear} Editar lista</button></div>
+    ${cmds.length ? `<div class="cgrid">${cmds.map((c) => `<div class="cbtn" data-cm="${esc(c.id)}">
+      <span class="ic" style="background:${esc(c.color || '#8e8e93')}">${IX[c.ix] || I.cmds}</span>
+      <div class="grow" style="min-width:0"><div class="nm">${esc(c.name)}</div><div class="sub">${c.admin ? 'pede administrador' : c.confirm ? 'pede confirmação' : 'clique para rodar'}</div></div></div>`).join('')}</div>`
+      : '<div class="empty">Nenhum comando cadastrado ainda.</div>'}
+    ${out ? `<div id="cout"><div class="hd">${esc(out.name || '')} · ${out.ok ? 'ok' : 'falhou'} · ${out.ms ? Math.round(out.ms) + ' ms' : ''}<span class="grow"></span><a id="cmCopy" style="cursor:pointer;color:var(--blue)">copiar</a></div>${esc((out.out || '').slice(0, 4000)) || '<span class="muted">(sem saída)</span>'}${out.err ? `<div class="err">${esc(out.err)}</div>` : ''}</div>` : ''}`;
+}
+function bindCmds() {
+  const set = $('#cmSet'); if (set) set.onclick = () => api.openSettings && api.openSettings();
+  document.querySelectorAll('[data-cm]').forEach((el) => el.onclick = async () => {
+    const c = cmds.find((x) => x.id === el.dataset.cm); if (!c) return;
+    if (c.confirm && !confirm(`Rodar "${c.name}"?`)) return;
+    cmdOut = { name: c.name, out: 'rodando…', ok: true }; renderView();
+    cmdOut = await api.cmdRun(c.id); renderView();
+  });
+  const cp = $('#cmCopy'); if (cp) cp.onclick = () => { const t = ((cmdOut && cmdOut.out) || '') + ((cmdOut && cmdOut.err) ? '\n' + cmdOut.err : ''); navigator.clipboard.writeText(t).catch(() => {}); };
+}
+
 // ---------- quadro do time de Sistemas ----------
 const BCOL = { recebida: 'Recebidas', em_triagem: 'Triagem', em_priorizacao: 'Priorização', aprovada: 'Aprovadas', em_desenvolvimento: 'Em dev', entregue: 'Entregue' };
 const BEV = { assumiu: '✋', mudou_status: '➜', bloqueou: '⛔', desbloqueou: '✅', comentou: '💬', criou: '✨' };
@@ -749,12 +850,32 @@ function viewTasks() {
   return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Tarefas atribuídas a você e as OS do Fluxo da AT.</span>
       <button class="pillbtn" id="fxPanel" title="Abrir o painel com calendário">${I.expand} Painel</button>
       <button class="pillbtn blue" id="ntNew">${I.add} Nova tarefa</button></div>
+    <div class="tform" style="display:block;margin-bottom:10px"><input id="nlIn" placeholder="Escreva do seu jeito: amanhã 14h ligar pro hospital !alta 30min" maxlength="255" style="width:100%">
+      <div class="row" style="margin-top:6px"><span class="muted grow" id="nlPrev" style="font-size:11px">${esc(nlHint || 'A data, a hora, a prioridade e a estimativa saem do próprio texto.')}</span><button class="pillbtn blue" id="nlGo">${I.add} Criar</button></div></div>
     ${viewFocusNow()}${form}
     <div class="fxgrid"><div class="lst" style="max-height:${newTaskOpen ? 290 : 400}px">${lists}</div>${viewStreak()}</div>
     <div class="muted" style="margin-top:8px;font-size:10.5px;text-align:center"><a id="hbTasks2" style="cursor:pointer;color:var(--blue)">Abrir central de tarefas no Hub</a>${hubBusy ? ' · ' + esc(hubBusy) : ''}</div>`
 }
 function bindTasks() {
   bindFocus();
+  const nl = $('#nlIn'), nlGo = $('#nlGo');
+  if (nl && nlGo) {
+    let tmr = null;
+    nl.oninput = () => { clearTimeout(tmr); tmr = setTimeout(async () => { const p = await api.nlpParse(nl.value); nlParsed = p; const d = nlDescribe(p); $('#nlPrev').innerHTML = p && p.title ? `<b>${esc(p.title)}</b>${d ? ' — ' + esc(d) : ''}` : 'A data, a hora, a prioridade e a estimativa saem do próprio texto.'; }, 180); };
+    nl.onclick = (e) => e.stopPropagation();
+    const criar = async () => {
+      const p = nlParsed || await api.nlpParse(nl.value);
+      if (!p || !p.title) { nlHint = 'Escreva o que precisa ser feito.'; renderView(); return; }
+      nlGo.disabled = true; $('#nlPrev').textContent = 'Criando…';
+      const r = await api.hubCreateTask({ title: p.title, due_date: p.due_date, priority: p.priority || 'medium', description: p.time ? `Horário: ${p.time}` : '' });
+      if (!r.ok) { nlHint = r.error; nlGo.disabled = false; renderView(); return; }
+      if (r.task && p.minutes) await api.hubTaskEstimate(r.task.id, p.minutes);
+      hub = r.state; nlParsed = null; nlHint = '✓ tarefa criada'; api.setFocusable(false); renderView();
+    };
+    nlGo.onclick = (e) => { e.stopPropagation(); criar(); };
+    nl.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') criar(); };
+    nl.onfocus = () => api.setFocusable(true);
+  }
   const setHub = (r) => { if (r && r.state) hub = r.state; renderTabs(); renderView(); };
   document.querySelectorAll('[data-ts]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); const [id, st] = b.dataset.ts.split(/:(?=[a-z_]+$)/); b.disabled = true; const r = await api.hubTask(id, st); if (!r.ok) { hubBusy = r.error; renderView(); } else setHub(r); });
   document.querySelectorAll('[data-tk]').forEach((el) => el.onclick = () => api.hubOpen(el.dataset.tk || '/tarefas'));
@@ -773,7 +894,9 @@ function viewChat() {
   const ini = (n) => String(n || '?').replace(/[^\p{L}\d ]/gu, '').split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase() || '#';
   const row = (c) => `<div class="grow-item" data-ch="${esc(c.id)}"><div class="ch-av">${c.avatar ? `<img src="${esc(c.avatar)}" onerror="this.remove()">` : esc(ini(c.name))}</div>
       <div class="grow" style="min-width:0"><div class="ti" style="display:flex;gap:6px;align-items:center"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>${c.transferred ? `<span class="chip tr">↪ de ${esc(c.transferredFrom || 'outro setor')}</span>` : ''}${c.mine ? '<span class="chip me">você</span>' : c.unassigned ? '<span class="chip free">sem atendente</span>' : ''}</div><div class="ms" style="-webkit-line-clamp:1">${esc(c.preview || '')}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="ag" style="margin:0;padding:0">${c.at ? ago(c.at) : ''}</span>${c.unread ? `<span class="ch-un">${c.unread}</span>` : ''}</div></div>`;
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="ag" style="margin:0;padding:0">${c.at ? ago(c.at) : ''}</span>${c.unread ? `<span class="ch-un">${c.unread}</span>` : ''}
+        <button class="pillbtn" data-rpo="${esc(c.id)}" style="padding:3px 8px;font-size:10px">${I.send} Responder</button></div></div>${reply(c)}`;
+  const reply = (c) => chatReply === c.id ? `<div class="reply" data-rp="${esc(c.id)}"><input id="rpIn" placeholder="Responder para ${esc(String(c.name).split(' ')[0])}…" maxlength="1000"><button class="pillbtn blue" id="rpGo">${I.send}</button></div>` : '';
   const transfers = list.filter((c) => c.transferred && c.unassigned), rest = list.filter((c) => !transfers.includes(c));
   const grp = (name, arr) => arr.length ? `<div class="sec-h"><span>${name} · ${arr.length}</span></div><div class="glist">${arr.map(row).join('')}</div>` : '';
   return `<div class="row" style="margin-bottom:6px"><span class="muted grow">${hub.chatUnread ? `<b style="color:#4ade80">${hub.chatUnread}</b> mensagem(ns) não lida(s)` : 'Conversas abertas do seu setor'}</span><button class="pillbtn" id="chOpen">Abrir Organizador</button></div>
@@ -782,6 +905,24 @@ function viewChat() {
 function bindChat() {
   document.querySelectorAll('[data-ch]').forEach((el) => el.onclick = () => api.hubOpen('/contatos?conversa=' + el.dataset.ch));
   $('#chOpen').onclick = () => api.hubOpen('/contatos');
+  document.querySelectorAll('[data-rpo]').forEach((b) => b.onclick = (e) => {
+    e.stopPropagation(); chatReply = chatReply === b.dataset.rpo ? null : b.dataset.rpo; renderView();
+    if (chatReply) setTimeout(() => { const i = $('#rpIn'); if (i) { api.setFocusable(true); i.focus(); } }, 40);
+  });
+  const go = $('#rpGo'), inp = $('#rpIn');
+  if (go && inp) {
+    const send = async () => {
+      const txt = inp.value.trim(); if (!txt) return;
+      go.disabled = true; inp.disabled = true; const alvo = chatReply;
+      const r = await api.hubChatSend(alvo, txt);
+      if (r.ok) { hub = r.state; chatReply = null; api.setFocusable(false); }
+      else { hubBusy = r.error; go.disabled = false; inp.disabled = false; }
+      renderView();
+    };
+    go.onclick = (e) => { e.stopPropagation(); send(); };
+    inp.onclick = (e) => e.stopPropagation();
+    inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') send(); if (e.key === 'Escape') { chatReply = null; api.setFocusable(false); renderView(); } };
+  }
 }
 function bindHub() {
   const setHub = (r) => { if (r && r.state) hub = r.state; else if (r && r.linked !== undefined) hub = r; renderTabs(); renderView(); };
@@ -886,7 +1027,7 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], board: [900, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], board: [900, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -917,6 +1058,19 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
+  api.onFiles((l) => { files = l || []; if (tab === 'files' && document.body.classList.contains('open')) renderView(); });
+  api.filesList().then((l) => { files = l || []; });
+  api.cmdList().then((l) => { cmds = l || []; });
+  // arrastar arquivo de qualquer lugar para dentro do notch aberto
+  document.addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('dragging'); });
+  document.addEventListener('dragleave', (e) => { if (e.relatedTarget === null) document.body.classList.remove('dragging'); });
+  document.addEventListener('drop', async (e) => {
+    e.preventDefault(); document.body.classList.remove('dragging');
+    const paths = [...(e.dataTransfer.files || [])].map((f) => f.path).filter(Boolean);
+    if (!paths.length) return;
+    files = await api.filesAdd(paths);
+    tab = 'files'; renderTabs(); setOpen(true); renderView();
+  });
   api.onFocus((st) => { if (!st) return; fx = st; renderMini(); if (document.body.classList.contains('open') && tab === 'notes' && notesMode === 'tasks' && !typing()) renderView(); });
   api.focusGet().then((st) => { if (st) { fx = st; renderMini(); } });
   api.onHub((h) => { const wasUnread = hub && hub.unread; hub = h; renderMini(); if (document.body.classList.contains('open')) { renderTabs(); if ((tab === 'hub' || tab === 'notes' || tab === 'chat') && !typing()) renderView(); }  });

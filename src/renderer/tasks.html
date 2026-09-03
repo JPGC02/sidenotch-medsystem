@@ -94,7 +94,7 @@
     <div class="panel">
       <div class="day-h"><span class="m grow" id="dayLbl">Hoje</span><div class="seg"><button data-f="day" class="on">Dia</button><button data-f="all">Todas</button><button data-f="none">Sem prazo</button></div></div>
       <div id="form">
-        <input type="text" id="fTitle" placeholder="O que precisa ser feito?" maxlength="255">
+        <input type="text" id="fTitle" placeholder="amanhã 14h ligar pro hospital !alta 30min" maxlength="255">
         <input type="date" id="fDue"><input type="number" id="fEst" min="5" max="480" step="5" placeholder="min" style="width:80px">
         <select id="fPri"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option><option value="urgent">Crítica</option></select>
         <button class="pri" id="fSave">Criar</button><button id="fCancel">Cancelar</button><div class="msg" id="fMsg"></div>
@@ -208,10 +208,22 @@ function bindRows() {
 // ---------- nova tarefa ----------
 $('#new').onclick = () => { const f = $('#form'); f.classList.toggle('on'); if (f.classList.contains('on')) { $('#fDue').value = filter === 'day' ? sel : ''; $('#fTitle').focus(); } };
 $('#fCancel').onclick = () => { $('#form').classList.remove('on'); $('#fMsg').textContent = ''; };
+let nlp = null;
+$('#fTitle').addEventListener('input', async () => {
+  nlp = await api.nlpParse($('#fTitle').value);
+  if (!nlp) return;
+  if (nlp.due_date) $('#fDue').value = nlp.due_date;
+  if (nlp.priority) $('#fPri').value = nlp.priority;
+  if (nlp.minutes) $('#fEst').value = nlp.minutes;
+  $('#fMsg').textContent = nlp.title && (nlp.due_date || nlp.priority || nlp.minutes || nlp.time)
+    ? `Entendi: ${nlp.title}${nlp.time ? ' · ' + nlp.time : ''}` : '';
+});
 $('#fSave').onclick = async () => {
-  const title = $('#fTitle').value.trim(); if (!title) { $('#fMsg').textContent = 'Dê um título.'; return; }
+  const p = nlp && nlp.title ? nlp : null;
+  const title = (p ? p.title : $('#fTitle').value.trim());
+  if (!title) { $('#fMsg').textContent = 'Dê um título.'; return; }
   $('#fSave').disabled = true; $('#fMsg').textContent = 'Criando…';
-  const r = await api.hubCreateTask({ title, due_date: $('#fDue').value || null, priority: $('#fPri').value });
+  const r = await api.hubCreateTask({ title, due_date: $('#fDue').value || null, priority: $('#fPri').value, description: p && p.time ? `Horário: ${p.time}` : '' });
   $('#fSave').disabled = false;
   if (!r.ok) { $('#fMsg').textContent = r.error; return; }
   if (r.task && $('#fEst').value) await api.hubTaskEstimate(r.task.id, Number($('#fEst').value));

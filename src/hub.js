@@ -497,6 +497,24 @@ class HubClient extends EventEmitter {
     const allowed = new Set(this.shortcuts().map((s) => s.id));
     return SHORTCUTS.map((s) => ({ id: s.id, name: s.name, path: s.path, ix: s.ix, kind: s.kind, module: s.module, allowed: allowed.has(s.id) }));
   }
+  // ---------- WhatsApp: responder pela edge function do Hub (mesma que o site usa) ----------
+  async sendChat(conversationId, text) {
+    const t = String(text || '').trim(); if (!t) throw new Error('escreva a mensagem');
+    if (!this.session) throw new Error('vincule o Medsystem Hub');
+    await this._ensure();
+    const r = await this.fetch(`${this.url}/functions/v1/send-whatsapp-message`, {
+      method: 'POST',
+      headers: { apikey: this.anon, Authorization: `Bearer ${this.session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversationId, content: t.slice(0, 4000), messageType: 'text' })
+    });
+    const j = await r.json().catch(() => ({}));
+    // a edge devolve HTTP 200 mesmo em erro de negócio
+    if (!r.ok || j.success === false) throw new Error(String(j.error || j.message || 'não consegui enviar').slice(0, 200));
+    const conv = this.chats.find((c) => c.id === conversationId);
+    if (conv) { conv.preview = t; conv.at = Date.now(); conv.unread = 0; conv.mine = true; this.chats.sort((a, b) => b.at - a.at); this._emitIfChanged(); }
+    return j.message || true;
+  }
+
   // ---------- quadro do time de Sistemas ----------
   hasBoard() { return !!(this.profile && (this.profile.modules || []).includes('sistemas')); }
   async loadBoard() {

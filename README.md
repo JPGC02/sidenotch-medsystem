@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.12.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.13.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.12.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.13.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -134,11 +134,17 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 - **Módulos** (Configurações → Módulos): cada função do app em uma linha com ícone colorido, descrição e switch — Hub, Quadro do time, Foco e tarefas, Conversas, Capturas, Área de transferência, Calendário, Música, Sistema, Apps, Uso das IAs, Aprovações, Maestri e Clima. Desligar tira a aba do notch **e** para o serviço por trás (menos memória e menos consulta); o link "ajustes" leva direto à página daquele módulo.
 - **Busca** no topo da navegação (ou <kbd>Ctrl+F</kbd>): filtra as páginas e destaca os ajustes que casam com o termo.
 
+## Ferramentas do dia a dia (1.13)
+- **Bandeja de arquivos** (`Ctrl+Shift+B` ou aba Bandeja): arraste arquivos para o notch aberto — eles ficam pousados ali (referência, nada é copiado) e podem ser **arrastados de volta** para WhatsApp, e-mail, ClickUp. Cada cartão tem *link* (sobe para o bucket `bandeja` e copia uma **URL assinada de 7 dias**), abrir na pasta, fixar e remover. Some sozinho da lista o arquivo que você apagou ou moveu.
+- **Responder WhatsApp pelo notch**: na aba Conversas, botão *Responder* abre um campo e envia pela mesma edge function do Hub (`send-whatsapp-message`), com a sua identidade — a conversa é atribuída a você como se tivesse respondido pelo site.
+- **Tarefa em linguagem natural**: escreva `amanhã 14h ligar pro hospital !alta 30min` e o app entende data, hora, prioridade e estimativa, com prévia antes de criar (`src/nlp.js`, sem IA e sem internet). Vale na aba Tarefas e no painel com calendário.
+- **Comandos do TI** (aba Comandos): atalhos de PowerShell cadastrados em Configurações → Comandos do TI, com saída no próprio notch e botão de copiar. Vem com sugestões (IP e rede, testar internet, reiniciar spool, limpar DNS, espaço em disco, quem está comendo memória). **Só roda o que está salvo na lista** — o notch dispara por id, nunca texto livre; comandos podem exigir confirmação.
+
 ## Maestri (Wire)
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.12.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.13.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor
