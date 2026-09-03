@@ -235,6 +235,7 @@ const ICONS = {
 const SVG = { sessions: IX.Monitor, bell: IX.Notification, bellOff: IX.NotificationBing, gear: IX.Setting2, check: IX.TaskSquare, chat: IX.Whatsapp, play: IX.PlayBold, tick: IX.TickCircle };
 const R = 17, C = 2 * Math.PI * R;
 const api = window.sidenotch;
+let barIgnoreState = null;   // último estado enviado ao main (evita reinstalar o hook de mouse a cada movimento)
 const $ = (s) => document.querySelector(s);
 let hub = null, settings = {}, usage = [], approvals = { pending: [], sessions: [], feed: [], maestri: null }, hovered = null, openTimer = null, pinned = false, view = null, barH = 420, toastTimers = {};
 
@@ -581,7 +582,7 @@ const UI = '#bar, #panelWrap, #hit';
 const root = $('#root');
 root.addEventListener('mousemove', (e) => {
   const overUi = e.target.closest(UI);
-  api.setIgnoreMouse(!overUi);
+  if (barIgnoreState !== !overUi) { barIgnoreState = !overUi; api.setIgnoreMouse(!overUi); }
   if (overUi) { clearTimeout(openTimer); setOpen(true); }
   showGear(!!e.target.closest('#gear'));
 });
@@ -601,7 +602,7 @@ function showGear(on) {
 gearEl.onclick = () => api.openSettings();
 document.addEventListener('mouseleave', () => showGear(false));
 gearEl.addEventListener('mouseleave', () => showGear(false));
-document.addEventListener('mouseleave', () => { api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 300); });
+document.addEventListener('mouseleave', () => { if (barIgnoreState !== true) { barIgnoreState = true; api.setIgnoreMouse(true); } openTimer = setTimeout(() => setOpen(false), 300); });
 root.addEventListener('mouseover', (e) => { if (!e.target.closest(UI)) openTimer = setTimeout(() => setOpen(false), 300); });
 document.addEventListener('mouseup', () => { if (document.body.classList.contains('dragging')) { document.body.classList.remove('dragging'); api.drag('end'); } });
 // janela não-focável: ao clicar num campo de texto, torna focável antes do foco acontecer

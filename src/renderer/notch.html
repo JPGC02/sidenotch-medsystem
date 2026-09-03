@@ -1037,8 +1037,11 @@ function setOpen(v) {
   if (v) fitPill(); else { $('#pill').style.height = ''; api.setFocusable(false); renderMini(); }
 }
 const root = $('#root');
-root.addEventListener('mousemove', (e) => { const ui = e.target.closest('#pill, #hit'); api.setIgnoreMouse(!ui); if (ui) { clearTimeout(openTimer); setOpen(true); } });
-document.addEventListener('mouseleave', () => { api.setIgnoreMouse(true); openTimer = setTimeout(() => setOpen(false), 350); });
+// o main reinstala um hook global de mouse a cada setIgnoreMouse: só avisa quando o estado muda
+let ignoreState = null;
+const setIgnore = (v) => { if (ignoreState !== v) { ignoreState = v; api.setIgnoreMouse(v); } };
+root.addEventListener('mousemove', (e) => { const ui = e.target.closest('#pill, #hit'); setIgnore(!ui); if (ui) { clearTimeout(openTimer); setOpen(true); } });
+document.addEventListener('mouseleave', () => { setIgnore(true); openTimer = setTimeout(() => setOpen(false), 350); });
 root.addEventListener('mouseover', (e) => { if (!e.target.closest('#pill, #hit')) openTimer = setTimeout(() => setOpen(false), 350); });
 document.addEventListener('focusout', () => setTimeout(() => { if (!typing()) api.setFocusable(false); }, 50));
 // janela é não-focável por padrão (não rouba foco); ao clicar num campo, torna focável antes de o foco acontecer

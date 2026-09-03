@@ -662,7 +662,9 @@ ipcMain.handle('update:install', () => { updater && updater.install(); return up
 ipcMain.handle('displays:get', () => screen.getAllDisplays().map((d, i) => ({ id: String(d.id), label: `Monitor ${i + 1} (${d.size.width}×${d.size.height})${d.id === screen.getPrimaryDisplay().id ? ' — principal' : ''}` })));
 ipcMain.on('bar:ignore-mouse', (e, ignore) => {
   const w = BrowserWindow.fromWebContents(e.sender);
-  if (w && !(dragging && w._role === dragging.role)) { w._ignore = !!ignore; w.setIgnoreMouseEvents(!!ignore, { forward: true }); }
+  if (!w || (dragging && w._role === dragging.role)) return;
+  if (w._ignore === !!ignore) return;                 // sem mudança: não reinstala o hook de mouse
+  w._ignore = !!ignore; w.setIgnoreMouseEvents(!!ignore, { forward: true });
 });
 ipcMain.on('bar:height', (e, h) => { const w = BrowserWindow.fromWebContents(e.sender); const role = w && w._role; if (!role) return; const nh = Math.max(160, Math.min(1000, Math.round(h))); if (nh !== barH[role]) { barH[role] = nh; positionBar(role); } });
 ipcMain.on('bar:focusable', (e, v) => { const w = BrowserWindow.fromWebContents(e.sender); if (!w) return; w.setFocusable(!!v); if (v) w.focus(); });
