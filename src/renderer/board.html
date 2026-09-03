@@ -71,6 +71,17 @@
   .card.ghost { position: fixed; z-index: 50; pointer-events: none; opacity: .92; transform: rotate(-2deg) scale(1.03); box-shadow: 0 24px 60px rgba(0,0,0,.6); border-color: var(--blue); }
   .card.lifting { opacity: .35; } body.dragging { cursor: grabbing; } body.dragging .card { cursor: grabbing; }
   .col.over { border-color: var(--blue) !important; background: rgba(10,132,255,.14) !important; }
+  /* seletor próprio: o <select> nativo não desenha em janela transparente e ainda captura o mouse */
+  .pick { position: relative; }
+  .pick > button { display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between; padding: 6px 10px; font-size: 12px; border-radius: 10px; }
+  .pick > button::after { content: "⌄"; opacity: .6; font-size: 13px; line-height: 1; margin-top: -3px; }
+  .pick .menu { position: absolute; right: 0; top: calc(100% + 4px); min-width: 190px; max-height: 260px; overflow: auto; z-index: 30;
+    background: rgba(24,24,30,.98); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 4px; box-shadow: 0 18px 40px rgba(0,0,0,.55); }
+  .pick[hidden-menu] .menu, .pick .menu[hidden] { display: none; }
+  .pick .menu div { padding: 7px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .pick .menu div:hover { background: rgba(255,255,255,.1); } .pick .menu div.on { background: var(--blue); color: #fff; }
+  /* prompt inline (nada de janela nativa) */
+  .inline-ask { display: flex; gap: 6px; margin-top: 8px; } .inline-ask input { flex: 1; min-width: 0; font-size: 12px; }
   /* detalhes do cartão */
   #modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; } #modal[hidden] { display: none; }
   #mBack { position: absolute; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(6px); }
@@ -113,8 +124,8 @@
     <h1>Quadro · Sistemas</h1>
     <div class="seg" id="modes"><button data-m="col" class="on">Colunas</button><button data-m="who">Por pessoa</button></div>
     <input id="q" placeholder="Buscar cartão…" style="width:180px">
-    <select id="fTrilha"><option value="">Bugs e ideias</option><option value="bug">Só bugs</option><option value="ideia">Só ideias</option></select>
-    <select id="fDono"><option value="">Todos</option><option value="me">Meus</option><option value="none">Sem dono</option></select>
+    <span class="pick" id="fTrilha" style="min-width:130px"></span>
+    <span class="pick" id="fDono" style="min-width:120px"></span>
     <span class="sp"></span>
     <button id="brief" title="Envia agora, como notificação no topo da tela, o resumo do quadro: o que entrou, o que está sem dono, o que travou e o que foi entregue. Sai sozinho às 9h e às 18h.">Resumo do dia</button>
     <button id="reload" class="pri">Atualizar</button>
@@ -253,8 +264,7 @@ function bindCards() {
   document.querySelectorAll('[data-blk]').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation(); const id = b.dataset.blk; const c = ((board && board.cards) || []).find((x) => x.id === id);
     if (c && c.bloqueado) { const r = await api.boardBlock(id, false); if (!r.ok) toast(r.error); else toast('Liberado.'); return load(true); }
-    const motivo = prompt('O que está travando esse cartão?'); if (!motivo) return;
-    const r = await api.boardBlock(id, true, motivo); if (!r.ok) { toast(r.error); return; } toast('Travado — o time é avisado.'); await load(true);
+    openCard(id); setTimeout(() => { const b = $('#mBlock'); if (b) b.click(); }, 260);   // trava pelo painel, com a pergunta inline
   });
   // arrastar por ponteiro: fantasma segue o cursor; soltar numa coluna move, soltar numa pessoa atribui
   document.querySelectorAll('.card[data-id]').forEach((el) => {
@@ -293,6 +303,29 @@ function bindCards() {
   });
 }
 
+// ---------- seletor próprio ----------
+function picker(el, itens, valor, onPick) {
+  const atual = itens.find((i) => i.v === valor) || itens[0] || { v: '', t: '—' };
+  el.innerHTML = `<button type="button">${esc(atual.t)}</button><div class="menu" hidden>${itens.map((i) => `<div data-v="${esc(i.v)}" class="${i.v === valor ? 'on' : ''}">${esc(i.t)}</div>`).join('')}</div>`;
+  const btn = el.querySelector('button'), menu = el.querySelector('.menu');
+  btn.onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.pick .menu').forEach((m) => { if (m !== menu) m.hidden = true; }); menu.hidden = !menu.hidden; };
+  menu.querySelectorAll('[data-v]').forEach((d) => d.onclick = (e) => { e.stopPropagation(); menu.hidden = true; onPick(d.dataset.v); });
+}
+document.addEventListener('click', () => document.querySelectorAll('.pick .menu').forEach((m) => m.hidden = true));
+
+// pergunta curta dentro do próprio painel (o prompt() nativo trava o mouse em janela acrílica)
+function ask(host, label, cb) {
+  const box = document.createElement('div'); box.className = 'inline-ask';
+  box.innerHTML = `<input type="text" placeholder="${esc(label)}"><button class="pri">OK</button><button>Cancelar</button>`;
+  host.appendChild(box);
+  const [inp, ok, no] = [box.querySelector('input'), box.querySelectorAll('button')[0], box.querySelectorAll('button')[1]];
+  setTimeout(() => inp.focus(), 30);
+  const done = (v) => { box.remove(); if (v) cb(v); };
+  ok.onclick = () => done(inp.value.trim());
+  no.onclick = () => done(null);
+  inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') done(inp.value.trim()); if (e.key === 'Escape') done(null); };
+}
+
 // ---------- detalhes do cartão ----------
 const PRI_N = { baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica' };
 let modalId = null;
@@ -303,7 +336,9 @@ async function openCard(id) {
   renderCard(r.data);
 }
 function renderCard(d) {
-  const c = d.card, people = d.people || [], hist = d.history || [], msgs = d.messages || [];
+  const c = d.card, hist = d.history || [], msgs = d.messages || [];
+  // se a RPC não trouxer o time, usa o que o quadro já carregou
+  const people = (d.people && d.people.length ? d.people : ((board && board.people) || []));
   const on = fx.active && fx.taskId === c.id;
   const dt = (v) => v ? new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '') : '—';
   const sec = (t, html) => html ? `<div class="msec"><h4>${t}</h4><div>${html}</div></div>` : '';
@@ -321,8 +356,8 @@ function renderCard(d) {
         ${msgs.length ? sec('Últimas mensagens', msgs.map((m) => `<div class="mmsg"><b>${esc(m.quem || '—')}</b> <span class="muted">${dt(m.at)}</span><div>${esc(m.texto || '')}</div></div>`).join('')) : ''}
       </div>
       <div class="mright">
-        <div class="mrow"><span>Responsável</span><select id="mWho"><option value="">— sem dono —</option>${people.map((p) => `<option value="${p.id}" ${p.id === c.responsavel_id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
-        <div class="mrow"><span>Coluna</span><select id="mCol">${COLS.map(([st, n]) => `<option value="${st}" ${st === c.status ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="mrow"><span>Responsável</span><span class="pick" id="mWho" style="min-width:170px"></span></div>
+        <div class="mrow"><span>Coluna</span><span class="pick" id="mCol" style="min-width:170px"></span></div>
         <div class="mrow"><span>Autor</span><b>${esc(c.autor_nome || '—')}${c.autor_setor_slug ? ' · ' + esc(c.autor_setor_slug) : ''}</b></div>
         <div class="mrow"><span>Criado</span><b>${dt(c.created_at)}</b></div>
         <div class="mrow"><span>Última atividade</span><b>${dt(c.updated_at)}</b></div>
@@ -337,14 +372,21 @@ function renderCard(d) {
       </div>
     </div>`;
   $('#mClose').onclick = closeCard;
-  $('#mWho').onchange = async () => { const uid = $('#mWho').value || null; const r = await api.boardAssign(c.id, uid, false); if (!r.ok) { toast(r.error); return; } toast(uid ? 'Atribuído.' : 'Sem dono.'); await load(true); openCard(c.id); };
-  $('#mCol').onchange = async () => { const st = $('#mCol').value; const r = await api.boardMove(c.id, st); if (!r.ok) { toast(r.error); return; } toast(`→ ${COL_N[st]}`); await load(true); openCard(c.id); };
+  picker($('#mWho'), [{ v: '', t: '— sem dono —' }, ...people.map((p) => ({ v: p.id, t: p.name }))], c.responsavel_id || '', async (uid) => {
+    const r = await api.boardAssign(c.id, uid || null, false); if (!r.ok) { toast(r.error); return; }
+    toast(uid ? 'Atribuído.' : 'Sem dono.'); await load(true); openCard(c.id);
+  });
+  picker($('#mCol'), COLS.map(([st, n]) => ({ v: st, t: n })), c.status, async (st) => {
+    if (st === c.status) return; const r = await api.boardMove(c.id, st); if (!r.ok) { toast(r.error); return; }
+    toast(`→ ${COL_N[st]}`); await load(true); openCard(c.id);
+  });
   $('#mFocus').onclick = async () => { fx = await api.focusToggle({ id: c.id, title: `#${c.numero_sequencial} ${c.titulo}`, kind: 'ideia' }) || fx; await load(true); openCard(c.id); };
   const dn = $('#mDone'); if (dn) dn.onclick = async () => { const r = await api.boardMove(c.id, 'entregue'); if (!r.ok) { toast(r.error); return; } toast('Entregue 🚀'); await load(true); openCard(c.id); };
   $('#mBlock').onclick = async () => {
     if (c.bloqueado) { const r = await api.boardBlock(c.id, false); if (!r.ok) toast(r.error); await load(true); return openCard(c.id); }
-    const motivo = prompt('O que está travando esse cartão?'); if (!motivo) return;
-    const r = await api.boardBlock(c.id, true, motivo); if (!r.ok) { toast(r.error); return; } await load(true); openCard(c.id);
+    ask(document.querySelector('.macts'), 'O que está travando?', async (motivo) => {
+      const r = await api.boardBlock(c.id, true, motivo); if (!r.ok) { toast(r.error); return; } await load(true); openCard(c.id);
+    });
   };
   $('#mHub').onclick = () => api.hubOpen(`/sistemas/ideias?id=${c.id}`);
 }
@@ -358,8 +400,11 @@ async function load(force) {
 }
 document.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll('[data-m]').forEach((x) => x.classList.toggle('on', x === b)); renderBoard(); });
 $('#q').oninput = () => { q = $('#q').value.trim(); renderBoard(); };
-$('#fTrilha').onchange = () => { fTrilha = $('#fTrilha').value; renderBoard(); };
-$('#fDono').onchange = () => { fDono = $('#fDono').value; renderBoard(); };
+function renderFiltros() {
+  picker($('#fTrilha'), [{ v: '', t: 'Bugs e ideias' }, { v: 'bug', t: 'Só bugs' }, { v: 'ideia', t: 'Só ideias' }], fTrilha, (v) => { fTrilha = v; renderFiltros(); renderBoard(); });
+  picker($('#fDono'), [{ v: '', t: 'Todos' }, { v: 'me', t: 'Meus' }, { v: 'none', t: 'Sem dono' }], fDono, (v) => { fDono = v; renderFiltros(); renderBoard(); });
+}
+renderFiltros();
 $('#reload').onclick = async () => { const a = await api.boardAlerts(); if (a) alerts = a; await load(true); toast('Atualizado.'); };
 $('#brief').onclick = async () => { await api.boardBrief(new Date().getHours() >= 14 ? 'tarde' : 'manha'); toast('Resumo enviado — aparece no banner do topo.'); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (modalId) closeCard(); else window.close(); } if (e.key === '/' && e.target !== $('#q')) { e.preventDefault(); $('#q').focus(); } });
@@ -377,5 +422,6 @@ api.onFocus((st) => { if (st) { fx = st; renderBoard(); } });
 </script>
 <script src="glass.js"></script>
 <script src="traffic.js"></script>
+<script src="select.js"></script>
 </body>
 </html>

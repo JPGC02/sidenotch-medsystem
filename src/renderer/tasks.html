@@ -59,6 +59,8 @@
   #fx .ring svg { transform: rotate(-90deg); } #fx .ring circle { fill: none; stroke-width: 3.4; }
   #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.6); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   /* nova tarefa */
+  .edit-box { display: flex; gap: 6px; align-items: center; margin: -2px 0 6px; padding: 8px 12px; background: rgba(10,132,255,.1); border: 1px solid rgba(10,132,255,.3); border-radius: 12px; }
+  .edit-box input { font-size: 12px; padding: 6px 9px; } .edit-box button { padding: 6px 12px; font-size: 12px; }
   #form { display: none; gap: 8px; margin-bottom: 10px; } #form.on { display: flex; flex-wrap: wrap; }
   #form input[type=text] { flex: 1; min-width: 200px; } #form .msg { font-size: 11px; color: var(--muted); width: 100%; }
 
@@ -200,13 +202,23 @@ function bindRows() {
   document.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
     const r = await api.hubTaskDelete(b.dataset.del); if (!r.ok) { toast(r.error); return; } hub = r.state; toast('Tarefa apagada.'); render();
   });
+  // edição inline (o prompt() nativo trava o mouse em janela acrílica)
   document.querySelectorAll('[data-edit]').forEach((b) => b.onclick = async () => {
     const id = b.dataset.edit; const t = tasks().find((x) => x.id === id); if (!t) return;
-    const due = prompt('Prazo (AAAA-MM-DD, vazio remove):', t.due_date || ''); if (due === null) return;
-    const est = prompt('Estimativa em minutos (vazio remove):', t.estimateMin || ''); if (est === null) return;
-    const r = await api.hubTaskUpdate(id, { due_date: due.trim() || null }); if (!r.ok) { toast(r.error); return; }
-    const r2 = await api.hubTaskEstimate(id, est.trim() ? Number(est) : null);
-    hub = (r2 && r2.state) || r.state; toast('Tarefa atualizada.'); render();
+    const row = b.closest('.row'); if (!row || row.querySelector('.edit-box')) return;
+    const box = document.createElement('div'); box.className = 'edit-box';
+    box.innerHTML = `<input type="date" value="${t.due_date || ''}"><input type="number" min="5" max="480" step="5" placeholder="min" value="${t.estimateMin || ''}" style="width:80px"><button class="pri">Salvar</button><button>Cancelar</button>`;
+    row.after(box);
+    const [due, est, ok, no] = [...box.querySelectorAll('input, button')];
+    setTimeout(() => due.focus(), 30);
+    no.onclick = () => box.remove();
+    ok.onclick = async () => {
+      ok.disabled = true;
+      const r = await api.hubTaskUpdate(id, { due_date: due.value || null });
+      if (!r.ok) { toast(r.error); ok.disabled = false; return; }
+      const r2 = await api.hubTaskEstimate(id, est.value ? Number(est.value) : null);
+      hub = (r2 && r2.state) || r.state; box.remove(); toast('Tarefa atualizada.'); render();
+    };
   });
 }
 
@@ -250,5 +262,6 @@ api.onFocus((st) => { if (st) { fx = st; renderFx(); } });
 </script>
 <script src="glass.js"></script>
 <script src="traffic.js"></script>
+<script src="select.js"></script>
 </body>
 </html>

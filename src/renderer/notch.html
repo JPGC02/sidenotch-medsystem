@@ -754,7 +754,14 @@ function bindCmds() {
   const set = $('#cmSet'); if (set) set.onclick = () => api.openSettings && api.openSettings();
   document.querySelectorAll('[data-cm]').forEach((el) => el.onclick = async () => {
     const c = cmds.find((x) => x.id === el.dataset.cm); if (!c) return;
-    if (c.confirm && !confirm(`Rodar "${c.name}"?`)) return;
+    // confirmação por segundo clique (confirm() nativo trava o mouse na janela transparente)
+    if (c.confirm && el.dataset.armed !== '1') {
+      el.dataset.armed = '1'; const sub = el.querySelector('.sub'); const antes = sub.textContent;
+      sub.textContent = 'clique de novo para rodar'; sub.style.color = '#ff9f0a';
+      clearTimeout(el._t); el._t = setTimeout(() => { el.dataset.armed = '0'; sub.textContent = antes; sub.style.color = ''; }, 4000);
+      return;
+    }
+    el.dataset.armed = '0';
     cmdOut = { name: c.name, out: 'rodando…', ok: true }; renderView();
     cmdOut = await api.cmdRun(c.id); renderView();
   });
@@ -1112,5 +1119,6 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   setInterval(() => { if (document.body.classList.contains('open')) { const c = document.querySelector('#tabs .clock'); if (c) c.textContent = `${new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })} · ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; } }, 15000);
 })();
 </script>
+<script src="select.js"></script>
 </body>
 </html>
