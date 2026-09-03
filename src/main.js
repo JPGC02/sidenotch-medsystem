@@ -294,7 +294,7 @@ function openBoardWindow() {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
-  boardWin.setMenu(null);
+  boardWin.setMenu(null); watchMaximize(boardWin);
   boardWin.loadFile(path.join(__dirname, 'renderer', 'board.html'), { query: win11 ? {} : { solid: '1' } });
   boardWin.once('ready-to-show', () => { app.focus({ steal: true }); boardWin.show(); boardWin.focus(); });
   boardWin.on('closed', () => { boardWin = null; });
@@ -517,7 +517,7 @@ function openTasksWindow() {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
-  tasksWin.setMenu(null);
+  tasksWin.setMenu(null); watchMaximize(tasksWin);
   tasksWin.loadFile(path.join(__dirname, 'renderer', 'tasks.html'), { query: win11 ? {} : { solid: '1' } });
   tasksWin.once('ready-to-show', () => { app.focus({ steal: true }); tasksWin.show(); tasksWin.focus(); });
   tasksWin.on('closed', () => { tasksWin = null; });
@@ -582,6 +582,7 @@ function openSettings() {
     ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
+  watchMaximize(settingsWin);
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'), { query: win11 ? {} : { solid: '1' } });
   settingsWin.on('closed', () => { settingsWin = null; });
 }
@@ -791,6 +792,12 @@ ipcMain.handle('hub:chat-send', async (_e, convId, text) => {
   catch (e) { return { ok: false, error: String(e.message || e) }; }
 });
 // controles de janela estilo Apple (os botões ficam no HTML de cada janela)
+// o Windows desliga o acrílico em janela maximizada: avisa o renderer para pintar o próprio fundo
+function watchMaximize(win) {
+  const send = () => { if (!win.isDestroyed()) win.webContents.send('win:state', { maximized: win.isMaximized() || win.isFullScreen() }); };
+  win.on('maximize', send); win.on('unmaximize', send); win.on('enter-full-screen', send); win.on('leave-full-screen', send);
+  win.webContents.on('did-finish-load', send);
+}
 ipcMain.on('win:ctl', (e, action) => {
   const w = BrowserWindow.fromWebContents(e.sender); if (!w) return;
   if (action === 'close') w.close();

@@ -140,6 +140,9 @@ class QuickAccess {
     const win11 = process.platform === 'win32' && Number((require('os').release().split('.')[2]) || 0) >= 22000;
     const win = new BrowserWindow({ width: w, height: h, title: 'Editar captura', autoHideMenuBar: true, show: false, titleBarStyle: 'hidden', ...(win11 ? { backgroundMaterial: 'acrylic' } : { backgroundColor: '#0f0f13' }), icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } });
     this.editor = win; win.setMenu(null);
+    // acrílico some quando a janela é maximizada: o renderer pinta o fundo nesse caso
+    const st = () => { if (!win.isDestroyed()) win.webContents.send('win:state', { maximized: win.isMaximized() || win.isFullScreen() }); };
+    win.on('maximize', st); win.on('unmaximize', st); win.webContents.on('did-finish-load', st);
     // a pilha não é focável: sem isto o Windows abre o editor atrás da janela ativa
     win.once('ready-to-show', () => { app.focus({ steal: true }); win.show(); win.setAlwaysOnTop(true); win.focus(); setTimeout(() => { if (!win.isDestroyed()) win.setAlwaysOnTop(false); }, 400); });
     win.loadFile(path.join(__dirname, 'renderer', 'editor.html'), { query: win11 ? { id } : { id, solid: '1' } });

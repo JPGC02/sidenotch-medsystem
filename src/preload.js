@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   setBarHeight: (h) => ipcRenderer.send('bar:height', h),
   setFocusable: (v) => ipcRenderer.send('bar:focusable', v),
   winCtl: (a) => ipcRenderer.send('win:ctl', a),
+  onWinState: (cb) => ipcRenderer.on('win:state', (_e, st) => cb(st)),
   drag: (phase) => ipcRenderer.send('bar:drag', phase),
   openSettings: () => ipcRenderer.send('app:open-settings'),
   openUrl: (u) => ipcRenderer.send('app:open-url', u),

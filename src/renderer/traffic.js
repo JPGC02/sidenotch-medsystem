@@ -22,6 +22,8 @@
   box.querySelector('.close').onclick = () => api && api.winCtl ? api.winCtl('close') : window.close();
   box.querySelector('.min').onclick = () => api && api.winCtl && api.winCtl('min');
   box.querySelector('.max').onclick = () => api && api.winCtl && api.winCtl('max');
+  // maximizada: o Windows não aplica acrílico, então a própria página pinta o fundo
+  if (api && api.onWinState) api.onWinState((st) => document.body.classList.toggle('solid', !!(st && st.maximized) || new URLSearchParams(location.search).has('solid')));
   window.addEventListener('blur', () => document.body.classList.add('win-blur'));
   window.addEventListener('focus', () => document.body.classList.remove('win-blur'));
   // clique duplo na faixa de arrasto maximiza, como no Mac
