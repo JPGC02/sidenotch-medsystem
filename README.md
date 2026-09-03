@@ -110,6 +110,15 @@ Além da barra lateral, uma pastilha no topo do monitor (estilo notch) que expan
 - **Clima**: temperatura e condição via Open-Meteo (localização automática por IP, ou lat/lon nas configurações), na pastilha fechada e na aba Sistema.
 Fechada, a pastilha mostra a hora, capa/música, CPU/RAM, próximo compromisso e temperatura; aberta, o tamanho se adapta à aba. Configurações → Notch. As configurações ganharam visual novo (acrílico no Windows 11).
 
+## Foco nas tarefas (1.10)
+Pomodoro ligado às tarefas do Medsystem Hub, no espírito do notch da Apple:
+- **Timer na pastilha fechada**: ⏱ mm:ss + nome da tarefa + 🔥 streak, com uma **linha azul de progresso que percorre a base da pastilha e tinge as mordidas** do recorte (laranja quando pausado).
+- **To Do na aba Tarefas**: cada tarefa (gerais + OS do Fluxo da AT) tem **play/pause** para focar e ✓ para concluir; o cartão do ciclo ativo mostra anel de progresso, pausar e encerrar.
+- **Journey Streak**: grade de 11 semanas com os dias em que você focou (3 níveis por minutos) + sequência atual e minutos de hoje.
+- **Painel de tarefas** (`Ctrl+Shift+F` sem ciclo ativo, ou botão *Painel*): janela com **calendário do mês** (pontos por prazo, vermelhos quando atrasada), lista do dia com prioridade, prazo, estimativa e tempo já focado, além de criar, editar prazo/estimativa e apagar.
+- **Onde fica o tempo**: cada sessão vai para `focus_sessions` no Supabase (RLS por usuário) via RPC `focus_log`, que **soma o tempo em `tasks.focus_seconds`** (ou `at_os_tarefa.focus_seconds`) — o Hub web vê o mesmo número. Sem internet a sessão espera em `focus.json` e sobe depois. Streak e heatmap vêm da RPC `focus_summary`.
+- Iniciar um ciclo marca a tarefa como *em andamento* no Hub (opcional). Duração, pausa, som, timer na pastilha e streak em Configurações → Medsystem Hub → Foco.
+
 ## Maestri (Wire)
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
