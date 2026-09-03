@@ -554,6 +554,8 @@ class HubClient extends EventEmitter {
   }
   async boardTake(id, startDev = true) { const r = await this.rpc('sistemas_take', { p_ideia: id, p_start_dev: !!startDev }); await this.loadBoard(); this._emitIfChanged(); return r; }
   async boardMove(id, status, motivo) { const r = await this.rpc('sistemas_move', { p_ideia: id, p_status: status, p_motivo: motivo || null }); await this.loadBoard(); this._emitIfChanged(); return r; }
+  async boardAssign(id, userId, startDev = false) { const r = await this.rpc('sistemas_assign', { p_ideia: id, p_user: userId || null, p_start_dev: !!startDev }); await this.loadBoard(); this._emitIfChanged(); return r; }
+  async boardCard(id) { const r = await this.rpc('sistemas_card', { p_ideia: id }); return Array.isArray(r) ? r[0] : r; }
   async boardBlock(id, on, motivo) { const r = await this.rpc('sistemas_block', { p_ideia: id, p_bloqueado: !!on, p_motivo: motivo || null }); await this.loadBoard(); this._emitIfChanged(); return r; }
 
   urlFor(link) { if (!link) return this.site; if (/^https?:/.test(link)) return link; return this.site + (link.startsWith('/') ? '' : '/') + link; }

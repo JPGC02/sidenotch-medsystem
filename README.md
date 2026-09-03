@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.13.4.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.14.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.13.4.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.14.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -122,7 +122,7 @@ Pomodoro ligado às tarefas do Medsystem Hub, no espírito do notch da Apple:
 ## Quadro do time de Sistemas (1.11)
 A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sistemas_ideias`):
 - **Resumo no notch**: placar (sem dono · em dev · paradas · bloqueadas · novas 24h · entregues 7d), **Agora** (quem está focando em quê, com WIP por pessoa), **Travas** e a **movimentação do time** em tempo real. Na pastilha fechada aparece `em dev · ⚠travados`.
-- **Janela do quadro** (`Ctrl+Shift+K`): Kanban com 6 colunas e **arrastar para mover**, modo **por pessoa** (swimlanes), busca, filtros (bug/ideia, meus/sem dono), e por cartão: *Assumir/Focar*, *Entregar*, *Travar/Liberar* (bloqueio exige motivo).
+- **Janela do quadro** (`Ctrl+Shift+K`): Kanban com 6 colunas e **arrastar para mover** (arrasto próprio por ponteiro — o nativo do Chromium não inicia em janela acrílica), modo **por pessoa** onde **soltar na raia de alguém atribui o cartão** (RPC `sistemas_assign`), busca, filtros (bug/ideia, meus/sem dono). **Clique num cartão abre o painel de detalhes**: descrição/problema/proposta/benefício, últimas mensagens, responsável (seletor com o time), coluna, autor, datas, histórico completo e ações (focar, entregar, travar, abrir no Hub).
 - **Notificações do time**: cada evento de outra pessoa (assumiu, moveu, bloqueou, entregou, comentou) chega no banner do topo — via Realtime de `sistemas_ideias` e `sistemas_ideia_historico`.
 - **Cobranças automáticas** (1× por dia cada): cartão sem dono há +24 h, em desenvolvimento sem evento há +2 dias, bloqueado, SLA de bug estourado, WIP acima do limite (padrão 2) e novas entradas na fila.
 - **Resumo do dia (9h e 18h)**: notificação no banner do topo com o retrato do quadro — quantas entraram, quantas estão sem dono, o que travou e o que foi entregue. Os horários são configuráveis e o botão *Resumo do dia* manda na hora.
@@ -144,7 +144,7 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.13.4 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.14.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

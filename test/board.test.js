@@ -30,6 +30,8 @@ const rpcs = {
   sistemas_alerts: (args) => ({ semDono: [{ id: 'i1', n: 42, titulo: 'Bug no login', horas: 30 }], paradas: [{ id: 'i2', n: 43, titulo: 'Painel novo', quem: 'JP Teste', dias: 3 }], bloqueadas: [], sla: [], wip: [], filaNova: 1, _args: args }),
   sistemas_take: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.responsavel_id = UID; if (args.p_start_dev) c.status = 'em_desenvolvimento'; return { ok: true }; },
   sistemas_move: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.status = args.p_status; return { ok: true }; },
+  sistemas_assign: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.responsavel_id = args.p_user; db.calls.push(['assign', args]); return { ok: true }; },
+  sistemas_card: (args) => ({ card: { ...db.cards.find((x) => x.id === args.p_ideia), descricao: 'desc' }, history: [{ id: 'h', acao: 'assumiu' }], messages: [], people: [{ id: UID, name: 'JP' }] }),
   sistemas_block: (args) => { const c = db.cards.find((x) => x.id === args.p_ideia); c.bloqueado = !!args.p_bloqueado; c.bloqueio_motivo = args.p_motivo; return { ok: true }; },
   focus_log: (args) => { db.calls.push(['focus_log', args]); return 'fs-1'; },
   focus_summary: () => ({ days: [], streak: 2, today: 600, total: 600 }),
@@ -82,6 +84,10 @@ server.listen(0, async () => {
     assert.strictEqual(db.cards[0].status, 'em_desenvolvimento', 'foi para em dev');
     await hub.boardMove('i1', 'entregue', 'pronto');
     assert.strictEqual(db.cards[0].status, 'entregue', 'moveu');
+    await hub.boardAssign('i2', 'outro-uid', false);
+    assert.strictEqual(db.cards[1].responsavel_id, 'outro-uid', 'atribuiu a outra pessoa');
+    const card = await hub.boardCard('i2');
+    assert.strictEqual(card.card.descricao, 'desc', 'detalhes do cartão'); assert.strictEqual(card.people.length, 1);
     await hub.boardBlock('i2', true, 'aguardando cliente');
     assert.strictEqual(db.cards[1].bloqueado, true, 'bloqueou');
     assert.strictEqual(db.cards[1].bloqueio_motivo, 'aguardando cliente', 'motivo gravado');

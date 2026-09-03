@@ -67,6 +67,26 @@
   .alert { display: flex; gap: 7px; align-items: flex-start; background: rgba(255,159,10,.12); border: 1px solid rgba(255,159,10,.3); border-radius: 12px; padding: 8px 10px; font-size: 11.5px; margin-bottom: 6px; cursor: pointer; }
   .alert.bad { background: rgba(255,69,58,.12); border-color: rgba(255,69,58,.35); }
   .empty { text-align: center; color: var(--muted); padding: 22px 8px; font-size: 11.5px; }
+  /* arrasto por ponteiro */
+  .card.ghost { position: fixed; z-index: 50; pointer-events: none; opacity: .92; transform: rotate(-2deg) scale(1.03); box-shadow: 0 24px 60px rgba(0,0,0,.6); border-color: var(--blue); }
+  .card.lifting { opacity: .35; } body.dragging { cursor: grabbing; } body.dragging .card { cursor: grabbing; }
+  .col.over { border-color: var(--blue) !important; background: rgba(10,132,255,.14) !important; }
+  /* detalhes do cartão */
+  #modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; } #modal[hidden] { display: none; }
+  #mBack { position: absolute; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(6px); }
+  #mCard { position: relative; width: min(920px, calc(100vw - 60px)); max-height: calc(100vh - 70px); overflow: auto; padding: 18px 20px; border-radius: 22px; }
+  .mhead { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; } .mhead > div { flex: 1; min-width: 0; }
+  .mhead .mn { font-size: 11px; color: var(--muted); } .mhead h2 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; margin: 2px 0 8px; line-height: 1.25; }
+  .mchips { display: flex; gap: 5px; flex-wrap: wrap; } .mchips .chip { font-size: 10.5px; }
+  .mgrid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+  .msec { margin-bottom: 12px; } .msec h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 5px; }
+  .msec > div { font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; user-select: text; }
+  .mmsg { background: rgba(255,255,255,.06); border-radius: 10px; padding: 7px 9px; margin-bottom: 5px; font-size: 12px; white-space: normal; }
+  .mright { background: rgba(0,0,0,.22); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+  .mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .mrow span { color: var(--muted); } .mrow b { font-weight: 600; text-align: right; } .mrow select { max-width: 170px; font-size: 12px; padding: 5px 8px; }
+  .macts { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 12px; } .macts button { flex: 1 1 45%; font-size: 12px; }
+  .mhist { max-height: 200px; overflow: auto; } .mh { font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); line-height: 1.3; } .mh span { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
   #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.62); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 
   /* vidro compartilhado */
@@ -109,6 +129,7 @@
     </div>
   </div>
 </div>
+<div id="modal" hidden><div id="mBack"></div><div id="mCard" class="panel"><div id="mBody"></div></div></div>
 <div id="toast"></div>
 <script src="iconsax.js"></script>
 <script>
@@ -146,7 +167,7 @@ function cardHtml(c) {
   const on = fx.active && fx.taskId === c.id;
   const stale = c.status === 'em_desenvolvimento' && new Date(c.ultimo_evento_em || c.updated_at || c.created_at).getTime() < Date.now() - 2 * 86400000;
   const dias = Math.floor((Date.now() - new Date(c.ultimo_evento_em || c.updated_at || c.created_at).getTime()) / 86400000);
-  return `<div class="card ${c.responsavel_id === me ? 'mine' : ''} ${c.bloqueado ? 'blocked' : ''} ${stale ? 'stale' : ''} ${on && fx.running ? 'focusing' : ''}" draggable="true" data-id="${esc(c.id)}" title="${esc(c.titulo)}">
+  return `<div class="card ${c.responsavel_id === me ? 'mine' : ''} ${c.bloqueado ? 'blocked' : ''} ${stale ? 'stale' : ''} ${on && fx.running ? 'focusing' : ''}" data-id="${esc(c.id)}">
     <div class="n">#${c.numero_sequencial}${c.autor_nome ? ' · ' + esc(String(c.autor_nome).split(' ')[0]) : ''}${c.modulo_slug ? ' · ' + esc(c.modulo_slug) : ''}</div>
     <div class="t">${esc(c.titulo)}</div>
     <div class="meta">
@@ -174,10 +195,10 @@ function renderBoard() {
     const people = (board && board.people) || [];
     const semDono = list.filter((c) => !c.responsavel_id);
     $('#cols').innerHTML = [
-      `<div class="col" data-col="" data-noDrop="1"><h2>Sem dono<i>${semDono.length}</i></h2><div class="cards">${semDono.map(cardHtml).join('') || '<div class="empty">tudo com dono 🎉</div>'}</div></div>`,
+      `<div class="col" data-person=""><h2>Sem dono<i>${semDono.length}</i></h2><div class="cards">${semDono.map(cardHtml).join('') || '<div class="empty">tudo com dono 🎉</div>'}</div></div>`,
       ...people.map((p) => {
         const cs = list.filter((c) => c.responsavel_id === p.id);
-        return `<div class="col" data-col="" data-noDrop="1"><h2>${esc(p.name || '—')}<i>${cs.length}</i></h2><div class="cards">${cs.map(cardHtml).join('') || '<div class="empty">nada em mãos</div>'}</div></div>`;
+        return `<div class="col" data-person="${esc(p.id)}"><h2>${esc(p.name || '—')}<i>${cs.length}</i></h2><div class="cards">${cs.map(cardHtml).join('') || '<div class="empty">solte um cartão aqui</div>'}</div></div>`;
       })
     ].join('');
   }
@@ -235,24 +256,99 @@ function bindCards() {
     const motivo = prompt('O que está travando esse cartão?'); if (!motivo) return;
     const r = await api.boardBlock(id, true, motivo); if (!r.ok) { toast(r.error); return; } toast('Travado — o time é avisado.'); await load(true);
   });
-  // arrastar para outra coluna
-  document.querySelectorAll('.card[draggable]').forEach((el) => {
-    el.addEventListener('dragstart', (e) => { drag = el.dataset.id; el.style.opacity = .5; e.dataTransfer.effectAllowed = 'move'; });
-    el.addEventListener('dragend', () => { drag = null; el.style.opacity = 1; });
-  });
-  document.querySelectorAll('.col[data-col]').forEach((col) => {
-    if (col.dataset.nodrop) return;
-    col.addEventListener('dragover', (e) => { if (!drag || !col.dataset.col) return; e.preventDefault(); col.classList.add('over'); });
-    col.addEventListener('dragleave', () => col.classList.remove('over'));
-    col.addEventListener('drop', async (e) => {
-      e.preventDefault(); col.classList.remove('over');
-      const id = drag, st = col.dataset.col; drag = null; if (!id || !st) return;
-      const c = ((board && board.cards) || []).find((x) => x.id === id); if (!c || c.status === st) return;
-      const r = await api.boardMove(id, st); if (!r.ok) { toast(r.error); return; }
-      toast(`Movido para ${COL_N[st]}`); await load(true);
+  // arrastar por ponteiro: fantasma segue o cursor; soltar numa coluna move, soltar numa pessoa atribui
+  document.querySelectorAll('.card[data-id]').forEach((el) => {
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || e.target.closest('button, a, input, select')) return;
+      const id = el.dataset.id; const start = { x: e.clientX, y: e.clientY }; let ghost = null, lastCol = null;
+      const move = (ev) => {
+        if (!ghost) {
+          if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
+          ghost = el.cloneNode(true); ghost.className = 'card ghost'; ghost.style.width = el.getBoundingClientRect().width + 'px';
+          document.body.appendChild(ghost); el.classList.add('lifting'); document.body.classList.add('dragging');
+        }
+        ghost.style.left = (ev.clientX + 12) + 'px'; ghost.style.top = (ev.clientY - 10) + 'px';
+        const under = document.elementFromPoint(ev.clientX, ev.clientY); const col = under && under.closest('.col');
+        if (col !== lastCol) { if (lastCol) lastCol.classList.remove('over'); if (col) col.classList.add('over'); lastCol = col; }
+      };
+      const up = async (ev) => {
+        document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+        if (!ghost) { openCard(id); return; }             // clique simples abre os detalhes
+        ghost.remove(); el.classList.remove('lifting'); document.body.classList.remove('dragging');
+        if (lastCol) lastCol.classList.remove('over');
+        const under = document.elementFromPoint(ev.clientX, ev.clientY); const col = under && under.closest('.col'); if (!col) return;
+        const c = ((board && board.cards) || []).find((x) => x.id === id); if (!c) return;
+        if (col.dataset.col) {                              // coluna de status
+          const st = col.dataset.col; if (c.status === st) return;
+          const r = await api.boardMove(id, st); if (!r.ok) { toast(r.error); return; }
+          toast(`#${c.numero_sequencial} → ${COL_N[st]}`); await load(true);
+        } else if (col.dataset.person !== undefined) {      // raia de pessoa
+          const uid = col.dataset.person || null; if ((c.responsavel_id || null) === uid) return;
+          const r = await api.boardAssign(id, uid, false); if (!r.ok) { toast(r.error); return; }
+          toast(uid ? `#${c.numero_sequencial} atribuído` : `#${c.numero_sequencial} sem dono`); await load(true);
+        }
+      };
+      document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
     });
   });
 }
+
+// ---------- detalhes do cartão ----------
+const PRI_N = { baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica' };
+let modalId = null;
+async function openCard(id) {
+  modalId = id; const m = $('#modal'); m.hidden = false; $('#mBody').innerHTML = '<div class="empty">Carregando…</div>';
+  const r = await api.boardCard(id);
+  if (!r.ok || !r.data || !r.data.card) { $('#mBody').innerHTML = `<div class="empty">${esc((r && r.error) || 'Não achei o cartão')}</div>`; return; }
+  renderCard(r.data);
+}
+function renderCard(d) {
+  const c = d.card, people = d.people || [], hist = d.history || [], msgs = d.messages || [];
+  const on = fx.active && fx.taskId === c.id;
+  const dt = (v) => v ? new Date(v).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '') : '—';
+  const sec = (t, html) => html ? `<div class="msec"><h4>${t}</h4><div>${html}</div></div>` : '';
+  $('#mBody').innerHTML = `
+    <div class="mhead"><div><div class="mn">#${c.numero_sequencial} · ${esc(c.trilha === 'bug' ? 'Bug' : 'Ideia')}${c.modulo_slug ? ' · ' + esc(c.modulo_slug) : ''}</div><h2>${esc(c.titulo)}</h2>
+      <div class="mchips"><span class="chip ${c.trilha === 'bug' ? 'bug' : 'ideia'}">${esc(COL_N[c.status] || c.status)}</span>
+        ${c.severidade ? `<span class="chip">sev. ${esc(c.severidade)}</span>` : ''}${c.prioridade ? `<span class="chip">${esc(PRI_N[c.prioridade] || c.prioridade)}</span>` : ''}
+        ${c.bloqueado ? `<span class="chip bug">⛔ ${esc(c.bloqueio_motivo || 'travado')}</span>` : ''}${c.estimativa_horas ? `<span class="chip">${c.estimativa_horas} h est.</span>` : ''}
+        ${c.focus_seconds ? `<span class="chip">${Math.round(c.focus_seconds / 60)} min focados</span>` : ''}${c.sla_resolucao_estourado_em || c.sla_resposta_estourado_em ? '<span class="chip bug">SLA estourado</span>' : ''}</div></div>
+      <button class="icon" id="mClose" title="Fechar (Esc)">✕</button></div>
+    <div class="mgrid">
+      <div class="mleft">
+        ${sec('Descrição', c.descricao ? esc(c.descricao) : '')}${sec('Problema', c.problema ? esc(c.problema) : '')}${sec('Proposta', c.proposta ? esc(c.proposta) : '')}${sec('Benefício esperado', c.beneficio_esperado ? esc(c.beneficio_esperado) : '')}
+        ${!c.descricao && !c.problema && !c.proposta ? '<div class="muted" style="font-size:12px">Sem descrição.</div>' : ''}
+        ${msgs.length ? sec('Últimas mensagens', msgs.map((m) => `<div class="mmsg"><b>${esc(m.quem || '—')}</b> <span class="muted">${dt(m.at)}</span><div>${esc(m.texto || '')}</div></div>`).join('')) : ''}
+      </div>
+      <div class="mright">
+        <div class="mrow"><span>Responsável</span><select id="mWho"><option value="">— sem dono —</option>${people.map((p) => `<option value="${p.id}" ${p.id === c.responsavel_id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+        <div class="mrow"><span>Coluna</span><select id="mCol">${COLS.map(([st, n]) => `<option value="${st}" ${st === c.status ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="mrow"><span>Autor</span><b>${esc(c.autor_nome || '—')}${c.autor_setor_slug ? ' · ' + esc(c.autor_setor_slug) : ''}</b></div>
+        <div class="mrow"><span>Criado</span><b>${dt(c.created_at)}</b></div>
+        <div class="mrow"><span>Última atividade</span><b>${dt(c.updated_at)}</b></div>
+        ${c.entregue_em ? `<div class="mrow"><span>Entregue</span><b>${dt(c.entregue_em)}</b></div>` : ''}
+        <div class="macts">
+          <button class="pri" id="mFocus">${on && fx.running ? 'Pausar foco' : c.responsavel_id === me ? 'Focar' : 'Assumir e focar'}</button>
+          ${c.status !== 'entregue' ? '<button id="mDone">Entregar</button>' : ''}
+          <button id="mBlock">${c.bloqueado ? 'Liberar' : 'Travar'}</button>
+          <button id="mHub">Abrir no Hub</button>
+        </div>
+        <div class="msec"><h4>Histórico</h4><div class="mhist">${hist.length ? hist.map((h) => `<div class="mh"><span>${dt(h.at)}</span><b>${esc(String(h.quem || '—').split(' ')[0])}</b> ${esc(h.acao === 'mudou_status' ? 'moveu' : h.acao)}${h.para && h.para.status ? ' → ' + esc(COL_N[h.para.status] || h.para.status) : ''}${h.para && h.para.responsavel_nome ? ' → ' + esc(h.para.responsavel_nome) : ''}${h.detalhes && !/via SideNotch/.test(h.detalhes) ? ' · ' + esc(String(h.detalhes).slice(0, 60)) : ''}</div>`).join('') : '<div class="muted">Sem eventos.</div>'}</div></div>
+      </div>
+    </div>`;
+  $('#mClose').onclick = closeCard;
+  $('#mWho').onchange = async () => { const uid = $('#mWho').value || null; const r = await api.boardAssign(c.id, uid, false); if (!r.ok) { toast(r.error); return; } toast(uid ? 'Atribuído.' : 'Sem dono.'); await load(true); openCard(c.id); };
+  $('#mCol').onchange = async () => { const st = $('#mCol').value; const r = await api.boardMove(c.id, st); if (!r.ok) { toast(r.error); return; } toast(`→ ${COL_N[st]}`); await load(true); openCard(c.id); };
+  $('#mFocus').onclick = async () => { fx = await api.focusToggle({ id: c.id, title: `#${c.numero_sequencial} ${c.titulo}`, kind: 'ideia' }) || fx; await load(true); openCard(c.id); };
+  const dn = $('#mDone'); if (dn) dn.onclick = async () => { const r = await api.boardMove(c.id, 'entregue'); if (!r.ok) { toast(r.error); return; } toast('Entregue 🚀'); await load(true); openCard(c.id); };
+  $('#mBlock').onclick = async () => {
+    if (c.bloqueado) { const r = await api.boardBlock(c.id, false); if (!r.ok) toast(r.error); await load(true); return openCard(c.id); }
+    const motivo = prompt('O que está travando esse cartão?'); if (!motivo) return;
+    const r = await api.boardBlock(c.id, true, motivo); if (!r.ok) { toast(r.error); return; } await load(true); openCard(c.id);
+  };
+  $('#mHub').onclick = () => api.hubOpen(`/sistemas/ideias?id=${c.id}`);
+}
+function closeCard() { modalId = null; $('#modal').hidden = true; }
 
 async function load(force) {
   const r = await api.boardGet(!!force);
@@ -266,7 +362,8 @@ $('#fTrilha').onchange = () => { fTrilha = $('#fTrilha').value; renderBoard(); }
 $('#fDono').onchange = () => { fDono = $('#fDono').value; renderBoard(); };
 $('#reload').onclick = async () => { const a = await api.boardAlerts(); if (a) alerts = a; await load(true); toast('Atualizado.'); };
 $('#brief').onclick = async () => { await api.boardBrief(new Date().getHours() >= 14 ? 'tarde' : 'manha'); toast('Resumo enviado — aparece no banner do topo.'); };
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.close(); if (e.key === '/' && e.target !== $('#q')) { e.preventDefault(); $('#q').focus(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (modalId) closeCard(); else window.close(); } if (e.key === '/' && e.target !== $('#q')) { e.preventDefault(); $('#q').focus(); } });
+$('#mBack').onclick = closeCard;
 
 api.onHub((h) => { if (!h) return; me = h.profile && h.profile.id || me; if (h.board) { board = h.board; feed = h.boardFeed || feed; alerts = h.boardAlerts || alerts; renderBoard(); renderWho(); renderFeed(); renderAlerts(); } });
 api.onFocus((st) => { if (st) { fx = st; renderBoard(); } });

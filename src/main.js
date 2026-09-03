@@ -719,6 +719,8 @@ ipcMain.handle('board:alerts', async () => { const cfg = store.get().board || {}
 ipcMain.handle('board:take', async (_e, id, startDev) => { try { await hub.boardTake(id, startDev !== false); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub.boardMove(id, status, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:assign', async (_e, id, userId, startDev) => { try { await hub.boardAssign(id, userId, startDev); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
+ipcMain.handle('board:card', async (_e, id) => { try { return { ok: true, data: await hub.boardCard(id) }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 // ---------- bandeja de arquivos ----------
 // Durante um arrasto o Windows não entrega mousemove a janelas atravessáveis, e deixar a notch inteira
