@@ -566,8 +566,26 @@ function applyAutoLaunch() {
 // ---------- IPC ----------
 ipcMain.handle('settings:get', () => store.get());
 ipcMain.handle('app:version', () => app.getVersion());
+// Loja de módulos: o mapa {id: bool} das configurações liga/desliga o ajuste que cada módulo controla
+const MODULE_PATHS = {
+  hub: 'hub.enabled', board: 'board.enabled', focus: 'focus.pill', chat: 'hub.chatNotify',
+  captures: 'quickaccess.enabled', clipboard: 'clipboard.enabled', calendar: 'calendar.enabled',
+  music: 'notch.show.music', system: 'notch.show.system', apps: 'notch.show.apps',
+  providers: 'sidebar.aiTools', approvals: 'approvals.enabled', maestri: 'maestri.enabled', weather: 'weather.enabled'
+};
+function modulesPatch(mods) {
+  const out = {};
+  for (const [id, on] of Object.entries(mods || {})) {
+    const path = MODULE_PATHS[id]; if (!path) continue;
+    const ks = path.split('.'); let cur = out;
+    for (let i = 0; i < ks.length - 1; i++) cur = (cur[ks[i]] = cur[ks[i]] || {});
+    cur[ks[ks.length - 1]] = !!on;
+  }
+  return out;
+}
 ipcMain.handle('settings:save', (_e, patch) => {
   const before = JSON.stringify(store.get().approvals);
+  if (patch && patch.modules) patch = { ...modulesPatch(patch.modules), ...patch };   // o ajuste explícito vence o switch
   store.set(patch);
   positionBars(); positionNotch(); applyWindowVisibility(); scheduleRefresh(); applyAutoLaunch(); registerShortcuts(); buildTrayMenu();
   if (JSON.stringify(store.get().approvals) !== before) startServer();
@@ -577,6 +595,7 @@ ipcMain.handle('settings:save', (_e, patch) => {
   if (patch && patch.hub) startHub();
   if (patch && patch.quickaccess && qa && qa.stack && !qa.stack.isDestroyed()) { qa.stack.close(); }
   if (patch && patch.clipboard && clipHist) { clipHist.max = Number(store.get().clipboard.max) || 60; if (store.get().clipboard.enabled !== false) clipHist.start(); else clipHist.stop(); }
+  if (patch && patch.modules) { if (store.get().calendar.enabled === false) clearInterval(calTimer); else startCalendar(); if (store.get().weather.enabled === false) clearInterval(weatherTimer); else startWeather(); }
   broadcast('settings', store.get());
   resetCache();
   refresh();

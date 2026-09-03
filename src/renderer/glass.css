@@ -1,0 +1,94 @@
+/* Sistema de vidro do SideNotch Medsystem (inspirado no "liquid glass" do Droppy):
+   luz por trás (aurora) → vidro saturado → borda dupla (topo claro, base escura) → brilho especular que segue o mouse.
+   Depende de --gx/--gy (posição do mouse em %), preenchidos por glass.js. Funciona por cima do acrílico do Windows 11. */
+:root {
+  --g-tint: 255, 255, 255;
+  --g-1: rgba(255,255,255,.07);          /* vidro base */
+  --g-2: rgba(255,255,255,.11);          /* vidro elevado */
+  --g-line: rgba(255,255,255,.10);
+  --g-hi: rgba(255,255,255,.30);         /* filete de luz no topo */
+  --g-shadow: 0 18px 46px rgba(0,0,0,.42), 0 2px 8px rgba(0,0,0,.28);
+  --g-blur: 26px;
+  --g-sat: 1.7;
+  --g-r: 20px;
+  --gx: 50%; --gy: 0%;
+  --acc-glow: 124, 140, 255;
+}
+
+/* ---------- aurora: as manchas de luz que fazem o vidro "acender" ---------- */
+body::before {
+  content: ""; position: fixed; inset: -20% -10% -10%; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(46% 38% at 18% 8%, rgba(124,140,255,.30), transparent 70%),
+    radial-gradient(40% 34% at 82% 4%, rgba(10,132,255,.26), transparent 72%),
+    radial-gradient(50% 40% at 62% 92%, rgba(191,90,242,.20), transparent 70%),
+    radial-gradient(38% 30% at 8% 82%, rgba(48,209,88,.12), transparent 72%);
+  filter: blur(28px) saturate(1.25);
+  opacity: .85;
+  animation: g-drift 34s ease-in-out infinite alternate;
+}
+@keyframes g-drift {
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  50%  { transform: translate3d(-2.2%, 1.6%, 0) scale(1.05); }
+  100% { transform: translate3d(1.8%, -1.4%, 0) scale(1.02); }
+}
+/* grão fino: tira o aspecto “plástico” do blur */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .035; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>");
+}
+/* sem transparência do sistema (Windows 10 / efeitos desligados): pinta um fundo próprio */
+body.solid { background: linear-gradient(165deg, #191922, #0e0e13 60%, #14141b); }
+body.solid::before { opacity: .6; }
+
+/* ---------- superfícies ---------- */
+.glass, .g-panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(var(--g-tint), .10), rgba(var(--g-tint), .05));
+  border: 1px solid var(--g-line);
+  border-radius: var(--g-r);
+  backdrop-filter: blur(var(--g-blur)) saturate(var(--g-sat));
+  -webkit-backdrop-filter: blur(var(--g-blur)) saturate(var(--g-sat));
+  box-shadow: var(--g-shadow), inset 0 1px 0 var(--g-hi), inset 0 -1px 0 rgba(0,0,0,.22);
+}
+/* reflexo especular seguindo o mouse (glass.js atualiza --gx/--gy) */
+.glass::before, .g-panel::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(340px 200px at var(--gx) var(--gy), rgba(255,255,255,.10), transparent 62%);
+  opacity: .9; transition: opacity .25s;
+}
+.g-panel.flat::before { display: none; }
+.g-soft { background: rgba(var(--g-tint), .06); border: 1px solid var(--g-line); border-radius: 14px; }
+
+/* barra lateral: vidro mais escuro, item ativo em pastilha luminosa */
+.g-aside {
+  background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.26));
+  backdrop-filter: blur(34px) saturate(1.4); -webkit-backdrop-filter: blur(34px) saturate(1.4);
+  border-right: 1px solid rgba(255,255,255,.07);
+}
+.g-item { position: relative; border-radius: 12px; transition: background .16s, color .16s, transform .16s; }
+.g-item:hover { background: rgba(255,255,255,.08); }
+.g-item.on {
+  background: linear-gradient(180deg, rgba(var(--acc-glow), .38), rgba(var(--acc-glow), .22));
+  color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgba(var(--acc-glow), .28);
+}
+.g-item.on::after { content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 2.5px; border-radius: 2px; background: #fff; opacity: .85; }
+
+/* botões e campos com o mesmo vidro */
+.g-btn {
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
+  border: 1px solid rgba(255,255,255,.12); border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 2px 8px rgba(0,0,0,.25);
+  transition: transform .12s, background .16s, box-shadow .16s;
+}
+.g-btn:hover { background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.1)); }
+.g-btn:active { transform: translateY(1px); }
+.g-field { background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.1); border-radius: 11px; box-shadow: inset 0 1px 2px rgba(0,0,0,.35); }
+
+/* ícone colorido de módulo (estilo "Store") */
+.g-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: 0 0 34px; color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 12px rgba(0,0,0,.3); }
+.g-ic svg { width: 18px; height: 18px; }
+
+/* respeita quem desliga animações no Windows */
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } .g-item, .g-btn { transition: none; } }

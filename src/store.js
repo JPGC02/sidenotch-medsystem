@@ -44,11 +44,13 @@ const DEFAULTS = {
     onReset: true             // avisa quando a janela reinicia
   },
   shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K' },
+  // loja de módulos: liga/desliga funções inteiras (a página Módulos das configurações)
+  modules: {},
   // quadro do time de Sistemas (Kanban + cobranças + brief)
   board: { enabled: true, notifyMoves: true, notifyStuck: true, notifyNew: true, brief: true, briefManha: '09:00', briefTarde: '18:00', sound: true, wip: 2, semDonoHoras: 24, paradoDias: 2, swimlanes: false, takeOnFocus: true },
   // foco (pomodoro) nas tarefas do Hub
   focus: { minutes: 25, breakMinutes: 5, autoStatus: true, chime: true, pill: true, streak: true },
-  quickaccess: { side: 'left', ttlSec: 0 },   // pilha de capturas: canto (left/right) e auto-dismiss em segundos (0 = nunca)
+  quickaccess: { side: 'left', ttlSec: 0, enabled: true },   // pilha de capturas: canto (left/right) e auto-dismiss em segundos (0 = nunca)
   clipboard: { enabled: true, max: 60 },   // histórico da área de transferência (aba no notch)   // ex.: "CommandOrControl+Shift+Space"
   update: { auto: true },
   maestri: {                  // Maestri Wire (https://www.themaestri.app/pt-br/docs/wire)
@@ -57,7 +59,7 @@ const DEFAULTS = {
   },
   notch: {                    // notch no topo do monitor (convive com a barra lateral)
     enabled: true, displayId: null, offsetX: 0,
-    show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true },
+    show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true, apps: true, board: true },
     tab: 'hub'
   },
   sidebar: { enabled: true, aiTools: true },
@@ -67,8 +69,8 @@ const DEFAULTS = {
   },   // aiTools: botões de sessões do Claude Code / não perturbe na barra
   webapps: null,              // null = lista padrão (apps.DEFAULT_WEBAPPS); [{id,name,url}]
   pinnedApps: [],             // ids de apps do Menu Iniciar fixados
-  calendar: { sources: [], refreshMinutes: 15 },  // [{name, url, color}]
-  weather: { lat: '', lon: '', label: '' },        // vazio = localização automática por IP
+  calendar: { sources: [], refreshMinutes: 15, enabled: true },  // [{name, url, color}]
+  weather: { lat: '', lon: '', label: '', enabled: true },        // vazio = localização automática por IP
   hub: {                      // Medsystem Hub (Supabase). Sessão fica cifrada em hub-session.bin (DPAPI), nunca aqui.
     enabled: true, url: '', anon: '', site: '',     // vazios = padrão do Hub de produção
     pollSeconds: 60, notify: true, toast: false, sound: true, markReadOnOpen: true, showBadge: true, pinned: [], dockCount: 5, dock: [], custom: [], chatNotify: true,   // dock: ids dos atalhos no dock (ordem); custom: [{id,name,path,ix,kind}]

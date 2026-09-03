@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SideNotch Medsystem — Configurações</title>
+<link rel="stylesheet" href="glass.css">
 <style>
   :root { --fg: #f4f4f6; --muted: #9a9aa4; --acc: #7c8cff; --acc2: #a78bfa; --ok: #34d399; --bad: #f87171; --warn: #fbbf24;
     --glass: rgba(255,255,255,.06); --glass2: rgba(255,255,255,.1); --line: rgba(255,255,255,.09); --ink: rgba(0,0,0,.28); }
@@ -62,6 +63,42 @@
   .dkrow .nm { flex: 1; min-width: 0; font-size: 12.5px; } .dkrow .nm small { display: block; color: var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .dkrow .ord { display: flex; gap: 2px; } .dkrow .ord button { padding: 3px 7px; font-size: 11px; } .dkrow input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--acc); }
   .dkrow .kind { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(62,207,142,.15); color: #3ECF8E; } .dkrow .kind.page { background: rgba(255,255,255,.08); color: var(--muted); }
+
+  /* busca da navegação */
+  .nsearch { display: flex; align-items: center; gap: 7px; margin: 0 2px 10px; padding: 7px 10px; border-radius: 12px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.1); box-shadow: inset 0 1px 2px rgba(0,0,0,.35); -webkit-app-region: no-drag; }
+  .nsearch svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 14px; }
+  .nsearch input { background: transparent; border: 0; outline: 0; color: var(--fg); font: inherit; font-size: 12px; min-width: 0; width: 100%; padding: 0; }
+  .nav.hide { display: none; }
+  mark { background: rgba(124,140,255,.35); color: #fff; border-radius: 3px; padding: 0 2px; }
+  .r.hit, .mod.hit, .prov.hit { box-shadow: inset 0 0 0 1px rgba(124,140,255,.5); border-radius: 12px; }
+  h2.hit { color: #b9c2ff; }
+  #srInfo { font-size: 11.5px; color: var(--muted); padding: 6px 2px 0; }
+  /* módulos (loja) */
+  .mods { display: flex; flex-direction: column; }
+  .mod { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-top: 1px solid var(--line); }
+  .mods .mod:first-child { border-top: 0; }
+  .mod .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: 0 0 34px; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 12px rgba(0,0,0,.28); }
+  .mod .ic svg { width: 18px; height: 18px; }
+  .mod .tx { flex: 1; min-width: 0; } .mod .tx b { display: block; font-weight: 600; font-size: 13px; }
+  .mod .tx small { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.4; margin-top: 1px; }
+  .mod .tag { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.08); border-radius: 999px; padding: 2px 8px; }
+  .mod.off .ic { filter: saturate(.25) brightness(.8); } .mod.off .tx b { color: var(--muted); }
+
+  /* vidro (glass.css) — sobrescreve as superfícies antigas */
+  aside { background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.26)); backdrop-filter: blur(34px) saturate(1.4); border-right: 1px solid rgba(255,255,255,.07); }
+  .nav { border-radius: 12px; transition: background .16s, color .16s; position: relative; }
+  .nav:hover { background: rgba(255,255,255,.08); }
+  .nav.on { background: linear-gradient(180deg, rgba(124,140,255,.42), rgba(124,140,255,.24)); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgba(124,140,255,.28); }
+  .nav.on::after { content: ""; position: absolute; left: 0; top: 24%; bottom: 24%; width: 2.5px; border-radius: 2px; background: #fff; opacity: .85; }
+  section { position: relative; background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05)); border: 1px solid rgba(255,255,255,.10); border-radius: 20px;
+    backdrop-filter: blur(26px) saturate(1.7); box-shadow: 0 18px 46px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(0,0,0,.22); }
+  section::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(340px 200px at var(--gx,50%) var(--gy,0%), rgba(255,255,255,.10), transparent 62%); }
+  section > * { position: relative; }
+  button { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07)); border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 2px 8px rgba(0,0,0,.25); transition: transform .12s, background .16s; }
+  button:active { transform: translateY(1px); } button.pri { background: linear-gradient(180deg, #8f9dff, #6b7cff); color: #0b0b10; border-color: rgba(255,255,255,.25); }
+  .prov { background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.045)); box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+  .bar { backdrop-filter: blur(20px) saturate(1.4); background: linear-gradient(transparent, rgba(0,0,0,.5) 45%); }
+
 </style>
 </head>
 <body>
@@ -69,7 +106,9 @@
 <div id="app">
   <aside>
     <div class="brand"><i style="background:linear-gradient(135deg,#2dd4bf,#6366f1)"></i>SideNotch <span style="color:#2dd4bf;font-weight:600">Med</span></div>
+    <div class="nsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="navQ" type="text" placeholder="Buscar ajuste…" autocomplete="off"></div>
     <div class="nav on" data-p="geral"><i data-ix="Element3"></i>Geral</div>
+    <div class="nav" data-p="modulos"><i data-ix="Category"></i>Módulos</div>
     <div class="nav" data-p="hub"><i data-ix="Home2"></i>Medsystem Hub</div>
     <div class="nav" data-p="notch"><i data-ix="Monitor"></i>Notch</div>
     <div class="nav" data-p="prov"><i data-ix="Cpu"></i>Provedores</div>
@@ -111,6 +150,11 @@
       </section>
     </div>
 
+    <div class="page" data-p="modulos">
+      <h1>Módulos</h1><p class="lead">Ligue o que faz sentido para você; o resto some do notch e para de rodar.</p>
+      <section><div class="mods" id="mods"></div></section>
+      <p class="help" style="padding:0 4px">Desligar um módulo remove a aba do notch e para o serviço por trás dele (menos memória e menos consulta). Dá para religar a qualquer momento.</p>
+    </div>
     <div class="page" data-p="hub">
       <h1>Medsystem Hub</h1><p class="lead">Notificações em tempo real, suas tarefas e atalhos dos formulários do Hub, direto no notch.</p>
       <section>
@@ -281,6 +325,65 @@ const api = window.sidenotch;
 const $ = (s) => document.querySelector(s);
 document.querySelectorAll('[data-ix]').forEach((el) => { el.innerHTML = (window.IX || {})[el.dataset.ix] || ''; });
 document.querySelectorAll('.nav').forEach((n) => n.onclick = () => { document.querySelectorAll('.nav').forEach((x) => x.classList.toggle('on', x === n)); document.querySelectorAll('.page').forEach((p) => p.classList.toggle('on', p.dataset.p === n.dataset.p)); });
+
+// ---------- Módulos (loja): liga/desliga funções; cada uma sabe onde mora nas configurações ----------
+const MODULES = [
+  { id: 'hub', name: 'Medsystem Hub', desc: 'Notificações, tarefas, agenda e o lançador de atalhos do Hub.', ix: 'Home2', color: '#0a84ff', path: 'hub.enabled', page: 'hub', always: true },
+  { id: 'board', name: 'Quadro do time', desc: 'Kanban de Sistemas, movimentação do time, travas e brief do dia.', ix: 'Chart21', color: '#5e5ce6', path: 'board.enabled', page: 'hub' },
+  { id: 'focus', name: 'Foco e tarefas', desc: 'Pomodoro por tarefa, timer na pastilha, streak e painel com calendário.', ix: 'Timer1', color: '#ff9f0a', path: 'focus.pill', page: 'hub' },
+  { id: 'chat', name: 'Conversas (WhatsApp)', desc: 'Mensagens, transferências e atribuições das instâncias do Hub.', ix: 'Whatsapp', color: '#25d366', path: 'hub.chatNotify', page: 'hub' },
+  { id: 'captures', name: 'Capturas', desc: 'Captura de área, pilha de cards, editor, OCR e envio com link.', ix: 'Monitor', color: '#30d158', path: 'quickaccess.enabled', page: 'alertas' },
+  { id: 'clipboard', name: 'Área de transferência', desc: 'Histórico do que você copia, com busca e fixados (estilo Win+V).', ix: 'Copy', color: '#bf5af2', path: 'clipboard.enabled', page: 'alertas' },
+  { id: 'calendar', name: 'Calendário', desc: 'Semana, eventos do dia e os próximos, de links .ics e da agenda do Hub.', ix: 'Calendar', color: '#ff375f', path: 'calendar.enabled', page: 'cal' },
+  { id: 'music', name: 'Música', desc: 'O que está tocando, capa do álbum e controles de mídia do Windows.', ix: 'MusicPlaylist', color: '#ff2d55', path: 'notch.show.music', page: 'notch' },
+  { id: 'system', name: 'Sistema', desc: 'CPU, memória, rede e discos com mini-gráficos na pastilha.', ix: 'Cpu', color: '#64d2ff', path: 'notch.show.system', page: 'notch' },
+  { id: 'apps', name: 'Apps e web apps', desc: 'Atalhos do Menu Iniciar e sites em janela própria com login salvo.', ix: 'Category', color: '#a2845e', path: 'notch.show.apps', page: 'notch' },
+  { id: 'providers', name: 'Uso das IAs', desc: 'Claude, Codex, Cursor e Gemini: consumo do plano na dock lateral.', ix: 'Flash', color: '#ffd60a', path: 'sidebar.aiTools', page: 'prov' },
+  { id: 'approvals', name: 'Aprovações do Claude Code', desc: 'Servidor local que pede sua permissão antes de o agente agir.', ix: 'Code', color: '#8e8e93', path: 'approvals.enabled', page: 'claude' },
+  { id: 'maestri', name: 'Maestri Wire', desc: 'Terminais pareados: avisos de atenção e resposta a prompts S/n.', ix: 'Driver', color: '#af52de', path: 'maestri.enabled', page: 'maestri' },
+  { id: 'weather', name: 'Clima', desc: 'Temperatura e condição na pastilha fechada (Open-Meteo).', ix: 'Sun', color: '#ff9500', path: 'weather.enabled', page: 'notch' }
+];
+const dig = (o, path) => path.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+function setDeep(o, path, v) { const ks = path.split('.'); let cur = o; for (let i = 0; i < ks.length - 1; i++) { cur[ks[i]] = cur[ks[i]] || {}; cur = cur[ks[i]]; } cur[ks[ks.length - 1]] = v; return o; }
+let modState = {};
+function renderMods() {
+  const box = $('#mods'); if (!box) return;
+  box.innerHTML = MODULES.map((m) => {
+    const on = modState[m.id] !== false;
+    return `<div class="mod ${on ? '' : 'off'}" data-mod="${m.id}">
+      <span class="ic" style="background:linear-gradient(160deg, ${m.color}, ${m.color}bb)">${(window.IX && window.IX[m.ix]) || ''}</span>
+      <div class="tx"><b>${m.name}</b><small>${m.desc}</small></div>
+      ${m.always ? '<span class="tag">essencial</span>' : ''}
+      <a class="tag" data-goto="${m.page}" style="cursor:pointer">ajustes</a>
+      <label class="sw"><input type="checkbox" data-modsw="${m.id}" ${on ? 'checked' : ''}><span></span></label></div>`;
+  }).join('');
+  box.querySelectorAll('[data-modsw]').forEach((el) => el.onchange = () => { modState[el.dataset.modsw] = el.checked; renderMods(); });
+  box.querySelectorAll('[data-goto]').forEach((el) => el.onclick = () => { const n = document.querySelector(`.nav[data-p="${el.dataset.goto}"]`); if (n) n.click(); });
+}
+
+// ---------- busca: filtra a navegação e destaca os ajustes que casam ----------
+const navSearch = () => {
+  const q = ($('#navQ').value || '').trim().toLowerCase();
+  document.querySelectorAll('mark').forEach((m) => m.replaceWith(document.createTextNode(m.textContent)));
+  document.querySelectorAll('.r.hit').forEach((r) => r.classList.remove('hit'));
+  if (!q) { document.querySelectorAll('.nav').forEach((n) => n.classList.remove('hide')); const i = $('#srInfo'); if (i) i.textContent = ''; return; }
+  const pages = new Set();
+  document.querySelectorAll('.page').forEach((pg) => {
+    let hit = 0;
+    pg.querySelectorAll('.r, .mod, .prov, section h2').forEach((r) => {
+      const t = (r.textContent || '').toLowerCase();
+      if (t.includes(q)) { r.classList.add('hit'); hit++; pages.add(pg.dataset.p); }
+    });
+    if ((pg.querySelector('h1') || {}).textContent && pg.querySelector('h1').textContent.toLowerCase().includes(q)) pages.add(pg.dataset.p);
+    if (hit) pages.add(pg.dataset.p);
+  });
+  document.querySelectorAll('.nav').forEach((n) => n.classList.toggle('hide', !pages.has(n.dataset.p)));
+  const first = [...document.querySelectorAll('.nav')].find((n) => !n.classList.contains('hide'));
+  if (first && !first.classList.contains('on')) first.click();
+};
+$('#navQ').addEventListener('input', navSearch);
+$('#navQ').addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('#navQ').value = ''; navSearch(); $('#navQ').blur(); } });
+document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); $('#navQ').focus(); $('#navQ').select(); } });
 if (new URLSearchParams(location.search).get('solid')) document.body.classList.add('solid');
 api.getVersion && api.getVersion().then((v) => { $('#ver').textContent = 'SideNotch Medsystem ' + v; });
 const META = {
@@ -341,7 +444,8 @@ function collect() {
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
     shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim() },
-    quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0) },
+    quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0), enabled: modState.captures !== false },
+    modules: { ...modState },
     board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
@@ -370,6 +474,10 @@ async function load() {
   $('#refreshSeconds').value = settings.refreshSeconds; $('#autoLaunch').checked = !!settings.autoLaunch; $('#dnd').checked = !!settings.dnd;
   $('#sbEnabled').checked = !settings.sidebar || settings.sidebar.enabled !== false;
   const nt = settings.notch || {}; $('#ntEnabled').checked = nt.enabled !== false; $('#ntDisplay').value = nt.displayId || ''; $('#ntOffset').value = nt.offsetX || 0; $('#ntTab').value = nt.tab || 'music';
+  // módulos: usa o mapa salvo; se não existir, deduz do ajuste que cada módulo controla
+  const mods = settings.modules || {};
+  modState = {}; for (const m of MODULES) { const v = mods[m.id]; modState[m.id] = v === undefined ? dig(settings, m.path) !== false : v !== false; }
+  renderMods();
   $('#ntMusic').checked = !nt.show || nt.show.music !== false; $('#ntSys').checked = !nt.show || nt.show.system !== false; $('#ntCal').checked = !nt.show || nt.show.calendar !== false;
   const a = settings.approvals || {}, n = settings.notifications || {}, al = settings.alerts || {}, sc = settings.shortcuts || {};
   $('#apEnabled').checked = !!a.enabled; $('#apPort').value = a.port || 47322; $('#apTimeout').value = a.timeoutSec || 110; $('#apSound').checked = !!a.sound;
@@ -473,5 +581,6 @@ api.onUsage((d) => { usage = d; renderProviders(); });
 api.onSettings((s) => { settings = s; $('#dnd').checked = !!s.dnd; const d = s.docks || {}; for (const [k, v] of [['Hub', d.hub], ['Ai', d.ai]]) if (v) { $(`#dk${k}Side`).value = v.side || 'right'; $(`#dk${k}V`).value = v.vertical || 'center'; } });
 api.getUpdate().then(() => {}); load();
 </script>
+<script src="glass.js"></script>
 </body>
 </html>

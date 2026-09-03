@@ -277,7 +277,13 @@ const I = {
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
 const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
-const tabsForState = () => { TABS = TABS_ALL.filter(([id]) => (id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)) && (id !== 'board' || (hub && hub.linked && hub.hasBoard))); if (!TABS.some((t) => t[0] === tab)) tab = 'hub'; };   // canvas desativado por enquanto
+const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus' };
+const modOn = (id) => { const m = (settings && settings.modules) || {}; const k = MOD_TAB[id]; return !k || m[k] !== false; };
+const tabsForState = () => {
+  TABS = TABS_ALL.filter(([id]) => modOn(id) && (id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)) && (id !== 'board' || (hub && hub.linked && hub.hasBoard)));
+  if (!TABS.length) TABS = [['hub', 'Medsystem Hub']];
+  if (!TABS.some((t) => t[0] === tab)) tab = TABS[0][0];
+};   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let fx = { active: false, running: false, remaining: 1500, planned: 1500, elapsed: 0, progress: 0, title: null, taskId: null, streak: 0, days: [], todaySeconds: 0, minutes: 25 };
 const mmss = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.round(Math.max(0, s) % 60)).padStart(2, '0')}`;
