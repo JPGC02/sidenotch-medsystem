@@ -60,8 +60,7 @@ function card(it) {
 function bind(el, it) {
   const id = it.id;
   // hover em dois níveis: parcial imediato, completo após 350 ms; sair some em < 200 ms
-  el.addEventListener('pointerenter', () => { api.qaInteractive(true); el.classList.add('h1'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.add('h2'), 350); pauseTtl(el, true); });
-  el.addEventListener('pointerleave', () => { clearTimeout(el._t); el.classList.remove('h1', 'h2'); const st = el.querySelector('.status'); if (st.classList.contains('done')) { clearTimeout(st._t); st._t = setTimeout(() => st.classList.remove('on', 'done', 'ok', 'err'), 2500); } pauseTtl(el, false); });
+  // hover é aplicado por hoverAt() a partir do cursor rastreado no processo principal
   // drag nativo: threshold 6 px → o SO recebe um PNG real
   let down = null;
   el.addEventListener('pointerdown', (e) => { LOG('pointerdown ' + e.target.className + ' btn=' + e.button); if (e.button !== 0 || e.target.closest('[data-a]')) return; down = { x: e.clientX, y: e.clientY }; });
@@ -86,7 +85,7 @@ function push(it) {
   zone.querySelectorAll('.card.newest').forEach((c) => c.classList.remove('newest'));
   const old = cards.get(it.id); if (old) old.remove();
   const el = card(it); cards.set(it.id, el);
-  zone.appendChild(el);   // column-reverse: o último filho fica no topo
+  zone.appendChild(el); hotSoon();   // column-reverse: o último filho fica no topo
   // entra pela borda com a mola glide (não voa da seleção)
   const dx = cfg.side === 'right' ? 240 : -240;
   anim(el, [{ transform: `translateX(${dx}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }], { duration: 733, easing: SPRING, fill: 'both' });
@@ -100,7 +99,7 @@ function remove(id) {
   const done = () => { el.remove(); cards.delete(id);
     // reflow FLIP dos que ficaram
     for (const [c, top] of first) { if (!c.isConnected) continue; const dy = top - c.getBoundingClientRect().top; if (dy) anim(c, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 733, easing: SPRING }); }
-    if (!cards.size) { api.qaInteractive(false); api.qaStackEmpty(); } };
+    hotSoon(); if (!cards.size) { leave(); api.qaHot([]); api.qaStackEmpty(); } };
   if (a) a.finished.then(done).catch(done); else done();
 }
 function closeAll() { for (const [id, el] of [...cards]) if (!el.classList.contains('pinned')) remove(id); }
@@ -108,11 +107,17 @@ function closeAll() { for (const [id, el] of [...cards]) if (!el.classList.conta
 function startTtl(el) { if (!cfg.ttl || el.classList.contains('pinned')) return; const bar = el.querySelector('.ttl i'); if (!bar) return; el._ttl = anim(bar, [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: cfg.ttl * 1000, easing: 'linear', fill: 'forwards' }); if (el._ttl) el._ttl.finished.then(() => { if (!el.classList.contains('pinned')) remove(el.dataset.id); }).catch(() => {}); }
 function pauseTtl(el, p) { if (!el._ttl) return; if (p) el._ttl.pause(); else if (!el.classList.contains('pinned')) el._ttl.play(); }
 
-zone.addEventListener('pointerleave', () => api.qaInteractive(false));
-document.addEventListener('mousemove', (e) => { const over = e.target.closest('.card'); api.qaInteractive(!!over); });
+// ---- hover pelo cursor (o Windows para de encaminhar mousemove com setIgnoreMouseEvents) ----
+let hoverEl = null;
+function enter(el) { if (hoverEl === el) return; leave(); hoverEl = el; if (!el) return; el.classList.add('h1'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.add('h2'), 350); pauseTtl(el, true); }
+function leave() { const el = hoverEl; hoverEl = null; if (!el || !el.isConnected) return; clearTimeout(el._t); el.classList.remove('h1', 'h2'); const st = el.querySelector('.status'); if (st && st.classList.contains('done')) { clearTimeout(st._t); st._t = setTimeout(() => st.classList.remove('on', 'done', 'ok', 'err'), 2500); } pauseTtl(el, false); }
+function hoverAt(p) { if (!p) { leave(); return; } const t = document.elementFromPoint(p.x, p.y); enter(t && t.closest ? t.closest('.card') : null); }
+// as zonas clicáveis são os cards; o resto da janela continua transparente ao mouse
+function sendHot() { const rects = [...cards.values()].filter((el) => el.isConnected).map((el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; }); api.qaHot(rects); }
+const hotSoon = () => { clearTimeout(hotSoon._t); hotSoon._t = setTimeout(sendHot, 60); setTimeout(sendHot, 800); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
 window.addEventListener('error', (e) => api.qaLog && api.qaLog('erro: ' + e.message + ' @' + e.lineno));
-api.onQa((ev, data) => { LOG('event ' + ev + ' ' + (data && data.id || data)); if (ev === 'remove') { const el = cards.get(data); if (el) { el.remove(); cards.delete(data); if (!cards.size) { api.qaInteractive(false); api.qaStackEmpty(); } } } else if (ev === 'config') cfg = { ...cfg, ...data }, document.body.classList.toggle('right', cfg.side === 'right'); else if (ev === 'push') push(data); else if (ev === 'update') update(data); });
+api.onQa((ev, data) => { if (ev !== 'hover') LOG('event ' + ev + ' ' + (data && data.id || data)); if (ev === 'hover') { hoverAt(data); return; } if (ev === 'remove') { const el = cards.get(data); if (el) { el.remove(); cards.delete(data); hotSoon(); if (!cards.size) { leave(); api.qaHot([]); api.qaStackEmpty(); } } } else if (ev === 'config') cfg = { ...cfg, ...data }, document.body.classList.toggle('right', cfg.side === 'right'); else if (ev === 'push') push(data); else if (ev === 'update') update(data); });
 </script>
 </body>
 </html>
