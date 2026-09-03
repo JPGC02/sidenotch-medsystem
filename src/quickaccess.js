@@ -127,7 +127,7 @@ class QuickAccess {
     if (this.editor && !this.editor.isDestroyed()) { this.editor.close(); }
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     const w = Math.min(d.workArea.width - 80, Math.max(720, it.w + 260)), h = Math.min(d.workArea.height - 80, Math.max(520, it.h + 140));
-    const win = new BrowserWindow({ width: w, height: h, title: 'Editar captura', backgroundColor: '#1c1c1e', autoHideMenuBar: true, show: false, icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } });
+    const win = new BrowserWindow({ width: w, height: h, title: 'Editar captura', backgroundColor: '#1c1c1e', autoHideMenuBar: true, show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#1c1c1e', symbolColor: '#f2f2f7', height: 36 }, icon: path.join(__dirname, 'assets', 'icon.png'), webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } });
     this.editor = win; win.setMenu(null);
     // a pilha não é focável: sem isto o Windows abre o editor atrás da janela ativa
     win.once('ready-to-show', () => { app.focus({ steal: true }); win.show(); win.setAlwaysOnTop(true); win.focus(); setTimeout(() => { if (!win.isDestroyed()) win.setAlwaysOnTop(false); }, 400); });
