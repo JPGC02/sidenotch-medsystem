@@ -99,7 +99,7 @@ cv.addEventListener('pointerdown', (e) => {
   // caixa de texto aberta: o clique fora confirma o texto onde ele está e não começa outra forma
   if (tb.style.display === 'block') { e.preventDefault(); commitText(); return; }
   if (tool === 'select') { sel = A.hit(shapes, p.x, p.y); draw(); if (sel >= 0) { const s = shapes[sel]; if (s.type !== 'blur') setColorUi(s.color); if (s.width) { $('#sizeIn').value = s.width; width = s.width; } snap(); drag = { move: true, px: p.x, py: p.y, s: { ...s } }; } return; }
-  if (tool === 'text') { openText(p, null); return; }
+  if (tool === 'text') { e.preventDefault(); openText(p, null); return; }
   if (!DRAW.has(tool)) return;
   snap(); shapes.push({ type: tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: tool === 'blur' ? undefined : color, width: tool === 'blur' ? undefined : width }); drag = { idx: shapes.length - 1 };
 });
@@ -116,7 +116,7 @@ cv.addEventListener('dblclick', (e) => { const p = norm(e); const i = A.hit(shap
 function openText(p, idx) {
   idx = (idx == null || idx < 0) ? -1 : idx; const ex = idx >= 0 ? shapes[idx] : null; // null >= 0 e true em JS - normaliza antes
   const r = cv.getBoundingClientRect(); tb.style.display = 'block'; tb.style.left = (r.left + p.x * r.width) + 'px'; tb.style.top = (r.top + p.y * r.height) + 'px'; tb.style.color = (ex && ex.color) || color;
-  tb.value = ex ? ex.text : ''; tb.dataset.idx = idx; tb.dataset.x = p.x; tb.dataset.y = p.y; autosize(); tb.focus();
+  tb.value = ex ? ex.text : ''; tb.dataset.idx = idx; tb.dataset.x = p.x; tb.dataset.y = p.y; tb.dataset.openedAt = Date.now(); autosize(); setTimeout(() => tb.focus(), 0);
 }
 function autosize() { tb.style.height = 'auto'; tb.style.height = (tb.scrollHeight + 2) + 'px'; tb.style.width = 'auto'; tb.style.width = Math.max(140, Math.min(520, tb.scrollWidth + 8)) + 'px'; }
 tb.addEventListener('input', autosize);
@@ -128,7 +128,9 @@ function commitText() {
   draw();
 }
 tb.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); } if (e.key === 'Escape') { tb.style.display = 'none'; } e.stopPropagation(); });
-tb.addEventListener('blur', () => setTimeout(commitText, 0));
+// o mousedown que abriu a caixa move o foco para o body logo depois do focus(); ignora blur nos primeiros 250 ms e refoca
+tb.addEventListener('blur', () => { if (Date.now() - Number(tb.dataset.openedAt || 0) < 250) { setTimeout(() => { if (tb.style.display === 'block') tb.focus(); }, 0); return; } setTimeout(commitText, 0); });
+cv.addEventListener('mousedown', (e) => { if (tool === 'text' || tb.style.display === 'block') e.preventDefault(); });
 
 async function save() { toast('Salvando…'); const png = A.rasterize(img, shapes); await api.qaEditorSave(id, shapes, shapes.length ? png : null); window.close(); }
 $('#save').onclick = save; $('#cancel').onclick = () => window.close();
