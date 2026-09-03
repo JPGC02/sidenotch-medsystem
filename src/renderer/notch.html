@@ -80,6 +80,8 @@
   .bwip { font-size: 10px; background: var(--bg3); border-radius: 999px; padding: 1px 6px; } .bwip.over { background: rgba(255,159,10,.25); color: #ffd79a; }
   .btravas { display: flex; flex-direction: column; gap: 4px; }
   .btrava { background: rgba(255,159,10,.12); border: 1px solid rgba(255,159,10,.28); border-radius: 10px; padding: 5px 9px; font-size: 11px; }
+  .btrava.bad { background: rgba(255,69,58,.12); border-color: rgba(255,69,58,.3); color: #ffc4bf; }
+  .btravas { display: flex; flex-wrap: wrap; gap: 6px; } .btravas .btrava { flex: 1 1 200px; }
   .bfeed { display: flex; flex-direction: column; gap: 2px; max-height: 330px; overflow: auto; scrollbar-width: none; } .bfeed::-webkit-scrollbar { display: none; }
   .bev { display: flex; gap: 6px; align-items: baseline; font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); line-height: 1.3; }
   .btm { font-size: 9.5px; color: var(--muted); margin-left: auto; white-space: nowrap; }
@@ -278,8 +280,9 @@
   .kpi { display: flex; justify-content: space-between; align-items: baseline; } .kpi b { font-size: 20px; font-weight: 700; }
 
   /* rolagem sem barra: continua rolando (roda do mouse), mas nada de trilho cinza na tela */
-  * { scrollbar-width: none; -ms-overflow-style: none; }
-  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  html, body, div, section, main, aside, ul, ol, pre, textarea { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-track { display: none !important; }
 </style>
 </head>
 <body>
@@ -746,42 +749,27 @@ const bago = (d) => { const s = (Date.now() - new Date(d).getTime()) / 1000; if 
 function viewBoard() {
   if (!hub || !hub.linked) return `<div class="empty">Vincule o Medsystem Hub para ver o quadro.</div>`;
   if (!hub.hasBoard) return `<div class="empty">Seu usuário não tem o módulo Sistemas.</div>`;
-  const b = hub.board || {}; const st = b.stats || {}; const a = hub.boardAlerts || {}; const feed = hub.boardFeed || [];
-  const kpi = (v, l, cls) => `<div class="bkpi ${cls || ''}"><b>${v ?? 0}</b><span>${l}</span></div>`;
-  const cards = (b.cards || []);
-  const mine = cards.filter((c) => c.responsavel_id === (hub.profile && hub.profile.id));
-  const now = (b.now || []);
+  const b = hub.board || {}; const st = b.stats || {}; const a = hub.boardAlerts || {};
+  const eu = (hub.profile && hub.profile.id) || null;
+  const cards = b.cards || [];
+  const mine = cards.filter((c) => c.responsavel_id === eu && c.status === 'em_desenvolvimento');
+  const now = (b.now || []).filter((n) => n.userId !== eu);
   const travas = [
-    ...((a.paradas || []).slice(0, 3).map((x) => `🛑 #${x.n} parada há ${x.dias}d${x.quem ? ' · ' + esc(String(x.quem).split(' ')[0]) : ''}`)),
-    ...((a.bloqueadas || []).slice(0, 3).map((x) => `⛔ #${x.n} ${esc((x.motivo || '').slice(0, 34))}`)),
-    ...((a.sla || []).slice(0, 2).map((x) => `⚠ SLA ${x.tipo} · #${x.n}`)),
-    ...((a.wip || []).map((w) => `📌 ${esc(String(w.name).split(' ')[0])} com ${w.wip} em dev`)),
-    ...((a.semDono || []).length ? [`⏳ ${a.semDono.length} sem dono há +24h`] : [])
+    ...((a.paradas || []).slice(0, 2).map((x) => [`#${x.n} parada há ${x.dias}d`, 'bad'])),
+    ...((a.bloqueadas || []).slice(0, 2).map((x) => [`#${x.n} travada: ${esc((x.motivo || '').slice(0, 30))}`, 'bad'])),
+    ...((a.semDono || []).length ? [[`${a.semDono.length} sem dono há +24h`, '']] : [])
   ];
-  return `<div class="row" style="margin-bottom:8px"><span class="muted grow">Quadro do time de Sistemas · ${st.total || 0} cartões na fila.</span>
-      <button class="pillbtn" id="bdBrief">${I.timer} Brief</button>
+  const kpi = (v, l, cls) => `<div class="bkpi ${cls || ''}"><b>${v ?? 0}</b><span>${l}</span></div>`;
+  return `<div class="row" style="margin-bottom:10px"><span class="muted grow">Quadro do time · ${st.total || 0} na fila</span>
+      <button class="pillbtn" id="bdBrief" title="Manda agora, no banner do topo, o resumo do dia: o que entrou, o que está sem dono, o que travou e o que foi entregue.">${I.timer} Resumo do dia</button>
       <button class="pillbtn blue" id="bdOpen">${I.expand} Abrir quadro</button></div>
-    <div class="bkpis">${kpi(st.semDono, 'sem dono', st.semDono ? 'warn' : '')}${kpi(st.emDev, 'em dev')}${kpi(st.paradas, 'paradas', st.paradas ? 'bad' : '')}${kpi(st.bloqueadas, 'bloqueadas', st.bloqueadas ? 'bad' : '')}${kpi(st.novas24h, 'novas 24h')}${kpi(st.entregues7d, 'entregues 7d', 'ok')}</div>
-    <div class="bgrid">
-      <div>
-        <div class="sec-h"><span>Agora</span></div>
-        <div class="card" style="padding:8px 10px">${(b.people || []).length ? (b.people || []).map((p) => {
-          const live = now.find((n) => n.userId === p.id);
-          return `<div class="brow"><span class="bdot ${live ? 'on' : ''}"></span><span class="bav">${String(p.name || '?').split(' ').slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</span>
-            <div class="grow" style="min-width:0"><div class="bnm">${esc(String(p.name || '').split(' ').slice(0, 2).join(' '))}</div>
-            <div class="bst">${live ? '⏱ ' + esc(String(live.title || '').slice(0, 26)) + ' · ' + Math.round((live.seconds || 0) / 60) + 'min' : (p.focusToday ? Math.round(p.focusToday / 60) + 'min hoje' : '—')}</div></div>
-            <span class="bwip ${p.wip > 2 ? 'over' : ''}">${p.wip || 0}</span></div>`;
-        }).join('') : '<div class="muted">Sem gente no setor.</div>'}</div>
-        ${travas.length ? `<div class="sec-h" style="margin-top:10px"><span>Travas</span></div><div class="btravas">${travas.map((t) => `<div class="btrava">${t}</div>`).join('')}</div>` : ''}
-        ${mine.length ? `<div class="sec-h" style="margin-top:10px"><span>Comigo · ${mine.length}</span></div><div class="glist">${mine.slice(0, 4).map((c) => `<div class="grow-item" data-bcard="${esc(c.id)}"><div class="lead" style="background:${c.bloqueado ? 'rgba(255,69,58,.18)' : 'var(--fill)'}">${c.trilha === 'bug' ? I.monitor : I.check}</div>
-          <div class="grow" style="min-width:0"><div class="ti">#${c.numero_sequencial} ${esc(c.titulo)}</div><div class="ms"><span class="chip">${BCOL[c.status] || c.status}</span>${c.focus_seconds ? ` <span class="chip">${Math.round(c.focus_seconds / 60)}m</span>` : ''}</div></div>
-          <div class="tk-actions"><button class="fxb ${fx.active && fx.taskId === c.id && fx.running ? 'on' : ''}" data-bfx="${esc(c.id)}" title="Focar">${fx.active && fx.taskId === c.id && fx.running ? I.pause : I.play}</button></div></div>`).join('')}</div>` : ''}
-      </div>
-      <div>
-        <div class="sec-h"><span>Movimentação</span></div>
-        <div class="bfeed">${feed.length ? feed.slice(0, 14).map((e) => `<div class="bev"><span>${BEV[e.acao] || '•'}</span><div class="grow"><b>${esc(String(e.usuario_nome || e.quem || '—').split(' ')[0])}</b> ${esc(e.acao === 'mudou_status' ? 'moveu' : e.acao)} ${e.numero_sequencial || e.numero ? '#' + (e.numero_sequencial || e.numero) : ''}${e.para && e.para.status ? ' → ' + (BCOL[e.para.status] || e.para.status) : ''}</div><span class="btm">${bago(e.created_at || e.at)}</span></div>`).join('') : '<div class="muted">Sem movimento hoje.</div>'}</div>
-      </div>
-    </div>`;
+    <div class="bkpis">${kpi(st.semDono, 'sem dono', st.semDono ? 'warn' : '')}${kpi(st.emDev, 'em dev')}${kpi(st.paradas, 'paradas', st.paradas ? 'bad' : '')}${kpi(st.bloqueadas, 'travadas', st.bloqueadas ? 'bad' : '')}${kpi(st.entregues7d, 'entregues 7d', 'ok')}</div>
+    ${travas.length ? `<div class="btravas" style="margin-bottom:10px">${travas.map(([t, c]) => `<div class="btrava ${c}">${t}</div>`).join('')}</div>` : ''}
+    ${mine.length ? `<div class="sec-h"><span>Comigo</span></div><div class="glist" style="margin-bottom:8px">${mine.slice(0, 3).map((c) => `<div class="grow-item" data-bcard="${esc(c.id)}"><div class="lead" style="background:${c.bloqueado ? 'rgba(255,69,58,.18)' : 'var(--fill)'}">${c.trilha === 'bug' ? I.monitor : I.check}</div>
+      <div class="grow" style="min-width:0"><div class="ti">#${c.numero_sequencial} ${esc(c.titulo)}</div><div class="ms">${c.focus_seconds ? Math.round(c.focus_seconds / 60) + ' min focados' : 'sem foco ainda'}</div></div>
+      <div class="tk-actions"><button class="fxb ${fx.active && fx.taskId === c.id && fx.running ? 'on' : ''}" data-bfx="${esc(c.id)}" title="Focar">${fx.active && fx.taskId === c.id && fx.running ? I.pause : I.play}</button></div></div>`).join('')}</div>`
+      : `<div class="muted" style="font-size:11.5px;margin-bottom:8px">Você não tem cartão em desenvolvimento. Abra o quadro para assumir um.</div>`}
+    ${now.length ? `<div class="sec-h"><span>Time agora</span></div><div class="muted" style="font-size:11.5px">${now.slice(0, 3).map((n) => `${esc(String(n.name || '').split(' ')[0])} · ${esc(String(n.title || '').slice(0, 26))}`).join(' &nbsp;·&nbsp; ')}</div>` : ''}`;
 }
 function bindBoard() {
   const o = $('#bdOpen'); if (o) o.onclick = () => api.boardOpen();
@@ -1034,7 +1022,7 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], board: [900, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], board: [700, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];

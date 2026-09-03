@@ -52,8 +52,9 @@
 
 
   /* rolagem sem barra: continua rolando (roda do mouse), mas nada de trilho cinza na tela */
-  * { scrollbar-width: none; -ms-overflow-style: none; }
-  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  html, body, div, section, main, aside, ul, ol, pre, textarea { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-track { display: none !important; }
 </style>
 </head>
 <body>

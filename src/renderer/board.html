@@ -33,7 +33,7 @@
   .col.over { border-color: var(--blue); background: rgba(10,132,255,.1); }
   .col h2 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .col h2 i { margin-left: auto; font-style: normal; background: var(--glass2); border-radius: 999px; padding: 1px 7px; font-size: 10.5px; color: #d5d5da; }
-  .cards { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 7px; scrollbar-width: thin; }
+  .cards { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 7px; scrollbar-width: none; }
   .card { background: rgba(255,255,255,.08); border: 1px solid transparent; border-radius: 14px; padding: 9px 10px; cursor: grab; }
   .card:hover { background: rgba(255,255,255,.13); } .card.mine { border-color: rgba(10,132,255,.45); }
   .card.blocked { border-color: rgba(255,69,58,.5); background: rgba(255,69,58,.08); }
@@ -60,7 +60,7 @@
   .who .nm { font-size: 12px; font-weight: 600; } .who .st { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who .live { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px rgba(48,209,88,.7); flex: 0 0 7px; }
   .who .wip { font-size: 10.5px; background: var(--glass2); border-radius: 999px; padding: 1px 7px; } .who .wip.over { background: rgba(255,159,10,.25); color: #ffd79a; }
-  #feed { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
+  #feed { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: none; }
   .ev { display: flex; gap: 7px; padding: 5px 0; font-size: 11.5px; line-height: 1.35; border-bottom: 1px solid rgba(255,255,255,.04); }
   .ev .ic { width: 18px; flex: 0 0 18px; text-align: center; opacity: .85; }
   .ev b { font-weight: 600; } .ev .tm { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; }
@@ -81,8 +81,9 @@
 
 
   /* rolagem sem barra: continua rolando (roda do mouse), mas nada de trilho cinza na tela */
-  * { scrollbar-width: none; -ms-overflow-style: none; }
-  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  html, body, div, section, main, aside, ul, ol, pre, textarea { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-track { display: none !important; }
 </style>
 </head>
 <body>
@@ -95,7 +96,7 @@
     <select id="fTrilha"><option value="">Bugs e ideias</option><option value="bug">Só bugs</option><option value="ideia">Só ideias</option></select>
     <select id="fDono"><option value="">Todos</option><option value="me">Meus</option><option value="none">Sem dono</option></select>
     <span class="sp"></span>
-    <button id="brief">Brief do dia</button>
+    <button id="brief" title="Envia agora, como notificação no topo da tela, o resumo do quadro: o que entrou, o que está sem dono, o que travou e o que foi entregue. Sai sozinho às 9h e às 18h.">Resumo do dia</button>
     <button id="reload" class="pri">Atualizar</button>
   </header>
   <div id="stats"></div>
@@ -264,7 +265,7 @@ $('#q').oninput = () => { q = $('#q').value.trim(); renderBoard(); };
 $('#fTrilha').onchange = () => { fTrilha = $('#fTrilha').value; renderBoard(); };
 $('#fDono').onchange = () => { fDono = $('#fDono').value; renderBoard(); };
 $('#reload').onclick = async () => { const a = await api.boardAlerts(); if (a) alerts = a; await load(true); toast('Atualizado.'); };
-$('#brief').onclick = async () => { await api.boardBrief(new Date().getHours() >= 14 ? 'tarde' : 'manha'); toast('Brief enviado para o notch.'); };
+$('#brief').onclick = async () => { await api.boardBrief(new Date().getHours() >= 14 ? 'tarde' : 'manha'); toast('Resumo enviado — aparece no banner do topo.'); };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.close(); if (e.key === '/' && e.target !== $('#q')) { e.preventDefault(); $('#q').focus(); } });
 
 api.onHub((h) => { if (!h) return; me = h.profile && h.profile.id || me; if (h.board) { board = h.board; feed = h.boardFeed || feed; alerts = h.boardAlerts || alerts; renderBoard(); renderWho(); renderFeed(); renderAlerts(); } });

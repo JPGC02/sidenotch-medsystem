@@ -62,6 +62,7 @@ app.whenReady().then(() => {
   qa = new QuickAccess({ userData: app.getPath('userData'), getSettings: () => store.get(), hub, notify: (n) => server && server._notify(n), broadcast });
   startFocus();
   startBoard();
+  startMouseGuard();
   filetray = new FileTray(app.getPath('userData'));
   filetray.on('change', (l) => broadcast('files', l));
   if (!store.get().commands || !store.get().commands.length) store.set({ commands: commands.DEFAULTS });
@@ -90,7 +91,7 @@ function createNotch() {
   notch.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   notch.setMenu(null);
   notch.loadFile(path.join(__dirname, 'renderer', 'notch.html'));
-  notch.setIgnoreMouseEvents(true, { forward: true });
+  notch.setIgnoreMouseEvents(true, { forward: true }); notch._ignore = true;
   notch.once('ready-to-show', () => { positionNotch(); if (store.get().notch.enabled) notch.show(); });
   notch.on('blur', () => { if (notch && !notch.isDestroyed() && notch.isFocusable()) { notch.setFocusable(false); notch.webContents.send('bar:blur'); } });
   const keep = () => { if (!notch || notch.isDestroyed() || !notch.isVisible()) return; notch.setAlwaysOnTop(true, 'screen-saver', 1); notch.moveTop(); };
@@ -378,7 +379,7 @@ function createBar(role) {
   win.setMenu(null);
   win.loadFile(path.join(__dirname, 'renderer', 'bar.html'), { query: { role } });
   win.once('ready-to-show', () => { positionBar(role); if (dockCfg(role).enabled) win.show(); });
-  win.setIgnoreMouseEvents(true, { forward: true });
+  win.setIgnoreMouseEvents(true, { forward: true }); win._ignore = true;
   const keepOnTop = () => {
     if (win.isDestroyed() || !win.isVisible() || (dragging && dragging.role === role)) return;
     win.setAlwaysOnTop(true, 'screen-saver', 1);
@@ -465,6 +466,24 @@ function scheduleRefresh() {
 
 function broadcast(ch, payload) {
   for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin, boardWin, dropWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
+}
+
+// Rede de segurança do mouse: se o cursor está fora de uma janela sobreposta e ela continua clicável
+// (um mouseleave perdido, o renderer ocupado, um arrasto interrompido), devolve o click-through na hora.
+// Sem isto, um único evento perdido "trava" o mouse numa faixa da tela.
+function startMouseGuard() {
+  setInterval(() => {
+    let c; try { c = screen.getCursorScreenPoint(); } catch { return; }
+    const check = (w, role) => {
+      if (!w || w.isDestroyed() || !w.isVisible()) return;
+      if (dragging && role && w._role === dragging.role) return;      // arrastando a dock de propósito
+      if (w === notch && dropWin && !dropWin.isDestroyed()) return;    // alvo de soltura aberto
+      let b; try { b = w.getBounds(); } catch { return; }
+      const dentro = c.x >= b.x && c.x < b.x + b.width && c.y >= b.y && c.y < b.y + b.height;
+      if (!dentro && w._ignore === false) { w._ignore = true; try { w.setIgnoreMouseEvents(true, { forward: true }); } catch { /* fechando */ } }
+    };
+    check(notch); check(bars.hub, true); check(bars.ai, true);
+  }, 350);
 }
 
 // ---------- Atalhos globais ----------
@@ -641,7 +660,10 @@ ipcMain.handle('update:check', () => { updater && updater.check(); return update
 ipcMain.handle('update:download', () => { updater && updater.download(); return updater && updater.state; });
 ipcMain.handle('update:install', () => { updater && updater.install(); return updater && updater.state; });
 ipcMain.handle('displays:get', () => screen.getAllDisplays().map((d, i) => ({ id: String(d.id), label: `Monitor ${i + 1} (${d.size.width}×${d.size.height})${d.id === screen.getPrimaryDisplay().id ? ' — principal' : ''}` })));
-ipcMain.on('bar:ignore-mouse', (e, ignore) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && !(dragging && w._role === dragging.role)) w.setIgnoreMouseEvents(!!ignore, { forward: true }); });
+ipcMain.on('bar:ignore-mouse', (e, ignore) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (w && !(dragging && w._role === dragging.role)) { w._ignore = !!ignore; w.setIgnoreMouseEvents(!!ignore, { forward: true }); }
+});
 ipcMain.on('bar:height', (e, h) => { const w = BrowserWindow.fromWebContents(e.sender); const role = w && w._role; if (!role) return; const nh = Math.max(160, Math.min(1000, Math.round(h))); if (nh !== barH[role]) { barH[role] = nh; positionBar(role); } });
 ipcMain.on('bar:focusable', (e, v) => { const w = BrowserWindow.fromWebContents(e.sender); if (!w) return; w.setFocusable(!!v); if (v) w.focus(); });
 ipcMain.on('bar:drag', (e, phase) => { const w = BrowserWindow.fromWebContents(e.sender); if (phase === 'start') dragStart(w && w._role || 'hub'); else dragEnd(); });
