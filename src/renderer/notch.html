@@ -80,7 +80,7 @@
   .btravas { display: flex; flex-direction: column; gap: 4px; }
   .btrava { background: rgba(255,159,10,.12); border: 1px solid rgba(255,159,10,.28); border-radius: 10px; padding: 5px 9px; font-size: 11px; }
   .btrava.bad { background: rgba(255,69,58,.12); border-color: rgba(255,69,58,.3); color: #ffc4bf; }
-  .btravas { display: flex; flex-wrap: wrap; gap: 6px; } .btravas .btrava { flex: 1 1 200px; }
+  .btravas { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; } .btravas .btrava { flex: 0 1 auto; min-width: 160px; }
   .bfeed { display: flex; flex-direction: column; gap: 2px; max-height: 330px; overflow: auto; scrollbar-width: none; } .bfeed::-webkit-scrollbar { display: none; }
   .bev { display: flex; gap: 6px; align-items: baseline; font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); line-height: 1.3; }
   .btm { font-size: 9.5px; color: var(--muted); margin-left: auto; white-space: nowrap; }
@@ -1089,8 +1089,9 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
     e.preventDefault(); document.body.classList.remove('dragging');
     const paths = [...(e.dataTransfer.files || [])].map((f) => api.pathForFile(f)).filter(Boolean);
     if (!paths.length) { msgFiles = 'Não consegui ler o arquivo arrastado.'; renderView(); return; }
-    files = await api.filesAdd(paths);
-    msgFiles = `✓ ${paths.length} arquivo(s) na bandeja`;
+    const antes = files.length; files = await api.filesAdd(paths);
+    const n = Math.max(0, files.length - antes);
+    msgFiles = n ? `✓ ${n} arquivo(s) na bandeja` : 'Esse item não é um arquivo do disco (pasta, atalho ou item virtual) — use Adicionar.';
     tab = 'files'; renderTabs(); setOpen(true); renderView();
 
   });

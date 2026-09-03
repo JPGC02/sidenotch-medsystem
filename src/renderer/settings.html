@@ -89,19 +89,29 @@
   .mod .tag { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.08); border-radius: 999px; padding: 2px 8px; }
   .mod.off .ic { filter: saturate(.25) brightness(.8); } .mod.off .tx b { color: var(--muted); }
 
-  /* vidro (glass.css) — sobrescreve as superfícies antigas */
-  aside { background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.26)); backdrop-filter: blur(34px) saturate(1.4); border-right: 1px solid rgba(255,255,255,.07); }
+  /* glass-card (receita do JP), adaptada ao fundo escuro: vidro leitoso, filete de luz no topo,
+     borda esquerda em gradiente e brilho interno difuso — o reflexo que segue o mouse vem do glass.css */
+  aside { background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03)); backdrop-filter: blur(14px) saturate(1.5); border-right: 1px solid rgba(255,255,255,.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset -1px 0 0 rgba(255,255,255,.04); }
   .nav { border-radius: 12px; transition: background .16s, color .16s; position: relative; }
-  .nav:hover { background: rgba(255,255,255,.08); }
-  .nav.on { background: linear-gradient(180deg, rgba(124,140,255,.42), rgba(124,140,255,.24)); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgba(124,140,255,.28); }
-  .nav.on::after { content: ""; position: absolute; left: 0; top: 24%; bottom: 24%; width: 2.5px; border-radius: 2px; background: #fff; opacity: .85; }
-  section { position: relative; background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05)); border: 1px solid rgba(255,255,255,.10); border-radius: 20px;
-    backdrop-filter: blur(26px) saturate(1.7); box-shadow: 0 18px 46px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(0,0,0,.22); }
-  section::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(340px 200px at var(--gx,50%) var(--gy,0%), rgba(255,255,255,.10), transparent 62%); }
-  section > * { position: relative; }
-  button { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07)); border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 2px 8px rgba(0,0,0,.25); transition: transform .12s, background .16s; }
-  button:active { transform: translateY(1px); } button.pri { background: linear-gradient(180deg, #8f9dff, #6b7cff); color: #0b0b10; border-color: rgba(255,255,255,.25); }
-  .prov { background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.045)); box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+  .nav:hover { background: rgba(255,255,255,.09); }
+  .nav.on { background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.10)); color: #fff; border: 1px solid rgba(255,255,255,.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 12px 2px rgba(255,255,255,.12), 0 6px 18px rgba(0,0,0,.28); }
+  .nav.on::after { content: ""; position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,.8), transparent, rgba(255,255,255,.3)); border-radius: 2px; }
+  section { position: relative; overflow: hidden; border-radius: 20px;
+    background: rgba(255,255,255,.085);
+    backdrop-filter: blur(12px) saturate(1.6); -webkit-backdrop-filter: blur(12px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,.22);
+    box-shadow: 0 8px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -1px 0 rgba(255,255,255,.08), inset 0 0 12px 6px rgba(255,255,255,.06); }
+  section::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent); pointer-events: none; z-index: 2; }
+  section::after { content: ""; position: absolute; top: 0; left: 0; width: 1px; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,.8), transparent, rgba(255,255,255,.3)); pointer-events: none; z-index: 2; }
+  section > * { position: relative; z-index: 1; }
+  button { background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)); border: 1px solid rgba(255,255,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 2px 8px rgba(0,0,0,.25); transition: transform .12s, background .16s; }
+  button:active { transform: translateY(1px); } button.pri { background: linear-gradient(180deg, #8f9dff, #6b7cff); color: #0b0b10; border-color: rgba(255,255,255,.35); }
+  .prov, .mod, .dkrow { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 10px 2px rgba(255,255,255,.04); }
+  .mod { border-radius: 14px; margin: 4px 0; padding: 10px 12px; }
+  .mods .mod:first-child { border-top: 1px solid rgba(255,255,255,.14); }
+  input[type=text], input[type=number], input[type=password], select { background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.16); box-shadow: inset 0 1px 2px rgba(0,0,0,.35), inset 0 -1px 0 rgba(255,255,255,.06); }
   .bar { backdrop-filter: blur(20px) saturate(1.4); background: linear-gradient(transparent, rgba(0,0,0,.5) 45%); }
 
 

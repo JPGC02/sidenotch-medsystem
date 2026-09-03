@@ -1,5 +1,6 @@
 const { app, BrowserWindow, screen, ipcMain, Tray, Menu, nativeImage, shell, globalShortcut, Notification, safeStorage, dialog, clipboard } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { Store } = require('./store');
 const { fetchAll, resetCache, setCacheDir } = require('./providers');
 const approvals = require('./approvals');
@@ -748,7 +749,8 @@ ipcMain.on('files:drop-mode', (_e, on) => setDropMode(!!on));
 ipcMain.handle('files:list', () => filetray ? filetray.prune() : []);
 ipcMain.handle('files:add', (_e, paths) => {
   if (!filetray) return [];
-  filetray.add(paths);
+  const before = filetray.items.length; const added = filetray.add(paths);
+  try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), `${new Date().toISOString()} bandeja add ${JSON.stringify(paths)} -> ${added.length} (antes ${before})\n`); } catch { /* ignore */ }
   if (notch && !notch.isDestroyed()) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); }
   return filetray.list();
 });
