@@ -21,7 +21,7 @@ const { parseTask } = require('./nlp');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray, dropWin = null, dropTimer = null;
 const briefDone = { manha: '', tarde: '' };   // aaaa-mm-dd do último brief enviado
 const alertSent = new Map();                  // chave do alerta → quando cobrou (não repete no mesmo dia)
 const webappWins = new Map();
@@ -464,7 +464,7 @@ function scheduleRefresh() {
 }
 
 function broadcast(ch, payload) {
-  for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin, boardWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
+  for (const w of [bars.hub, bars.ai, notch, settingsWin, tasksWin, boardWin, dropWin]) if (w && !w.isDestroyed()) w.webContents.send(ch, payload);
 }
 
 // ---------- Atalhos globais ----------
@@ -697,20 +697,35 @@ ipcMain.handle('board:move', async (_e, id, status, motivo) => { try { await hub
 ipcMain.handle('board:block', async (_e, id, on, motivo) => { try { await hub.boardBlock(id, on, motivo); return { ok: true, state: hub.state() }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 // ---------- bandeja de arquivos ----------
-// Durante um arrasto o Windows não manda mousemove para a janela; sem isso a notch continuaria
-// atravessável e nunca receberia o "drop". O modo bandeja deixa a janela clicável por um tempo.
-let dropTimer = null;
-function setDropMode(on, secs = 30) {
-  if (!notch || notch.isDestroyed()) return;
+// Durante um arrasto o Windows não entrega mousemove a janelas atravessáveis, e deixar a notch inteira
+// clicável travava o mouse. Então o arrasto cai numa janelinha própria, que só existe enquanto espera.
+function setDropMode(on, secs = 25) {
   clearTimeout(dropTimer);
-  notch.setIgnoreMouseEvents(!on, { forward: true });
-  if (on && !notch.isVisible()) notch.show();
-  notch.webContents.send('files:drop-mode', !!on);
-  if (on) dropTimer = setTimeout(() => setDropMode(false), secs * 1000);
+  if (!on) { if (dropWin && !dropWin.isDestroyed()) dropWin.close(); dropWin = null; if (notch && !notch.isDestroyed()) notch.webContents.send('files:drop-mode', false); return; }
+  if (dropWin && !dropWin.isDestroyed()) { dropWin.show(); dropWin.focus(); return; }
+  const d = targetDisplay(); const W = 320, H = 210;
+  dropWin = new BrowserWindow({
+    width: W, height: H, x: d.workArea.x + Math.round((d.workArea.width - W) / 2), y: d.workArea.y + 54,
+    frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true, resizable: false, movable: false,
+    hasShadow: false, show: false, acceptFirstMouse: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+  });
+  dropWin.setAlwaysOnTop(true, 'screen-saver');
+  dropWin.setMenu(null);
+  dropWin.loadFile(path.join(__dirname, 'renderer', 'drop.html'), { query: { secs: String(secs) } });
+  dropWin.once('ready-to-show', () => { dropWin.show(); dropWin.focus(); });
+  dropWin.on('closed', () => { dropWin = null; });
+  if (notch && !notch.isDestroyed()) notch.webContents.send('files:drop-mode', true);
+  dropTimer = setTimeout(() => setDropMode(false), secs * 1000);
 }
 ipcMain.on('files:drop-mode', (_e, on) => setDropMode(!!on));
 ipcMain.handle('files:list', () => filetray ? filetray.prune() : []);
-ipcMain.handle('files:add', (_e, paths) => { if (!filetray) return []; filetray.add(paths); return filetray.list(); });
+ipcMain.handle('files:add', (_e, paths) => {
+  if (!filetray) return [];
+  filetray.add(paths);
+  if (notch && !notch.isDestroyed()) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); }
+  return filetray.list();
+});
 ipcMain.handle('files:pick', async () => {
   app.focus({ steal: true });
   const r = await dialog.showOpenDialog({ title: 'Adicionar à bandeja', properties: ['openFile', 'multiSelections'] });

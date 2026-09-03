@@ -50,6 +50,10 @@
   button { background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07)); border: 1px solid rgba(255,255,255,.12); }
   button.pri { background: linear-gradient(180deg, #3ba0ff, #0a84ff); }
 
+
+  /* rolagem sem barra: continua rolando (roda do mouse), mas nada de trilho cinza na tela */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
 </style>
 </head>
 <body>

@@ -79,6 +79,10 @@
   .kpi { background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05)); box-shadow: inset 0 1px 0 rgba(255,255,255,.22); backdrop-filter: blur(18px) saturate(1.5); }
   .card, .row { box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
 
+
+  /* rolagem sem barra: continua rolando (roda do mouse), mas nada de trilho cinza na tela */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
 </style>
 </head>
 <body>
