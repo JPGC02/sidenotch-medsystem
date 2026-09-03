@@ -54,18 +54,18 @@ class QuickAccess {
   showStack(display) {
     const d = display || screen.getPrimaryDisplay();
     const cfg = this.getSettings().quickaccess || {};
-    const W = 300, H = Math.min(d.workArea.height, 900);
+    // a altura acompanha os cards (qa:size); começa mínima para nunca cobrir a tela
+    const W = 300, H = Math.min(d.workArea.height, this.stack && !this.stack.isDestroyed() ? Math.max(1, this.stack.getBounds().height) : 1);
     if (!this.stack || this.stack.isDestroyed()) {
       const win = new BrowserWindow({
-        width: W, height: H, frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true, resizable: false, movable: false, hasShadow: false, focusable: false, show: false,
+        width: W, height: 1, frame: false, transparent: true, alwaysOnTop: true, skipTaskbar: true, resizable: false, movable: false, hasShadow: false, focusable: false, show: false,
         webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
       });
       this.stack = win;
       win.setAlwaysOnTop(true, 'screen-saver'); win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); win.setMenu(null);
-      win.setIgnoreMouseEvents(true, { forward: false });
+      // sem click-through: a janela tem exatamente o tamanho dos cards (qa:size), então nunca rouba o mouse
       win.loadFile(path.join(__dirname, 'renderer', 'qa.html'));
-      win.on('closed', () => { this.stack = null; this._stopTrack(); });
-      this._startTrack();
+      win.on('closed', () => { this.stack = null; });
       win.webContents.on('did-finish-load', () => win.webContents.send('qa:config', { ttl: Number(cfg.ttlSec) || 0, side: cfg.side || 'left' }));
     }
     const side = cfg.side || 'left';
@@ -74,24 +74,15 @@ class QuickAccess {
     if (!this.stack.isVisible()) this.stack.show();
     try { fs.appendFileSync(path.join(app.getPath('userData'), 'qa.log'), `${new Date().toISOString()} stack display=${d.id} bounds=${JSON.stringify(this.stack.getBounds())}\n`); } catch { /* ignore */ }
   }
-  // O Windows deixa de encaminhar mousemove depois de alguns ciclos de setIgnoreMouseEvents;
-  // por isso o hover é decidido aqui, lendo o cursor, e a janela só fica clicável sobre um card.
-  _startTrack() {
-    this._stopTrack();
-    this._hotRects = [];
-    this._interactive = null;
-    this._track = setInterval(() => {
-      const w = this.stack;
-      if (!w || w.isDestroyed() || !w.isVisible()) return;
-      const b = w.getBounds(); const c = screen.getCursorScreenPoint();
-      const x = c.x - b.x, y = c.y - b.y;
-      const inside = x >= 0 && y >= 0 && x < b.width && y < b.height;
-      const over = inside && (this._hotRects || []).some((r) => x >= r.x - 4 && x <= r.x + r.w + 4 && y >= r.y - 4 && y <= r.y + r.h + 4);
-      if (over !== this._interactive) { this._interactive = over; try { w.setIgnoreMouseEvents(!over, { forward: false }); } catch { /* ignore */ } }
-      try { w.webContents.send('qa:hover', over ? { x, y } : null); } catch { /* ignore */ }
-    }, 90);
+  // a janela acompanha a altura da pilha; fora dos cards não existe janela, então o mouse fica livre
+  _fit(h) {
+    const w = this.stack; if (!w || w.isDestroyed()) return;
+    const d = screen.getDisplayNearestPoint({ x: w.getBounds().x + 10, y: w.getBounds().y + 10 });
+    const cfg = this.getSettings().quickaccess || {}; const side = cfg.side || 'left';
+    const W = 300, H = Math.max(1, Math.min(Math.round(h) || 1, d.workArea.height));
+    const x = side === 'right' ? d.workArea.x + d.workArea.width - W : d.workArea.x;
+    w.setBounds({ x, y: d.workArea.y + d.workArea.height - H, width: W, height: H });
   }
-  _stopTrack() { if (this._track) { clearInterval(this._track); this._track = null; } }
   _push(item) { const send = () => this.stack && !this.stack.isDestroyed() && this.stack.webContents.send('qa:push', this._card(item)); if (this.stack.webContents.isLoading()) this.stack.webContents.once('did-finish-load', () => setTimeout(send, 50)); else send(); }
   _card(item) { const it = this.caps.get(item.id) || item; return { ...it, thumb: 'file:///' + this.caps.best(it.id).replace(/\\/g, '/') + '?v=' + (it.editedAt || it.at) }; }
   restore(id) { const it = this.caps.get(id); if (!it) return false; this.showStack(); this._push(it); return true; }
@@ -159,8 +150,8 @@ class QuickAccess {
   _ipc() {
     ipcMain.handle('qa:select-done', (_e, rect) => { const it = this._finishSelection(rect); return it ? it.id : null; });
     ipcMain.on('qa:select-cancel', () => { if (this.select && !this.select.isDestroyed()) this.select.close(); this.select = null; this.shot = null; });
-    ipcMain.on('qa:interactive', (e, on) => { const w = BrowserWindow.fromWebContents(e.sender); if (w && w !== this.stack) w.setIgnoreMouseEvents(!on, { forward: false }); });
-    ipcMain.on('qa:hot', (_e, rects) => { this._hotRects = Array.isArray(rects) ? rects : []; });
+    ipcMain.on('qa:interactive', () => { /* obsoleto: a pilha não usa mais click-through */ });
+    ipcMain.on('qa:size', (_e, h) => this._fit(h));
     ipcMain.on('qa:drag', (e, id) => this.startDrag(e.sender, id));
     ipcMain.handle('qa:copy', (_e, id) => this.copy(id));
     ipcMain.handle('qa:save', (_e, id) => this.saveAs(id));
