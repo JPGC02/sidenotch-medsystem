@@ -12,12 +12,12 @@
     .selx > .cur span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .selx > .cur i { font-style: normal; opacity: .55; font-size: 11px; margin-top: -1px; }
     .selx.open > .cur { border-color: rgba(120,160,255,.6); }
-    .selx .selx-menu { position: fixed; z-index: 999; min-width: 160px; max-height: 280px; overflow: auto;
+    .selx-menu { position: fixed; z-index: 999; min-width: 160px; max-height: 280px; overflow: auto;
       background: rgba(22,22,28,.99); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 4px;
       box-shadow: 0 20px 46px rgba(0,0,0,.6); }
-    .selx .selx-menu div { padding: 7px 11px; border-radius: 8px; font-size: 12.5px; cursor: pointer; white-space: nowrap; color: #f0f0f3; }
-    .selx .selx-menu div:hover { background: rgba(255,255,255,.1); }
-    .selx .selx-menu div.on { background: #0a84ff; color: #fff; }
+    .selx-menu div { padding: 7px 11px; border-radius: 8px; font-size: 12.5px; cursor: pointer; white-space: nowrap; color: #f0f0f3; }
+    .selx-menu div:hover { background: rgba(255,255,255,.1); }
+    .selx-menu div.on { background: #0a84ff; color: #fff; }
     .selx select:disabled ~ .cur { opacity: .5; cursor: default; }
   `;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -50,12 +50,15 @@
       if (!abrindo) return;
       const menu = document.createElement('div'); menu.className = 'selx-menu';
       menu.innerHTML = [...sel.options].map((o, i) => `<div data-i="${i}" class="${o.selected ? 'on' : ''}">${o.textContent.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</div>`).join('');
-      document.body.appendChild(menu);
       const r = cur.getBoundingClientRect();
       menu.style.minWidth = Math.max(160, r.width) + 'px';
-      menu.style.left = Math.min(r.left, innerWidth - menu.offsetWidth - 8) + 'px';
-      const abaixo = r.bottom + 6 + menu.offsetHeight < innerHeight;
-      menu.style.top = (abaixo ? r.bottom + 6 : Math.max(8, r.top - menu.offsetHeight - 6)) + 'px';
+      menu.style.visibility = 'hidden';
+      document.body.appendChild(menu);
+      const alt = menu.offsetHeight, larg = menu.offsetWidth;      // mede já com o estilo aplicado
+      menu.style.left = Math.max(8, Math.min(r.left, innerWidth - larg - 8)) + 'px';
+      const abaixo = r.bottom + 6 + alt < innerHeight;
+      menu.style.top = (abaixo ? r.bottom + 6 : Math.max(8, r.top - alt - 6)) + 'px';
+      menu.style.visibility = '';
       box.classList.add('open');
       openMenu = { box, menu };
       menu.onclick = (ev) => {
