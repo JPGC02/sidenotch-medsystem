@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.16.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.16.1.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.16.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.16.1.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -146,9 +146,9 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 
 ## Pausa do café (1.16)
 - Aba **Café** no notch: um cartão por pessoa (Marina e Julia por padrão), com **timer grande** e uma **linha que avança conforme o tempo restante**. Vários controles ao mesmo tempo — elas saem em horários parecidos, então os dois ficam lado a lado.
-- Botão *Saiu para o café* começa; *Voltou* encerra. **Passado o limite o timer não para**: vira contagem de excedente em vermelho (`+02:00`) e o notch avisa uma vez, para mostrar quanto tempo a pausa realmente levou. O `✕` descarta sem registrar.
+- Botão *Saiu para o café* começa; *Voltou* encerra. O limite padrão é **20 minutos**. **Passado o limite o timer não para**: vira contagem de excedente em vermelho (`+02:00`) e o notch avisa uma vez, para mostrar quanto tempo a pausa realmente levou. O `✕` descarta sem registrar.
 - Cada pausa encerrada vai para a tabela `coffee_breaks` no Supabase com RLS `owner_id = auth.uid()` — **só a conta que registrou consegue ler**. Sem internet a pausa fica numa fila local (`coffee.json`) e sobe sozinha depois. RPCs `coffee_log` e `coffee_summary` (hoje, média, semana e quantas vezes passou do limite, por pessoa).
-- A pastilha fechada mostra `☕ Marina 12:31` enquanto alguém está fora. Ajustes em Configurações → Medsystem Hub → Pausa do café (quem entra, limite em minutos, aviso e atalho).
+- A pastilha fechada mostra `☕ Marina 12:31` enquanto alguém está fora. Ajustes em Configurações → Medsystem Hub → Pausa do café (quem entra, limite em minutos — 20 por padrão —, aviso e atalho).
 - Registro de pausa é dado sensível de RH: vale avisar a Marina e a Julia que o controle existe.
 
 ## Mouse preso com a notch aberta (1.16)
@@ -158,7 +158,7 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.16.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.16.1 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

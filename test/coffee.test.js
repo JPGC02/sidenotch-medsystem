@@ -75,6 +75,10 @@ const c = new Coffee({ userData: dir, hub, getSettings: () => cfg, notify: (n) =
   c.start('Julia'); c.running.Julia.startedAt = Date.now() - 1000; c.stop('Julia');
   assert.strictEqual(gravadas.length, 1, 'pausa de menos de 5 s não é gravada');
 
+  // ---- sem minutos nas configurações, o padrão é 20 min ----
+  cfg.coffee = { people: ['Marina'] };
+  assert.strictEqual(c.state().limite, 1200, 'padrão de 20 minutos');
+
   // ---- mudar a lista nas configurações muda o controle ----
   cfg.coffee = { people: ['Ana'], minutes: 5, alert: false };
   st = c.state();

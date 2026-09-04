@@ -517,7 +517,7 @@ class HubClient extends EventEmitter {
 
   // ---------- pausa do café (registro privado de quem anota) ----------
   async coffeeLog({ pessoa, seconds, limite, startedAt, obs }) {
-    return this.rpc('coffee_log', { p_pessoa: pessoa, p_seconds: Math.round(seconds || 0), p_limite: Math.round(limite || 900),
+    return this.rpc('coffee_log', { p_pessoa: pessoa, p_seconds: Math.round(seconds || 0), p_limite: Math.round(limite || 1200),
       p_started: new Date(startedAt || Date.now() - (seconds || 0) * 1000).toISOString(), p_obs: obs || null });
   }
   async coffeeSummary(days = 30) {

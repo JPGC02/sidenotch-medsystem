@@ -250,7 +250,7 @@
         <h2>Pausa do café</h2>
         <p class="help" style="padding:4px 0">Um cronômetro por pessoa na aba Café do notch. Passado o limite ele não para: segue contando em vermelho até você encerrar. Cada pausa fica gravada no Supabase numa tabela privada — só a sua conta lê o que foi registrado aqui.</p>
         <div class="r"><div class="l"><b>Quem entra no controle</b><small>nomes separados por vírgula (até 8)</small></div><input id="cfPeople" type="text" placeholder="Marina, Julia"></div>
-        <div class="r"><div class="l"><b>Limite da pausa</b><small>minutos; depois disso o timer vira contagem de excedente</small></div><input id="cfMin" type="number" min="1" max="120"></div>
+        <div class="r"><div class="l"><b>Limite da pausa</b><small>minutos; depois disso o timer vira contagem de excedente</small></div><input id="cfMin" type="number" min="1" max="120" placeholder="20"></div>
         <div class="r"><div class="l"><b>Avisar quando passar do limite</b><small>notificação no notch + som</small></div><label class="sw"><input id="cfAlert" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Atalho: abrir a aba Café</b></div><input id="scCoffee" type="text" placeholder="vazio = desativado"></div>
         <h2>Capturas (Quick Access)</h2>
@@ -531,7 +531,7 @@ function collect() {
     commands: cmdList.filter((c) => c.name && c.cmd).map((c, i) => ({ id: c.id || 'c' + i, name: c.name, cmd: c.cmd, ix: c.ix || 'Code', color: c.color || '#8e8e93', confirm: !!c.confirm, admin: !!c.admin })),
     board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
-    coffee: { enabled: modState.coffee !== false, people: $('#cfPeople').value.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 8), minutes: Math.min(120, Math.max(1, Number($('#cfMin').value) || 15)), alert: $('#cfAlert').checked },
+    coffee: { enabled: modState.coffee !== false, people: $('#cfPeople').value.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 8), minutes: Math.min(120, Math.max(1, Number($('#cfMin').value) || 20)), alert: $('#cfAlert').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
     hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
     update: { auto: $('#upAuto').checked },
@@ -574,7 +574,7 @@ async function load() {
   const fxs = settings.focus || {}; $('#fxMin').value = fxs.minutes || 25; $('#fxBrk').value = fxs.breakMinutes || 5;
   $('#fxPill').checked = fxs.pill !== false; $('#fxStreak').checked = fxs.streak !== false; $('#fxAuto').checked = fxs.autoStatus !== false; $('#fxChime').checked = fxs.chime !== false;
   $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K'; $('#scFiles').value = sc.files ?? 'CommandOrControl+Shift+B'; $('#scCoffee').value = sc.coffee || '';
-  const cf = settings.coffee || {}; $('#cfPeople').value = (cf.people || ['Marina', 'Julia']).join(', '); $('#cfMin').value = cf.minutes || 15; $('#cfAlert').checked = cf.alert !== false;
+  const cf = settings.coffee || {}; $('#cfPeople').value = (cf.people || ['Marina', 'Julia']).join(', '); $('#cfMin').value = cf.minutes || 20; $('#cfAlert').checked = cf.alert !== false;
   const bd = settings.board || {}; $('#bdOn').checked = bd.enabled !== false; $('#bdMoves').checked = bd.notifyMoves !== false; $('#bdStuck').checked = bd.notifyStuck !== false;
   $('#bdNew').checked = bd.notifyNew !== false; $('#bdBrief').checked = bd.brief !== false; $('#bdM').value = bd.briefManha || '09:00'; $('#bdT').value = bd.briefTarde || '18:00';
   $('#bdWip').value = bd.wip || 2; $('#bdSem').value = bd.semDonoHoras || 24; $('#bdPar').value = bd.paradoDias || 2; $('#bdTake').checked = bd.takeOnFocus !== false;

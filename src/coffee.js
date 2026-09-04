@@ -24,7 +24,7 @@ class Coffee extends EventEmitter {
   cfg() {
     const c = (this.getSettings() || {}).coffee || {};
     const nomes = Array.isArray(c.people) && c.people.length ? c.people : ['Marina', 'Julia'];
-    return { people: nomes.map((n) => String(n).trim()).filter(Boolean).slice(0, 8), limite: Math.max(60, Math.round((Number(c.minutes) || 15) * 60)), avisar: c.alert !== false };
+    return { people: nomes.map((n) => String(n).trim()).filter(Boolean).slice(0, 8), limite: Math.max(60, Math.round((Number(c.minutes) || 20) * 60)), avisar: c.alert !== false };
   }
   _load() { try { const j = JSON.parse(fs.readFileSync(this.file, 'utf8')); this.running = j.running || {}; this.pending = j.pending || []; this.summary = j.summary || this.summary; } catch { /* primeira vez */ } }
   _save() { try { fs.writeFileSync(this.file, JSON.stringify({ running: this.running, pending: this.pending, summary: this.summary }), 'utf8'); } catch { /* ignore */ } }
