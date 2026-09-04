@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.16.1.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.17.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.16.1.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.17.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -151,6 +151,18 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 - A pastilha fechada mostra `☕ Marina 12:31` enquanto alguém está fora. Ajustes em Configurações → Medsystem Hub → Pausa do café (quem entra, limite em minutos — 20 por padrão —, aviso e atalho).
 - Registro de pausa é dado sensível de RH: vale avisar a Marina e a Julia que o controle existe.
 
+## Ideia Central (1.17)
+- O SideNotch agora fala com **dois projetos Supabase**: o Medsystem Hub (trabalho) e o **Ideia Central** (projeto pessoal, `khumibmkasycrfifomev`) — contas, chaves e sessões separadas, cada um com o seu módulo.
+- Aba **Ideia Central** no notch:
+  - **Rodando agora**: recap de filme, vídeo musical, cortes de cena, geração de imagem, estúdio, automação do TikTok e cortes do YouTube — com a etapa de cada um (`rendering`, `cortando`, `mixing`…). Nenhuma dessas tabelas está no realtime do projeto, então o app consulta de tempos em tempos (60 s por padrão).
+  - **Aviso quando termina ou quebra** — só na virada de estado, e nunca na primeira leitura (senão abrir o app viraria uma chuva de notificação). Falha vem com o motivo.
+  - **Capturadas**: o que entrou por Telegram/atalho do iPhone e ainda está `novo`, com ✓ para marcar como processada.
+  - **Para publicar**: Instagram (`planned_posts`, `instagram_publications`), TikTok e YouTube, com aviso quando uma publicação falha.
+  - **Campo de captura**: escreve e dá Enter — vira linha em `saved_content` com `source = 'sidenotch'`.
+  - **Ações**: *Publicar agendados* e *Gerar imagens da fila* (edge functions, com a sessão do dono); *Automação do TikTok* e *Fila do YouTube* (rotas `/api` do site, exigem o `x-automation-secret`).
+- A pastilha fechada mostra `💡 2 renders` enquanto tem coisa renderizando.
+- Configurações → Ideia Central: e-mail/senha, chave pública (anon), URL, endereço do app, `x-automation-secret`, intervalo e quais avisos quer. **Nada disso vai para o repositório** — a chave fica no `settings.json` da máquina e o segredo, junto da sessão, no cofre do Windows.
+
 ## Mouse preso com a notch aberta (1.16)
 - A janela da notch tem 960×560 quase todos transparentes, mas só a pastilha recebe clique. O renderer manda o **retângulo real da pastilha** (`notch:hot`) e o main decide pelo cursor: dentro dele a notch recebe o mouse, longe dele volta a ser atravessável — com uma folga de 14 px para não ficar alternando na borda (`src/hotrect.js`, testado). Antes a verificação usava a janela inteira, então o mouse ficava preso na área transparente.
 
@@ -158,7 +170,7 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.16.1 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.17.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor
@@ -183,6 +195,7 @@ src/captures.js        histórico de capturas (index.json, PNG, anotações JSON
 src/clipboard.js       histórico da área de transferência
 src/coffee.js          pausa do café: timers por pessoa, excedente, fila offline e resumo
 src/hotrect.js         qual área da notch recebe o mouse (evita o cursor preso)
+src/ideia.js           Ideia Central: 2º cliente Supabase (filas de render, ideias, publicações, ações)
 src/renderer/qa.html · select.html · editor.html · annotations.js
 src/providers/*.js     um módulo por provedor (fetchUsage + parse)
 src/renderer/bar.html  a barra (anéis, hover, popover)

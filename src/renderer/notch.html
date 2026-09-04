@@ -66,6 +66,25 @@
   .reply input { flex: 1; min-width: 0; font-size: 12px; }
   .reply button { padding: 6px 10px; }
 
+  /* Ideia Central: render rodando, ideia capturada e o que está para publicar */
+  .icrow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--fill); margin-bottom: 6px; }
+  .icrow:hover { background: var(--fill2); }
+  .icrow .ic-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: 0 0 30px; background: rgba(255,255,255,.06); color: #cfd2ff; }
+  .icrow .ic-ic svg { width: 16px; height: 16px; }
+  .icrow.run .ic-ic { background: rgba(94,92,230,.22); color: #b6b3ff; }
+  .icrow.err .ic-ic { background: rgba(255,69,58,.2); color: #ff8b83; }
+  .icrow.ok .ic-ic { background: rgba(48,209,88,.18); color: #6ee08a; }
+  .icrow .t { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icrow .s { font-size: 10.5px; color: var(--muted); }
+  .icrow .grow { min-width: 0; }
+  .icrow .tag2 { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.07); border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+  .icdot { width: 6px; height: 6px; border-radius: 50%; background: #5e5ce6; box-shadow: 0 0 8px rgba(94,92,230,.8); animation: pulse 1.6s ease-in-out infinite; flex: 0 0 6px; }
+  .icacts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .icacts button { font-size: 11.5px; padding: 6px 10px; }
+  .icnew { display: flex; gap: 6px; margin-bottom: 10px; }
+  .icnew input { flex: 1; }
+  #mini .ic-mini { color: #b6b3ff; font-weight: 700; }
+
   /* pausa do café: um cartão por pessoa, com trilho que anda e vira vermelho ao estourar */
   .cofs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media (max-width: 620px) { .cofs { grid-template-columns: 1fr; } }
@@ -325,15 +344,15 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const IX = window.IX || {};
 const I = {
-  board: IX.Chart21, coffee: IX.Coffee || IX.Timer1, files: IX.Folder, cmds: IX.Code, send: IX.Send2, link: IX.Link, folder: IX.FolderOpen, down: IX.DocumentDownload, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
+  board: IX.Chart21, coffee: IX.Coffee || IX.Timer1, ideia: IX.Lamp, files: IX.Folder, cmds: IX.Code, send: IX.Send2, link: IX.Link, folder: IX.FolderOpen, down: IX.DocumentDownload, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
   timer: IX.Timer1 || IX.Clock, flame: IX.Flash, stop: IX.StopCircle, expand: IX.Maximize4, edit: IX.Edit2, pausec: IX.PauseCircle, playc: IX.PlayCircle,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
-const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['files', 'Bandeja de arquivos'], ['coffee', 'Pausa do café'], ['cmds', 'Comandos do TI'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['files', 'Bandeja de arquivos'], ['coffee', 'Pausa do café'], ['ideia', 'Ideia Central'], ['cmds', 'Comandos do TI'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
-const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus', files: 'files', cmds: 'commands', coffee: 'coffee' };
+const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus', files: 'files', cmds: 'commands', coffee: 'coffee', ideia: 'ideia' };
 const modOn = (id) => { const m = (settings && settings.modules) || {}; const k = MOD_TAB[id]; return !k || m[k] !== false; };
 const tabsForState = () => {
   TABS = TABS_ALL.filter(([id]) => modOn(id) && (id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)) && (id !== 'board' || (hub && hub.linked && hub.hasBoard)));
@@ -342,6 +361,7 @@ const tabsForState = () => {
 };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
 let cof = { people: [], last: [], limite: 900 };
+let ic = null, icMsg = '';
 let files = [], cmds = [], cmdOut = null, chatReply = null, nlParsed = null, nlHint = '', dropMode = false;
 // mesma descrição do parser (o main devolve só os campos)
 function nlDescribe(p) {
@@ -378,6 +398,10 @@ function renderMini() {
   if (sh.music !== false && m) h += `<div class="seg">${m.art ? `<img class="cover" src="${m.art}">` : ''}<span class="dot ${m.playing ? 'playing' : ''}" style="background:${m.playing ? 'var(--ok)' : 'var(--muted)'}"></span><div class="track ${(m.title + m.artist).length > 24 ? 'scroll' : ''}"><span>${esc(m.title)}${m.artist ? ' — ' + esc(m.artist) : ''}</span></div></div>`;
   if (sh.system !== false && sys) h += `<div class="seg">${I.cpu}<span style="color:${col(sys.cpu)}">${sys.cpu}%</span><div class="bar"><i style="width:${sys.mem.percent}%;background:${col(sys.mem.percent)}"></i></div></div>`;
   if (sh.calendar !== false && cal && cal.next) { const min = Math.round((cal.next.start - Date.now()) / 60000); h += `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 18))}</span></div>`; }
+  if (ic && ic.linked && ic.counts && (ic.counts.rodando || ic.counts.falhas)) {
+    const t = ic.counts.rodando ? `${ic.counts.rodando} render${ic.counts.rodando > 1 ? 's' : ''}` : `${ic.counts.falhas} falhou`;
+    h += `<div class="seg ic-mini" title="Ideia Central">${I.ideia || '💡'} ${t}</div>`;
+  }
   const cofOn = (cof.people || []).filter((p) => p.running);
   if (cofOn.length) h += cofOn.map((p) => `<div class="seg cof-mini ${p.over ? 'over' : ''}" title="Pausa de ${esc(p.nome)}">☕ ${esc(p.nome.split(' ')[0])} ${p.over ? '+' + cmm(p.over) : cmm(p.remaining)}</div>`).join('');
   if (sh.board !== false && hub && hub.linked && hub.hasBoard && hub.board && hub.board.stats) {
@@ -458,6 +482,7 @@ function renderView() {
   else if (tab === 'files') { v.innerHTML = viewFiles(); bindFiles(); }
   else if (tab === 'cmds') { v.innerHTML = viewCmds(); bindCmds(); }
   else if (tab === 'coffee') { v.innerHTML = viewCoffee(); bindCoffee(); }
+  else if (tab === 'ideia') { v.innerHTML = viewIdeia(); bindIdeia(); }
   if (tab === 'music') bindMusic();
   requestAnimationFrame(fitPill);
 }
@@ -796,6 +821,62 @@ function bindCoffee() {
   document.querySelectorAll('[data-cofcancel]').forEach((b) => b.onclick = async () => { cof = await api.coffeeCancel(b.dataset.cofcancel) || cof; renderView(); renderMini(); });
 }
 
+// ---------- Ideia Central ----------
+const icQuando = (ms) => { if (!ms) return ''; const d = (ms - Date.now()) / 60000; if (Math.abs(d) < 1) return 'agora'; if (d > 0) return d < 60 ? `em ${Math.round(d)} min` : (d < 1440 ? `em ${Math.round(d / 60)} h` : new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })); const a = -d; return a < 60 ? `há ${Math.round(a)} min` : (a < 1440 ? `há ${Math.round(a / 60)} h` : new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })); };
+function viewIdeia() {
+  if (!ic) return `<div class="empty">${I.ideia || ''}Carregando…</div>`;
+  if (!ic.configurado) return `<div class="empty">${I.ideia || ''}Falta ligar o Ideia Central.<div class="muted" style="margin-top:6px">Configurações → Ideia Central: cole a chave pública (anon) do projeto e entre com a sua conta.</div><button class="pillbtn" id="icSet" style="margin-top:10px">Abrir configurações</button></div>`;
+  if (!ic.linked) return `<div class="empty">${I.ideia || ''}Entre na sua conta do Ideia Central.<div class="muted" style="margin-top:6px">É o mesmo e-mail e senha do site.</div><button class="pillbtn" id="icSet" style="margin-top:10px">Abrir configurações</button></div>`;
+  const c = ic.counts || {};
+  const jobRow = (j) => `<div class="icrow ${j.rodando ? 'run' : (j.erro_ok ? 'err' : (j.ok ? 'ok' : ''))}">
+      <span class="ic-ic">${IX[j.ix] || I.flame || ''}</span>
+      <div class="grow"><div class="t" title="${esc(j.titulo)}">${esc(j.titulo)}</div>
+        <div class="s">${esc(j.rotulo)} · ${esc(j.etapa || j.status)}${j.erro ? ' · ' + esc(j.erro).slice(0, 60) : ''}</div></div>
+      ${j.rodando ? '<span class="icdot"></span>' : ''}<span class="tag2">${icQuando(j.quando)}</span></div>`;
+  const ideiaRow = (i) => `<div class="icrow"><span class="ic-ic">${I.ideia || ''}</span>
+      <div class="grow"><div class="t" title="${esc(i.titulo)}">${esc(i.titulo)}</div><div class="s">${esc(i.fonte || 'captura')} · ${icQuando(i.quando)}</div></div>
+      <button class="pillbtn" data-icdone="${i.id}" title="Marcar como processada">✓</button></div>`;
+  const postRow = (p) => `<div class="icrow ${p.status === 'failed' ? 'err' : ''}"><span class="ic-ic">${I.send || ''}</span>
+      <div class="grow"><div class="t" title="${esc(p.titulo)}">${esc(p.titulo)}</div><div class="s">${esc(p.plataforma)} · ${esc(p.status)}${p.erro ? ' · ' + esc(p.erro).slice(0, 50) : ''}</div></div>
+      <span class="tag2">${icQuando(p.quando)}</span></div>`;
+  const rodando = (ic.jobs || []).filter((j) => j.rodando || j.parado);
+  const recentes = (ic.jobs || []).filter((j) => !j.rodando && !j.parado).slice(0, 5);
+  return `<div class="icnew"><input id="icTxt" type="text" placeholder="Jogar uma ideia aqui… (Enter)" autocomplete="off"><button class="pillbtn pri" id="icAdd">Guardar</button></div>
+    ${icMsg ? `<div class="muted" style="margin-bottom:8px;font-size:11px">${esc(icMsg)}</div>` : ''}
+    ${ic.error ? `<div class="muted" style="margin-bottom:8px;font-size:11px;color:#ff9f9a">${esc(ic.error)}</div>` : ''}
+    <div class="sec-h"><span>Rodando agora${rodando.length ? ' · ' + rodando.length : ''}</span></div>
+    ${rodando.length ? rodando.map(jobRow).join('') : '<div class="muted" style="font-size:11.5px;padding:2px 2px 8px">Nada renderizando.</div>'}
+    ${recentes.length ? `<div class="sec-h" style="margin-top:10px"><span>Terminaram</span></div>${recentes.map(jobRow).join('')}` : ''}
+    ${(ic.ideias || []).length ? `<div class="sec-h" style="margin-top:10px"><span>Capturadas · ${ic.ideias.length}</span></div>${ic.ideias.slice(0, 6).map(ideiaRow).join('')}` : ''}
+    ${(ic.posts || []).length ? `<div class="sec-h" style="margin-top:10px"><span>Para publicar${c.postFalhas ? ' · ' + c.postFalhas + ' com erro' : ''}</span></div>${ic.posts.slice(0, 6).map(postRow).join('')}` : ''}
+    <div class="icacts">${(ic.acoes || []).map((a) => `<button class="pillbtn" data-icact="${a.id}" ${a.precisaSecret && !ic.temSecret ? 'disabled title="Cadastre o x-automation-secret nas configurações"' : ''}>${esc(a.nome)}</button>`).join('')}
+      <button class="pillbtn" id="icOpen">Abrir o site</button><button class="pillbtn" id="icSync">Atualizar</button></div>`;
+}
+function bindIdeia() {
+  const set = $('#icSet'); if (set) set.onclick = () => api.openSettings && api.openSettings();
+  const txt = $('#icTxt'), add = $('#icAdd');
+  const guardar = async () => {
+    const v = (txt.value || '').trim(); if (!v) return;
+    add.disabled = true; icMsg = 'guardando…'; renderView();
+    const r = await api.ideiaNew({ texto: v });
+    icMsg = r && r.ok ? 'ideia guardada no Ideia Central.' : `não deu: ${(r && r.error) || 'erro'}`;
+    if (r && r.state) ic = r.state;
+    renderView(); renderMini();
+    setTimeout(() => { icMsg = ''; if (tab === 'ideia') renderView(); }, 4000);
+  };
+  if (add) add.onclick = guardar;
+  if (txt) txt.onkeydown = (e) => { if (e.key === 'Enter') guardar(); };
+  document.querySelectorAll('[data-icdone]').forEach((b) => b.onclick = async () => { const r = await api.ideiaMark(b.dataset.icdone, 'processado'); if (r && r.state) ic = r.state; renderView(); renderMini(); });
+  document.querySelectorAll('[data-icact]').forEach((b) => b.onclick = async () => {
+    b.disabled = true; icMsg = 'disparando…'; renderView();
+    const r = await api.ideiaAction(b.dataset.icact);
+    icMsg = r && r.ok ? `${r.nome}: ok` : `falhou: ${(r && r.error) || 'erro'}`;
+    renderView(); setTimeout(() => { icMsg = ''; if (tab === 'ideia') renderView(); }, 5000);
+  });
+  const op = $('#icOpen'); if (op) op.onclick = () => api.ideiaOpen('/');
+  const sy = $('#icSync'); if (sy) sy.onclick = async () => { icMsg = 'atualizando…'; renderView(); ic = await api.ideiaRefresh() || ic; icMsg = ''; renderView(); renderMini(); };
+}
+
 // ---------- comandos do TI ----------
 function viewCmds() {
   const out = cmdOut;
@@ -1106,7 +1187,7 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], board: [700, 0], coffee: [660, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], board: [700, 0], coffee: [660, 0], ideia: [720, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
@@ -1155,6 +1236,8 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
+  api.onIdeia((st) => { if (!st) return; ic = st; renderMini(); if (tab === 'ideia' && document.body.classList.contains('open') && !typing()) renderView(); });
+  api.ideiaGet().then((st) => { if (st) { ic = st; renderMini(); } });
   api.onCoffee((st) => { if (!st) return; cof = st; renderMini(); if (tab === 'coffee' && document.body.classList.contains('open') && !typing()) renderView(); });
   api.coffeeGet().then((st) => { if (st) { cof = st; renderMini(); } });
   api.coffeeRefresh().catch(() => {});

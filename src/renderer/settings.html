@@ -143,6 +143,7 @@
     <div class="nav" data-p="modulos" data-c="191,90,242" data-hex="#bf5af2" style="--nc:#bf5af2"><i data-ix="Category"></i>Módulos</div>
     <div class="nav" data-p="cmds" data-c="142,142,147" data-hex="#c7c7cc" style="--nc:#c7c7cc"><i data-ix="Code"></i>Comandos do TI</div>
     <div class="nav" data-p="hub" data-c="45,212,191" data-hex="#2dd4bf" style="--nc:#2dd4bf"><i data-ix="Home2"></i>Medsystem Hub</div>
+    <div class="nav" data-p="ideia" data-c="94,92,230" data-hex="#5e5ce6" style="--nc:#5e5ce6"><i data-ix="Lamp"></i>Ideia Central</div>
     <div class="nav" data-p="notch" data-c="10,132,255" data-hex="#0a84ff" style="--nc:#0a84ff"><i data-ix="Monitor"></i>Notch</div>
     <div class="nav" data-p="prov" data-c="255,214,10" data-hex="#ffd60a" style="--nc:#ffd60a"><i data-ix="Cpu"></i>Provedores</div>
     <div class="nav" data-p="claude" data-c="255,159,10" data-hex="#ff9f0a" style="--nc:#ff9f0a"><i data-ix="Code"></i>Claude Code</div>
@@ -281,6 +282,34 @@
       </section>
     </div>
 
+    <div class="page" data-p="ideia">
+      <h1>Ideia Central</h1><p class="lead">O outro projeto: renders, ideias capturadas e publicações. É um Supabase separado do Hub — conta, chave e sessão próprias, tudo guardado só nesta máquina.</p>
+      <section>
+        <h2>Conta</h2>
+        <div id="icLinked" hidden><div class="r"><div class="l"><b id="icWho"></b><small id="icInfo"></small></div><button id="icOut">Sair</button></div></div>
+        <div id="icForm"><div class="r"><div class="l"><b>E-mail</b><small>o mesmo do site do Ideia Central</small></div><input id="icEmail" type="text" placeholder="voce@gmail.com"></div>
+        <div class="r"><div class="l"><b>Senha</b><small>não é guardada: só a sessão, cifrada pelo Windows</small></div><input id="icPass" type="password"></div>
+        <div class="actions"><button id="icLogin" class="pri">Entrar</button></div></div>
+        <div class="actions"><span id="icStatus" class="help"></span></div>
+      </section>
+      <section>
+        <h2>Projeto</h2>
+        <div class="r"><div class="l"><b>Ativar integração</b><small>desligado, o app nem consulta o projeto</small></div><label class="sw"><input id="icOn" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Chave pública (anon)</b><small>Supabase → Settings → API → publishable/anon. Fica só aqui; a RLS do projeto é que manda</small></div><input id="icAnon" type="password" placeholder="eyJ…"></div>
+        <div class="r"><div class="l"><b>URL do Supabase</b><small>vazio = khumibmkasycrfifomev.supabase.co</small></div><input id="icUrl" type="text" placeholder="https://….supabase.co"></div>
+        <div class="r"><div class="l"><b>Endereço do app</b><small>a Vercel do Ideia Central; usado no botão “abrir o site” e nas ações /api</small></div><input id="icSite" type="text" placeholder="https://….vercel.app"></div>
+        <div class="r"><div class="l"><b>x-automation-secret</b><small>opcional; só para disparar automação do TikTok e fila do YouTube pelo notch</small></div><input id="icSecret" type="password" placeholder="deixe vazio para não usar"></div>
+        <div class="r"><div class="l"><b>Consultar a cada</b><small>segundos; as filas de render não têm realtime, então o app pergunta de tempos em tempos</small></div><input id="icPoll" type="number" min="20" max="900"></div>
+      </section>
+      <section>
+        <h2>Avisos</h2>
+        <div class="r"><div class="l"><b>Render terminou ou falhou</b><small>recap, vídeo musical, cortes, imagens, estúdio, automação</small></div><label class="sw"><input id="icNJobs" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Ideia capturada</b><small>o que chega pelo Telegram ou pelo atalho do iPhone</small></div><label class="sw"><input id="icNIdeias" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Publicação falhou</b><small>Instagram, TikTok e YouTube</small></div><label class="sw"><input id="icNPosts" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Atalho: abrir a aba</b></div><input id="scIdeia" type="text" placeholder="vazio = desativado"></div>
+      </section>
+    </div>
+
     <div class="page" data-p="notch">
       <h1>Notch</h1><p class="lead">Pastilha no topo do monitor: Hub, tarefas e notas, calendário, apps, música e sistema.</p>
       <section>
@@ -399,6 +428,7 @@ const MODULES = [
   { id: 'providers', name: 'Uso das IAs', desc: 'Claude, Codex, Cursor e Gemini: consumo do plano na dock lateral.', ix: 'Flash', color: '#ffd60a', path: 'sidebar.aiTools', page: 'prov' },
   { id: 'approvals', name: 'Aprovações do Claude Code', desc: 'Servidor local que pede sua permissão antes de o agente agir.', ix: 'Code', color: '#8e8e93', path: 'approvals.enabled', page: 'claude' },
   { id: 'maestri', name: 'Maestri Wire', desc: 'Terminais pareados: avisos de atenção e resposta a prompts S/n.', ix: 'Driver', color: '#af52de', path: 'maestri.enabled', page: 'maestri' },
+  { id: 'ideia', name: 'Ideia Central', desc: 'Renders, ideias capturadas e publicações do seu projeto pessoal.', ix: 'Lamp', color: '#5e5ce6', path: 'ideia.enabled', page: 'ideia' },
   { id: 'coffee', name: 'Pausa do café', desc: 'Cronômetro por pessoa, excedente em vermelho e registro privado das pausas.', ix: 'Timer1', color: '#2dd4bf', path: 'coffee.enabled', page: 'hub' },
   { id: 'files', name: 'Bandeja de arquivos', desc: 'Arraste arquivos para o notch, leve para outro app e gere link de 7 dias.', ix: 'Folder', color: '#ff9500', path: 'notch.show.files', page: 'cmds' },
   { id: 'commands', name: 'Comandos do TI', desc: 'Atalhos de PowerShell com um clique e a saída no próprio notch.', ix: 'Code', color: '#48484e', path: 'notch.show.cmds', page: 'cmds' },
@@ -525,12 +555,13 @@ function collect() {
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
-    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim(), files: $('#scFiles').value.trim(), coffee: $('#scCoffee').value.trim() },
+    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim(), files: $('#scFiles').value.trim(), coffee: $('#scCoffee').value.trim(), ideia: $('#scIdeia').value.trim() },
     quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0), enabled: modState.captures !== false },
     modules: { ...modState },
     commands: cmdList.filter((c) => c.name && c.cmd).map((c, i) => ({ id: c.id || 'c' + i, name: c.name, cmd: c.cmd, ix: c.ix || 'Code', color: c.color || '#8e8e93', confirm: !!c.confirm, admin: !!c.admin })),
     board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
+    ideia: { enabled: $('#icOn').checked && modState.ideia !== false, url: $('#icUrl').value.trim(), anon: $('#icAnon').value.trim(), site: $('#icSite').value.trim(), pollSec: Math.min(900, Math.max(20, Number($('#icPoll').value) || 60)), notifyJobs: $('#icNJobs').checked, notifyIdeias: $('#icNIdeias').checked, notifyPosts: $('#icNPosts').checked },
     coffee: { enabled: modState.coffee !== false, people: $('#cfPeople').value.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 8), minutes: Math.min(120, Math.max(1, Number($('#cfMin').value) || 20)), alert: $('#cfAlert').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
     hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
@@ -574,6 +605,10 @@ async function load() {
   const fxs = settings.focus || {}; $('#fxMin').value = fxs.minutes || 25; $('#fxBrk').value = fxs.breakMinutes || 5;
   $('#fxPill').checked = fxs.pill !== false; $('#fxStreak').checked = fxs.streak !== false; $('#fxAuto').checked = fxs.autoStatus !== false; $('#fxChime').checked = fxs.chime !== false;
   $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K'; $('#scFiles').value = sc.files ?? 'CommandOrControl+Shift+B'; $('#scCoffee').value = sc.coffee || '';
+  const ide = settings.ideia || {}; $('#icUrl').value = ide.url || ''; $('#icAnon').value = ide.anon || ''; $('#icSite').value = ide.site || ''; $('#icPoll').value = ide.pollSec || 60;
+  $('#icNJobs').checked = ide.notifyJobs !== false; $('#icNIdeias').checked = ide.notifyIdeias !== false; $('#icNPosts').checked = ide.notifyPosts !== false; $('#scIdeia').value = sc.ideia || '';
+  $('#icOn').checked = ide.enabled !== false;
+  ideiaPaint(await api.ideiaGet());
   const cf = settings.coffee || {}; $('#cfPeople').value = (cf.people || ['Marina', 'Julia']).join(', '); $('#cfMin').value = cf.minutes || 20; $('#cfAlert').checked = cf.alert !== false;
   const bd = settings.board || {}; $('#bdOn').checked = bd.enabled !== false; $('#bdMoves').checked = bd.notifyMoves !== false; $('#bdStuck').checked = bd.notifyStuck !== false;
   $('#bdNew').checked = bd.notifyNew !== false; $('#bdBrief').checked = bd.brief !== false; $('#bdM').value = bd.briefManha || '09:00'; $('#bdT').value = bd.briefTarde || '18:00';
@@ -659,6 +694,30 @@ const sndCfg = () => ({ volume: Number($('#hbVol').value), soundFile: $('#hbSndF
 $('#hbSndT1').addEventListener('click', () => api.soundTest($('#hbSndP').value, sndCfg()));
 $('#hbSndT2').addEventListener('click', () => api.soundTest($('#hbSndC').value, sndCfg()));
 $('#hbSndPick').addEventListener('click', async () => { const f = await api.soundPick(); if (f) { $('#hbSndF').value = f; $('#hbSndP').value = 'file'; } });
+// ---------- Ideia Central ----------
+function ideiaPaint(st) {
+  if (!st) { $('#icStatus').textContent = 'Módulo desligado.'; return; }
+  const dentro = !!st.linked;
+  $('#icLinked').hidden = !dentro; $('#icForm').hidden = dentro;
+  if (dentro) {
+    $('#icWho').textContent = st.email || 'conectado';
+    const c = st.counts || {};
+    $('#icInfo').textContent = `${c.rodando || 0} rodando · ${c.ideias || 0} ideia(s) na caixa · ${c.agendados || 0} para publicar${st.temSecret ? ' · segredo cadastrado' : ''}`;
+  }
+  $('#icSecret').placeholder = st.temSecret ? 'já cadastrado — deixe vazio para manter' : 'deixe vazio para não usar';
+  $('#icStatus').innerHTML = st.error ? `<span class="st err">${st.error}</span>` : (st.configurado ? (dentro ? 'Conectado.' : 'Falta entrar na conta.') : 'Cole a chave pública (anon) do projeto para começar.');
+}
+$('#icLogin').addEventListener('click', async () => {
+  await api.saveSettings(collect());
+  if ($('#icSecret').value.trim()) await api.ideiaSecret($('#icSecret').value.trim());   // vazio = mantém o que já está guardado
+  $('#icStatus').textContent = 'Entrando…';
+  const r = await api.ideiaLogin($('#icEmail').value.trim(), $('#icPass').value);
+  if (!r.ok) $('#icStatus').innerHTML = `<span class="st err">Falha: ${r.error}</span>`;
+  else { $('#icPass').value = ''; ideiaPaint(r.state); }
+});
+$('#icOut').addEventListener('click', async () => ideiaPaint(await api.ideiaLogout()));
+$('#icSecret').addEventListener('change', async () => { const st = await api.ideiaSecret($('#icSecret').value.trim()); ideiaPaint(st); });
+api.onIdeia(ideiaPaint);
 api.onHub(renderHub);
 $('#calAdd').addEventListener('click', () => { calSources.push({ name: '', url: '', color: '#60a5fa' }); renderCalSources(); });
 $('#calRefresh').addEventListener('click', async () => { await api.saveSettings(collect()); $('#calStatus').textContent = 'Atualizando…'; renderCal(await api.refreshCalendar()); });

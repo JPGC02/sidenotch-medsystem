@@ -98,6 +98,16 @@ contextBridge.exposeInMainWorld('sidenotch', {
   boardPeople: (force) => ipcRenderer.invoke('board:people', force),
   // bandeja de arquivos
   // pausa do café
+  ideiaGet: () => ipcRenderer.invoke('ideia:get'),
+  ideiaLogin: (email, pass) => ipcRenderer.invoke('ideia:login', email, pass),
+  ideiaLogout: () => ipcRenderer.invoke('ideia:logout'),
+  ideiaRefresh: () => ipcRenderer.invoke('ideia:refresh'),
+  ideiaSecret: (v) => ipcRenderer.invoke('ideia:secret', v),
+  ideiaNew: (d) => ipcRenderer.invoke('ideia:new', d),
+  ideiaMark: (id, status) => ipcRenderer.invoke('ideia:mark', id, status),
+  ideiaAction: (id) => ipcRenderer.invoke('ideia:action', id),
+  ideiaOpen: (rota) => ipcRenderer.invoke('ideia:open', rota),
+  onIdeia: (fn) => ipcRenderer.on('ideia', (_e, v) => fn(v)),
   coffeeGet: () => ipcRenderer.invoke('coffee:get'),
   coffeeToggle: (p, l) => ipcRenderer.invoke('coffee:toggle', p, l),
   coffeeStart: (p, l) => ipcRenderer.invoke('coffee:start', p, l),

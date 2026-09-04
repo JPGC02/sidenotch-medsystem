@@ -18,13 +18,14 @@ const { QuickAccess } = require('./quickaccess');
 const { Focus } = require('./focus');
 const { FileTray } = require('./files');
 const { Coffee } = require('./coffee');
+const { IdeiaClient } = require('./ideia');
 const { decideIgnore } = require('./hotrect');
 const commands = require('./commands');
 const { parseTask } = require('./nlp');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray, coffee, dropWin = null, dropTimer = null;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray, coffee, ideia, dropWin = null, dropTimer = null;
 const briefDone = { manha: '', tarde: '' };   // aaaa-mm-dd do último brief enviado
 const alertSent = new Map();                  // chave do alerta → quando cobrou (não repete no mesmo dia)
 const webappWins = new Map();
@@ -70,6 +71,7 @@ app.whenReady().then(() => {
   coffee.on('change', () => broadcast('coffee', coffee.state()));
   coffee.on('tick', (st) => broadcast('coffee', st));
   setInterval(() => coffee && coffee.flush(), 3 * 60 * 1000);
+  startIdeia();
   filetray = new FileTray(app.getPath('userData'));
   filetray.on('change', (l) => broadcast('files', l));
   if (!store.get().commands || !store.get().commands.length) store.set({ commands: commands.DEFAULTS });
@@ -82,7 +84,7 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => openSettings());
 app.on('window-all-closed', (e) => e.preventDefault());
-app.on('will-quit', () => { coffee && coffee.dispose(); globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
+app.on('will-quit', () => { ideia && ideia.dispose(); coffee && coffee.dispose(); globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
 
 // ---------- Notch (topo) ----------
 const NOTCH_W = 960, NOTCH_H = 560;
@@ -244,6 +246,23 @@ function boardEventText(ev) {
   if (ev.acao === 'bloqueou') return { title: `${ev.quem} bloqueou`, text: `${card}${ev.detalhes ? ' — ' + ev.detalhes : ''}` };
   return { title: `${ev.quem} ${acao}`, text: card };
 }
+// Ideia Central: 2º projeto Supabase (renders, ideias capturadas e publicações) — cliente e avisos próprios
+function startIdeia() {
+  if (ideia) { ideia.dispose(); ideia = null; }
+  const cfg = store.get().ideia || {};
+  if (cfg.enabled === false) return;
+  const secret = safeStorage.isEncryptionAvailable() ? { encrypt: (s) => safeStorage.encryptString(s), decrypt: (b) => safeStorage.decryptString(b) } : null;
+  ideia = new IdeiaClient({
+    dir: app.getPath('userData'), secret, getCfg: () => store.get().ideia || {},
+    notify: (n) => {
+      server && server._notify({ type: n.tipo === 'erro' ? 'error' : 'ideia', title: n.title, text: n.text, project: 'Ideia Central' });
+      const h = store.get().hub || {}; playSound(h.soundPreset || 'ping', h);
+    }
+  });
+  ideia.on('change', (st) => broadcast('ideia', st));
+  ideia.start();
+}
+
 function startBoard() {
   clearInterval(boardTimer);
   boardTimer = setInterval(() => { checkBoardAlerts(); checkBriefs(); }, 5 * 60 * 1000);
@@ -524,6 +543,7 @@ function registerShortcuts() {
   reg(sc.tasks, () => openTasksWindow());
   reg(sc.board, () => openBoardWindow());
   reg(sc.coffee, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'coffee'); } });
+  reg(sc.ideia, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'ideia'); } });
   reg(sc.files, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); setDropMode(true); } });
 }
 
@@ -761,6 +781,17 @@ ipcMain.handle('board:card', async (_e, id) => {
 ipcMain.handle('board:people', async (_e, force) => { try { return { ok: true, people: await hub.boardPeople(force) }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
 // ---------- pausa do café ----------
+// ---------- Ideia Central ----------
+ipcMain.handle('ideia:get', () => (ideia ? ideia.state() : null));
+ipcMain.handle('ideia:login', async (_e, email, pass) => { try { if (!ideia) startIdeia(); return { ok: true, state: await ideia.login(email, pass) }; } catch (e) { return { ok: false, error: String(e && e.message || e), state: ideia ? ideia.state() : null }; } });
+ipcMain.handle('ideia:logout', () => { if (ideia) ideia.logout(); return ideia ? ideia.state() : null; });
+ipcMain.handle('ideia:refresh', async () => { try { return await ideia.refresh(); } catch (e) { return ideia ? ideia.state() : null; } });
+ipcMain.handle('ideia:secret', (_e, v) => (ideia ? ideia.setSecret(v) : null));
+ipcMain.handle('ideia:new', async (_e, d) => { try { const r = await ideia.novaIdeia(d || {}); return { ok: true, ideia: r, state: ideia.state() }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
+ipcMain.handle('ideia:mark', async (_e, id, status) => { try { return { ok: true, state: await ideia.marcarIdeia(id, status) }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
+ipcMain.handle('ideia:action', async (_e, id) => { try { const r = await ideia.acao(id); return { ok: true, ...r }; } catch (e) { return { ok: false, error: String(e && e.message || e) }; } });
+ipcMain.handle('ideia:open', (_e, rota) => { const c = (store.get().ideia || {}); const base = (c.site || '').replace(/\/$/, ''); if (base) shell.openExternal(base + (rota || '/')); return !!base; });
+
 ipcMain.handle('coffee:get', () => coffee ? coffee.state() : null);
 ipcMain.handle('coffee:toggle', (_e, pessoa, limite) => coffee ? coffee.toggle(pessoa, limite) : null);
 ipcMain.handle('coffee:start', (_e, pessoa, limite) => coffee ? coffee.start(pessoa, limite) : null);
