@@ -66,6 +66,32 @@
   .reply input { flex: 1; min-width: 0; font-size: 12px; }
   .reply button { padding: 6px 10px; }
 
+  /* pausa do café: um cartão por pessoa, com trilho que anda e vira vermelho ao estourar */
+  .cofs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 620px) { .cofs { grid-template-columns: 1fr; } }
+  .cof { background: var(--bg2); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; position: relative; overflow: hidden; }
+  .cof.on { border-color: rgba(45,212,191,.45); background: linear-gradient(160deg, rgba(45,212,191,.12), rgba(255,255,255,.05)); }
+  .cof.over { border-color: rgba(255,69,58,.5); background: linear-gradient(160deg, rgba(255,69,58,.14), rgba(255,255,255,.05)); }
+  .cof .nm { font-size: 12.5px; font-weight: 700; letter-spacing: .2px; display: flex; align-items: center; gap: 7px; }
+  .cof .nm .dot { width: 7px; height: 7px; border-radius: 50%; background: #48484e; } .cof.on .nm .dot { background: #2dd4bf; box-shadow: 0 0 8px rgba(45,212,191,.7); animation: pulse 1.6s ease-in-out infinite; }
+  .cof.over .nm .dot { background: #ff453a; box-shadow: 0 0 8px rgba(255,69,58,.7); }
+  .cof .tm { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.1; margin: 6px 0 2px; }
+  .cof.over .tm { color: #ff6b62; }
+  .cof .sub { font-size: 11px; color: var(--muted); min-height: 15px; }
+  .cof .trilho { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); margin: 12px 0 10px; overflow: hidden; position: relative; }
+  .cof .trilho i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2dd4bf, #22c9e6); width: 0; transition: width .9s linear; box-shadow: 0 0 10px rgba(45,212,191,.5); }
+  .cof.over .trilho i { background: linear-gradient(90deg, #ff453a, #ff9f0a); box-shadow: 0 0 10px rgba(255,69,58,.5); }
+  .cof .acts { display: flex; gap: 6px; }
+  .cof .acts button { flex: 1; font-size: 12px; padding: 7px 0; }
+  .cof .acts .go { background: linear-gradient(180deg, #2ee0c6, #14b8a6); color: #04231f; font-weight: 700; }
+  .cof .acts .stop { background: linear-gradient(180deg, #ff5c52, #e0342a); color: #fff; font-weight: 700; }
+  .cof .hist { font-size: 10.5px; color: var(--muted); margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .cof .hist b { color: #d8d8dd; font-variant-numeric: tabular-nums; }
+  .coflist { margin-top: 12px; } .coflist .l { display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .coflist .l .p { font-weight: 600; min-width: 70px; } .coflist .l .t { font-variant-numeric: tabular-nums; } .coflist .l .ex { color: #ff9f9a; }
+  .coflist .l .ag { margin-left: auto; color: var(--muted); font-size: 10px; }
+  #mini .cof-mini { color: #2dd4bf; font-weight: 700; } #mini .cof-mini.over { color: #ff6b62; }
+
   /* quadro do time */
   .bkpis { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .bkpi { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; min-width: 74px; }
@@ -299,15 +325,15 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const IX = window.IX || {};
 const I = {
-  board: IX.Chart21, files: IX.Folder, cmds: IX.Code, send: IX.Send2, link: IX.Link, folder: IX.FolderOpen, down: IX.DocumentDownload, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
+  board: IX.Chart21, coffee: IX.Coffee || IX.Timer1, files: IX.Folder, cmds: IX.Code, send: IX.Send2, link: IX.Link, folder: IX.FolderOpen, down: IX.DocumentDownload, flame2: IX.Award, music: IX.MusicPlaylist, sys: IX.Cpu, apps: IX.Category, notes: IX.Note, cal: IX.Calendar, hub: IX.Home2, chat: IX.Messages2, clip: IX.Copy || IX.DocumentText, caps: IX.Monitor, bell: IX.Notification, check: IX.TaskSquare, gear: IX.Setting2,
   play: IX.PlayBold, pause: IX.PauseBold, prev: IX.PreviousBold, next: IX.NextBold, note: IX.Music, cpu: IX.Cpu, calEmpty: IX.Calendar1,
   timer: IX.Timer1 || IX.Clock, flame: IX.Flash, stop: IX.StopCircle, expand: IX.Maximize4, edit: IX.Edit2, pausec: IX.PauseCircle, playc: IX.PlayCircle,
   search: IX.SearchNormal1, trash: IX.Trash, left: IX.ArrowLeft2, right: IX.ArrowRight2, add: IX.Add, user: IX.User, wa: IX.Whatsapp, transfer: IX.ExportSquare, hospital: IX.Hospital, monitor: IX.Monitor, tick: IX.TickCircle, refresh: IX.Refresh, logout: IX.LogoutCurve
 };
 const ico = (name, cls = '') => `<span class="ix ${cls}">${IX[name] || ''}</span>`;
-const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['files', 'Bandeja de arquivos'], ['cmds', 'Comandos do TI'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
+const TABS_ALL = [['hub', 'Medsystem Hub'], ['board', 'Quadro do time (Sistemas)'], ['chat', 'Conversas (WhatsApp)'], ['notes', 'Tarefas e notas'], ['files', 'Bandeja de arquivos'], ['coffee', 'Pausa do café'], ['cmds', 'Comandos do TI'], ['clip', 'Área de transferência'], ['caps', 'Capturas'], ['cal', 'Calendário'], ['apps', 'Apps'], ['music', 'Música'], ['sys', 'Sistema']];
 let TABS = TABS_ALL;
-const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus', files: 'files', cmds: 'commands' };
+const MOD_TAB = { hub: 'hub', chat: 'chat', board: 'board', clip: 'clipboard', caps: 'captures', cal: 'calendar', music: 'music', sys: 'system', apps: 'apps', notes: 'focus', files: 'files', cmds: 'commands', coffee: 'coffee' };
 const modOn = (id) => { const m = (settings && settings.modules) || {}; const k = MOD_TAB[id]; return !k || m[k] !== false; };
 const tabsForState = () => {
   TABS = TABS_ALL.filter(([id]) => modOn(id) && (id !== 'chat' || (hub && hub.linked && hub.hasWhatsapp)) && (id !== 'board' || (hub && hub.linked && hub.hasBoard)));
@@ -315,6 +341,7 @@ const tabsForState = () => {
   if (!TABS.some((t) => t[0] === tab)) tab = TABS[0][0];
 };   // canvas desativado por enquanto
 let settings = {}, sys = null, cal = null, wx = null, docs = { notes: [], boards: [] }, approvals = { pending: [], maestri: null }, tab = 'music', openTimer = null, pinned = false;
+let cof = { people: [], last: [], limite: 900 };
 let files = [], cmds = [], cmdOut = null, chatReply = null, nlParsed = null, nlHint = '', dropMode = false;
 // mesma descrição do parser (o main devolve só os campos)
 function nlDescribe(p) {
@@ -351,6 +378,8 @@ function renderMini() {
   if (sh.music !== false && m) h += `<div class="seg">${m.art ? `<img class="cover" src="${m.art}">` : ''}<span class="dot ${m.playing ? 'playing' : ''}" style="background:${m.playing ? 'var(--ok)' : 'var(--muted)'}"></span><div class="track ${(m.title + m.artist).length > 24 ? 'scroll' : ''}"><span>${esc(m.title)}${m.artist ? ' — ' + esc(m.artist) : ''}</span></div></div>`;
   if (sh.system !== false && sys) h += `<div class="seg">${I.cpu}<span style="color:${col(sys.cpu)}">${sys.cpu}%</span><div class="bar"><i style="width:${sys.mem.percent}%;background:${col(sys.mem.percent)}"></i></div></div>`;
   if (sh.calendar !== false && cal && cal.next) { const min = Math.round((cal.next.start - Date.now()) / 60000); h += `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 18))}</span></div>`; }
+  const cofOn = (cof.people || []).filter((p) => p.running);
+  if (cofOn.length) h += cofOn.map((p) => `<div class="seg cof-mini ${p.over ? 'over' : ''}" title="Pausa de ${esc(p.nome)}">☕ ${esc(p.nome.split(' ')[0])} ${p.over ? '+' + cmm(p.over) : cmm(p.remaining)}</div>`).join('');
   if (sh.board !== false && hub && hub.linked && hub.hasBoard && hub.board && hub.board.stats) {
     const bs = hub.board.stats; const bad = (bs.paradas || 0) + (bs.bloqueadas || 0);
     if (bs.emDev || bad) h += `<div class="seg" style="color:${bad ? '#ff9f0a' : '#d8d8dd'}" title="Quadro de Sistemas: em dev / travados">${I.board}${bs.emDev || 0}${bad ? ' · ⚠' + bad : ''}</div>`;
@@ -428,6 +457,7 @@ function renderView() {
   else if (tab === 'board') { v.innerHTML = viewBoard(); bindBoard(); }
   else if (tab === 'files') { v.innerHTML = viewFiles(); bindFiles(); }
   else if (tab === 'cmds') { v.innerHTML = viewCmds(); bindCmds(); }
+  else if (tab === 'coffee') { v.innerHTML = viewCoffee(); bindCoffee(); }
   if (tab === 'music') bindMusic();
   requestAnimationFrame(fitPill);
 }
@@ -737,6 +767,33 @@ function bindFiles() {
   document.querySelectorAll('[data-fo]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); api.filesReveal(b.dataset.fo); });
   document.querySelectorAll('[data-fp]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); await api.filesPin(b.dataset.fp); files = await api.filesList(); renderView(); });
   document.querySelectorAll('[data-fx2]').forEach((b) => b.onclick = async (e) => { e.stopPropagation(); files = await api.filesRemove(b.dataset.fx2); renderView(); });
+}
+
+// ---------- pausa do café ----------
+const cmm = (s) => `${String(Math.floor(Math.abs(s) / 60)).padStart(2, '0')}:${String(Math.abs(Math.round(s)) % 60).padStart(2, '0')}`;
+function viewCoffee() {
+  const pes = cof.people || [];
+  const card = (p) => `<div class="cof ${p.running ? (p.over ? 'over' : 'on') : ''}" data-cof="${esc(p.nome)}">
+      <div class="nm"><span class="dot"></span>${esc(p.nome)}</div>
+      <div class="tm">${p.running ? (p.over ? '+' + cmm(p.over) : cmm(p.remaining)) : cmm(p.limite)}</div>
+      <div class="sub">${p.running ? (p.over ? `passou ${Math.round(p.over / 60)} min do limite · saiu às ${new Date(p.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : `de ${Math.round(p.limite / 60)} min · saiu às ${new Date(p.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`) : `limite de ${Math.round(p.limite / 60)} min`}</div>
+      <div class="trilho"><i style="width:${Math.round((p.running ? p.progress : 0) * 100)}%"></i></div>
+      <div class="acts">${p.running
+        ? `<button class="stop" data-cofstop="${esc(p.nome)}">Voltou</button><button data-cofcancel="${esc(p.nome)}" title="Descartar sem registrar">✕</button>`
+        : `<button class="go" data-cofstart="${esc(p.nome)}">Saiu para o café</button>`}</div>
+      <div class="hist"><span>hoje <b>${Math.round((p.hoje || 0) / 60)} min</b>${p.hojeN ? ` (${p.hojeN}×)` : ''}</span><span>média <b>${Math.round((p.media || 0) / 60)} min</b></span><span>semana <b>${Math.round((p.semana || 0) / 60)} min</b></span>${p.excedeu ? `<span class="ex" style="color:#ff9f9a">passou ${p.excedeu}×</span>` : ''}</div>
+    </div>`;
+  return `<div class="row" style="margin-bottom:10px"><span class="muted grow">Controle de pausa · registro privado (só você vê).</span>
+      <button class="pillbtn" id="cofSet">${I.gear} Ajustar</button></div>
+    <div class="cofs">${pes.length ? pes.map(card).join('') : '<div class="empty">Cadastre quem entra no controle em Configurações → Medsystem Hub → Pausa do café.</div>'}</div>
+    ${(cof.last || []).length ? `<div class="sec-h" style="margin-top:12px"><span>Últimas pausas</span></div><div class="coflist">${cof.last.map((l) => `<div class="l"><span class="p">${esc(l.pessoa)}</span><span class="t">${cmm(l.seconds)}</span>${l.excedeu ? `<span class="ex">+${cmm(l.excedeu)}</span>` : ''}<span class="ag">${new Date(l.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></div>`).join('')}</div>` : ''}
+    ${cof.pending ? `<div class="muted" style="margin-top:8px;font-size:10.5px">${cof.pending} registro(s) aguardando internet para subir.</div>` : ''}`;
+}
+function bindCoffee() {
+  const set = $('#cofSet'); if (set) set.onclick = () => api.openSettings && api.openSettings();
+  document.querySelectorAll('[data-cofstart]').forEach((b) => b.onclick = async () => { cof = await api.coffeeStart(b.dataset.cofstart) || cof; renderView(); renderMini(); });
+  document.querySelectorAll('[data-cofstop]').forEach((b) => b.onclick = async () => { cof = await api.coffeeStop(b.dataset.cofstop) || cof; renderView(); renderMini(); setTimeout(async () => { cof = await api.coffeeRefresh() || cof; renderView(); }, 400); });
+  document.querySelectorAll('[data-cofcancel]').forEach((b) => b.onclick = async () => { cof = await api.coffeeCancel(b.dataset.cofcancel) || cof; renderView(); renderMini(); });
 }
 
 // ---------- comandos do TI ----------
@@ -1049,14 +1106,25 @@ function playSound(d) {
 
 // ---------- abrir/fechar + click-through ----------
 function typing() { const a = document.activeElement; return a && (/(INPUT|TEXTAREA)/.test(a.tagName) || a.isContentEditable); }
-const SIZES = { hub: [760, 0], board: [700, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
+const SIZES = { hub: [760, 0], board: [700, 0], coffee: [660, 0], files: [700, 0], cmds: [720, 0], chat: [640, 0], clip: [640, 0], caps: [700, 0], music: [520, 0], sys: [640, 0], apps: [720, 0], notes: [700, 0], canvas: [760, 0], cal: [620, 0] };
 function fitPill() {
   if (!document.body.classList.contains('open')) return;
   const w = (SIZES[tab] || [640])[0];
   const h = Math.min(548, $('#tabs').offsetHeight + $('#view').scrollHeight + 6);
   const pill = $('#pill'); pill.style.width = w + 'px'; pill.style.height = h + 'px';
+  sendHot(); setTimeout(sendHot, 300);
   // o traçado do foco acompanha a nova largura/altura (a transição de tamanho leva 250 ms)
   clearTimeout(fitPill._fx); fitPill._fx = setTimeout(paintFocus, 280); paintFocus();
+}
+// a janela do notch tem 960×560, mas só a pastilha é clicável: manda o retângulo real ao main,
+// que devolve o click-through assim que o cursor sai dele (evita o mouse preso na área transparente)
+let hotLast = '';
+function sendHot() {
+  const p = $('#pill').getBoundingClientRect(), t = $('#hit').getBoundingClientRect();
+  const x = Math.floor(Math.min(p.left, t.left)) - 26;             // as mordidas laterais fazem parte da pastilha
+  const r = { x, y: 0, w: Math.ceil(Math.max(p.right, t.right)) + 26 - x, h: Math.ceil(Math.max(p.bottom, t.bottom)) };
+  const k = `${r.x}|${r.w}|${r.h}`; if (k === hotLast) return;
+  hotLast = k; api.notchHot(r);
 }
 function setOpen(v) {
   if (!v && (pinned || typing() || drag)) return;
@@ -1064,11 +1132,13 @@ function setOpen(v) {
   if (v && !document.body.classList.contains('open')) { renderTabs(); renderView(); }
   document.body.classList.toggle('open', v);
   if (v) fitPill(); else { $('#pill').style.height = ''; api.setFocusable(false); renderMini(); clearTimeout(fitPill._fx); fitPill._fx = setTimeout(paintFocus, 280); }
+  sendHot(); setTimeout(sendHot, 300);
 }
 const root = $('#root');
 // o main reinstala um hook global de mouse a cada setIgnoreMouse: só avisa quando o estado muda
 let ignoreState = null;
 const setIgnore = (v) => { if (ignoreState !== v) { ignoreState = v; api.setIgnoreMouse(v); } };
+setInterval(sendHot, 2000);   // largura muda com o conteúdo da pastilha fechada
 root.addEventListener('mousemove', (e) => { const ui = e.target.closest('#pill, #hit'); setIgnore(!ui); if (ui) { clearTimeout(openTimer); setOpen(true); } });
 document.addEventListener('mouseleave', () => { setIgnore(true); openTimer = setTimeout(() => setOpen(false), 350); });
 root.addEventListener('mouseover', (e) => { if (!e.target.closest('#pill, #hit')) openTimer = setTimeout(() => setOpen(false), 350); });
@@ -1085,6 +1155,9 @@ document.addEventListener('mousedown', (e) => { const t = e.target; if (t && (/(
   api.onCalendar((c) => { cal = c; renderMini(); if (tab === 'cal' && document.body.classList.contains('open')) renderView(); });
   wx = await api.getWeather(); api.onWeather((w) => { wx = w; renderMini(); if (tab === 'sys' && document.body.classList.contains('open')) renderView(); });
   api.onSettings((s) => { settings = s; renderMini(); });
+  api.onCoffee((st) => { if (!st) return; cof = st; renderMini(); if (tab === 'coffee' && document.body.classList.contains('open') && !typing()) renderView(); });
+  api.coffeeGet().then((st) => { if (st) { cof = st; renderMini(); } });
+  api.coffeeRefresh().catch(() => {});
   api.onFiles((l) => { files = l || []; if (tab === 'files' && document.body.classList.contains('open')) renderView(); });
   api.filesList().then((l) => { files = l || []; });
   api.cmdList().then((l) => { cmds = l || []; });

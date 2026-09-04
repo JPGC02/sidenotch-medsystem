@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('sidenotch', {
   refresh: () => ipcRenderer.invoke('usage:refresh'),
   getDisplays: () => ipcRenderer.invoke('displays:get'),
   setIgnoreMouse: (v) => ipcRenderer.send('bar:ignore-mouse', v),
+  notchHot: (r) => ipcRenderer.send('notch:hot', r),
   setBarHeight: (h) => ipcRenderer.send('bar:height', h),
   setFocusable: (v) => ipcRenderer.send('bar:focusable', v),
   winCtl: (a) => ipcRenderer.send('win:ctl', a),
@@ -96,6 +97,14 @@ contextBridge.exposeInMainWorld('sidenotch', {
   boardCard: (id) => ipcRenderer.invoke('board:card', id),
   boardPeople: (force) => ipcRenderer.invoke('board:people', force),
   // bandeja de arquivos
+  // pausa do café
+  coffeeGet: () => ipcRenderer.invoke('coffee:get'),
+  coffeeToggle: (p, l) => ipcRenderer.invoke('coffee:toggle', p, l),
+  coffeeStart: (p, l) => ipcRenderer.invoke('coffee:start', p, l),
+  coffeeStop: (p) => ipcRenderer.invoke('coffee:stop', p),
+  coffeeCancel: (p) => ipcRenderer.invoke('coffee:cancel', p),
+  coffeeRefresh: () => ipcRenderer.invoke('coffee:refresh'),
+  onCoffee: (cb) => ipcRenderer.on('coffee', (_e, st) => cb(st)),
   filesList: () => ipcRenderer.invoke('files:list'),
   filesAdd: (paths) => ipcRenderer.invoke('files:add', paths),
   filesPick: () => ipcRenderer.invoke('files:pick'),

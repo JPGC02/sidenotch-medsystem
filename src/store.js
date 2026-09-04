@@ -43,7 +43,9 @@ const DEFAULTS = {
     thresholds: [80, 95],     // % usado
     onReset: true             // avisa quando a janela reinicia
   },
-  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K', files: 'CommandOrControl+Shift+B' },
+  shortcuts: { toggle: '', approve: '', deny: '', hub: '', clip: '', capture: 'CommandOrControl+Shift+X', captures: 'CommandOrControl+Shift+H', focus: 'CommandOrControl+Shift+F', tasks: '', board: 'CommandOrControl+Shift+K', files: 'CommandOrControl+Shift+B', coffee: '' },
+  // pausa do café: quem entra no controle, limite em minutos e aviso ao estourar
+  coffee: { enabled: true, people: ['Marina', 'Julia'], minutes: 15, alert: true },
   // comandos do TI (PowerShell) que aparecem na aba Comandos; a lista de fábrica entra na 1ª execução
   commands: [],
   // loja de módulos: liga/desliga funções inteiras (a página Módulos das configurações)

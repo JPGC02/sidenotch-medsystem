@@ -17,12 +17,14 @@ const { ClipboardHistory } = require('./clipboard');
 const { QuickAccess } = require('./quickaccess');
 const { Focus } = require('./focus');
 const { FileTray } = require('./files');
+const { Coffee } = require('./coffee');
+const { decideIgnore } = require('./hotrect');
 const commands = require('./commands');
 const { parseTask } = require('./nlp');
 
 const WIN_W = 340;            // largura da janela transparente (barra + cartões)
 let WIN_H = 420;
-let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray, dropWin = null, dropTimer = null;
+let store, notch, settingsWin, tray, timer, server, history, updater, maestri, sysmon, calendar, docs, calTimer, weather, weatherTimer, hub, clipHist, qa, focus, tasksWin, boardWin, boardTimer, filetray, coffee, dropWin = null, dropTimer = null;
 const briefDone = { manha: '', tarde: '' };   // aaaa-mm-dd do último brief enviado
 const alertSent = new Map();                  // chave do alerta → quando cobrou (não repete no mesmo dia)
 const webappWins = new Map();
@@ -64,6 +66,10 @@ app.whenReady().then(() => {
   startFocus();
   startBoard();
   startMouseGuard();
+  coffee = new Coffee({ userData: app.getPath('userData'), hub, getSettings: () => store.get(), notify: (n) => { server && server._notify({ type: 'coffee', title: n.title, text: n.text, project: 'Pausa' }); const h = store.get().hub || {}; playSound(h.soundPreset || 'ping', h); } });
+  coffee.on('change', () => broadcast('coffee', coffee.state()));
+  coffee.on('tick', (st) => broadcast('coffee', st));
+  setInterval(() => coffee && coffee.flush(), 3 * 60 * 1000);
   filetray = new FileTray(app.getPath('userData'));
   filetray.on('change', (l) => broadcast('files', l));
   if (!store.get().commands || !store.get().commands.length) store.set({ commands: commands.DEFAULTS });
@@ -76,7 +82,7 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => openSettings());
 app.on('window-all-closed', (e) => e.preventDefault());
-app.on('will-quit', () => { globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
+app.on('will-quit', () => { coffee && coffee.dispose(); globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
 
 // ---------- Notch (topo) ----------
 const NOTCH_W = 960, NOTCH_H = 560;
@@ -225,6 +231,7 @@ function startHub() {
   const h = store.get().hub || {};
   if (h.enabled !== false) hub.start(Number(h.pollSeconds) || 60); else hub.stop();
   if (focus) { focus.hubRef(hub); focus.flush(); }
+  if (coffee) { coffee.hubRef(hub); coffee.flush(); }
 }
 // ---------- Quadro do time de Sistemas ----------
 const ACAO_TXT = { assumiu: 'assumiu', mudou_status: 'moveu', bloqueou: 'bloqueou', desbloqueou: 'desbloqueou', comentou: 'comentou em', criou: 'criou', entregou: 'entregou' };
@@ -346,7 +353,7 @@ function broadcastApprovals() { broadcast('approvals', approvalsState()); update
 
 function onNotify(n) {
   const cfg = store.get().notifications;
-  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true, focus: true, board: true }[n.type];
+  const want = { done: cfg.done, waiting: cfg.waiting, denied: cfg.denied, limit: true, error: true, alert: true, update: true, hub: true, chat: true, focus: true, board: true, coffee: true }[n.type];
   if (!want) { server.feed = server.feed.filter((x) => x.id !== n.id); return; }
   broadcast('notify', n);
   if (store.get().dnd) return;
@@ -472,6 +479,15 @@ function broadcast(ch, payload) {
 // Rede de segurança do mouse: se o cursor está fora de uma janela sobreposta e ela continua clicável
 // (um mouseleave perdido, o renderer ocupado, um arrasto interrompido), devolve o click-through na hora.
 // Sem isto, um único evento perdido "trava" o mouse numa faixa da tela.
+// A janela do notch ocupa 960x560 transparentes, mas só a pastilha recebe clique. O renderer manda
+// o retângulo real (notch:hot) e aqui o cursor decide: dentro dele o notch recebe o mouse, longe dele
+// volta a ser atravessável. É isso que evita o "mouse preso" quando a extensão está aberta.
+let notchHot = null;
+ipcMain.on('notch:hot', (_e, r) => { if (r && r.w > 0 && r.h > 0) notchHot = r; });
+function setIgn(w, v) {
+  if (!w || w.isDestroyed() || w._ignore === v) return;
+  w._ignore = v; try { w.setIgnoreMouseEvents(v, { forward: true }); } catch { /* fechando */ }
+}
 function startMouseGuard() {
   setInterval(() => {
     let c; try { c = screen.getCursorScreenPoint(); } catch { return; }
@@ -480,11 +496,16 @@ function startMouseGuard() {
       if (dragging && role && w._role === dragging.role) return;      // arrastando a dock de propósito
       if (w === notch && dropWin && !dropWin.isDestroyed()) return;    // alvo de soltura aberto
       let b; try { b = w.getBounds(); } catch { return; }
+      if (w === notch) {                                               // usa a pastilha, não a janela inteira
+        const d = decideIgnore(c, b, notchHot);
+        if (d !== null) setIgn(w, d);
+        return;
+      }
       const dentro = c.x >= b.x && c.x < b.x + b.width && c.y >= b.y && c.y < b.y + b.height;
-      if (!dentro && w._ignore === false) { w._ignore = true; try { w.setIgnoreMouseEvents(true, { forward: true }); } catch { /* fechando */ } }
+      if (!dentro) setIgn(w, true);
     };
     check(notch); check(bars.hub, true); check(bars.ai, true);
-  }, 350);
+  }, 200);
 }
 
 // ---------- Atalhos globais ----------
@@ -502,6 +523,7 @@ function registerShortcuts() {
   reg(sc.focus || 'CommandOrControl+Shift+F', () => { if (!focus) return; if (focus.state().active) focus.toggle(); else openTasksWindow(); });
   reg(sc.tasks, () => openTasksWindow());
   reg(sc.board, () => openBoardWindow());
+  reg(sc.coffee, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'coffee'); } });
   reg(sc.files, () => { if (notch) { if (!notch.isVisible()) notch.show(); notch.webContents.send('notch:open', 'files'); setDropMode(true); } });
 }
 
@@ -738,6 +760,14 @@ ipcMain.handle('board:card', async (_e, id) => {
 });
 ipcMain.handle('board:people', async (_e, force) => { try { return { ok: true, people: await hub.boardPeople(force) }; } catch (e) { return { ok: false, error: String(e.message || e) }; } });
 ipcMain.handle('board:brief', async (_e, kind) => { await sendBrief(kind === 'tarde' ? 'tarde' : 'manha'); return true; });
+// ---------- pausa do café ----------
+ipcMain.handle('coffee:get', () => coffee ? coffee.state() : null);
+ipcMain.handle('coffee:toggle', (_e, pessoa, limite) => coffee ? coffee.toggle(pessoa, limite) : null);
+ipcMain.handle('coffee:start', (_e, pessoa, limite) => coffee ? coffee.start(pessoa, limite) : null);
+ipcMain.handle('coffee:stop', (_e, pessoa) => coffee ? coffee.stop(pessoa) : null);
+ipcMain.handle('coffee:cancel', (_e, pessoa) => coffee ? coffee.cancel(pessoa) : null);
+ipcMain.handle('coffee:refresh', async () => { if (!coffee) return null; await coffee.flush(); await coffee.refresh(); return coffee.state(); });
+
 // ---------- bandeja de arquivos ----------
 // Durante um arrasto o Windows não entrega mousemove a janelas atravessáveis, e deixar a notch inteira
 // clicável travava o mouse. Então o arrasto cai numa janelinha própria, que só existe enquanto espera.

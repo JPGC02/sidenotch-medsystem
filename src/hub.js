@@ -515,6 +515,17 @@ class HubClient extends EventEmitter {
     return j.message || true;
   }
 
+  // ---------- pausa do café (registro privado de quem anota) ----------
+  async coffeeLog({ pessoa, seconds, limite, startedAt, obs }) {
+    return this.rpc('coffee_log', { p_pessoa: pessoa, p_seconds: Math.round(seconds || 0), p_limite: Math.round(limite || 900),
+      p_started: new Date(startedAt || Date.now() - (seconds || 0) * 1000).toISOString(), p_obs: obs || null });
+  }
+  async coffeeSummary(days = 30) {
+    const r = await this.rpc('coffee_summary', { p_days: days });
+    const s = Array.isArray(r) ? r[0] : r;
+    return s && typeof s === 'object' ? { people: s.people || [], last: s.last || [] } : { people: [], last: [] };
+  }
+
   // ---------- quadro do time de Sistemas ----------
   hasBoard() { return !!(this.profile && (this.profile.modules || []).includes('sistemas')); }
   async loadBoard() {

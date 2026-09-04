@@ -247,6 +247,12 @@
         <div class="r"><div class="l"><b>Aviso sonoro no fim do ciclo</b></div><label class="sw"><input id="fxChime" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Atalho: iniciar/pausar foco</b><small>sem ciclo ativo, abre o painel de tarefas</small></div><input id="scFocus" type="text" placeholder="CommandOrControl+Shift+F"></div>
         <div class="r"><div class="l"><b>Atalho: painel de tarefas</b><small>janela com calendário do mês e o dia</small></div><input id="scTasks" type="text" placeholder="vazio = desativado"></div>
+        <h2>Pausa do café</h2>
+        <p class="help" style="padding:4px 0">Um cronômetro por pessoa na aba Café do notch. Passado o limite ele não para: segue contando em vermelho até você encerrar. Cada pausa fica gravada no Supabase numa tabela privada — só a sua conta lê o que foi registrado aqui.</p>
+        <div class="r"><div class="l"><b>Quem entra no controle</b><small>nomes separados por vírgula (até 8)</small></div><input id="cfPeople" type="text" placeholder="Marina, Julia"></div>
+        <div class="r"><div class="l"><b>Limite da pausa</b><small>minutos; depois disso o timer vira contagem de excedente</small></div><input id="cfMin" type="number" min="1" max="120"></div>
+        <div class="r"><div class="l"><b>Avisar quando passar do limite</b><small>notificação no notch + som</small></div><label class="sw"><input id="cfAlert" type="checkbox"><span></span></label></div>
+        <div class="r"><div class="l"><b>Atalho: abrir a aba Café</b></div><input id="scCoffee" type="text" placeholder="vazio = desativado"></div>
         <h2>Capturas (Quick Access)</h2>
         <div class="r"><div class="l"><b>Capturar área</b><small>atalho global; arraste na tela e o card entra na pilha do canto</small></div><input id="scCap" type="text" placeholder="CommandOrControl+Shift+X"></div>
         <div class="r"><div class="l"><b>Histórico de capturas</b><small>abre o notch na aba Capturas (busca por texto OCR)</small></div><input id="scCaps" type="text" placeholder="CommandOrControl+Shift+H"></div>
@@ -393,6 +399,7 @@ const MODULES = [
   { id: 'providers', name: 'Uso das IAs', desc: 'Claude, Codex, Cursor e Gemini: consumo do plano na dock lateral.', ix: 'Flash', color: '#ffd60a', path: 'sidebar.aiTools', page: 'prov' },
   { id: 'approvals', name: 'Aprovações do Claude Code', desc: 'Servidor local que pede sua permissão antes de o agente agir.', ix: 'Code', color: '#8e8e93', path: 'approvals.enabled', page: 'claude' },
   { id: 'maestri', name: 'Maestri Wire', desc: 'Terminais pareados: avisos de atenção e resposta a prompts S/n.', ix: 'Driver', color: '#af52de', path: 'maestri.enabled', page: 'maestri' },
+  { id: 'coffee', name: 'Pausa do café', desc: 'Cronômetro por pessoa, excedente em vermelho e registro privado das pausas.', ix: 'Timer1', color: '#2dd4bf', path: 'coffee.enabled', page: 'hub' },
   { id: 'files', name: 'Bandeja de arquivos', desc: 'Arraste arquivos para o notch, leve para outro app e gere link de 7 dias.', ix: 'Folder', color: '#ff9500', path: 'notch.show.files', page: 'cmds' },
   { id: 'commands', name: 'Comandos do TI', desc: 'Atalhos de PowerShell com um clique e a saída no próprio notch.', ix: 'Code', color: '#48484e', path: 'notch.show.cmds', page: 'cmds' },
   { id: 'weather', name: 'Clima', desc: 'Temperatura e condição na pastilha fechada (Open-Meteo).', ix: 'Sun', color: '#ff9500', path: 'weather.enabled', page: 'notch' }
@@ -518,12 +525,13 @@ function collect() {
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
-    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim(), files: $('#scFiles').value.trim() },
+    shortcuts: { toggle: $('#scToggle').value.trim(), approve: $('#scApprove').value.trim(), deny: $('#scDeny').value.trim(), hub: $('#scHub').value.trim(), clip: $('#scClip').value.trim(), capture: $('#scCap').value.trim(), captures: $('#scCaps').value.trim(), focus: $('#scFocus').value.trim(), tasks: $('#scTasks').value.trim(), board: $('#scBoard').value.trim(), files: $('#scFiles').value.trim(), coffee: $('#scCoffee').value.trim() },
     quickaccess: { side: $('#qaSide').value, ttlSec: Math.max(0, Number($('#qaTtl').value) || 0), enabled: modState.captures !== false },
     modules: { ...modState },
     commands: cmdList.filter((c) => c.name && c.cmd).map((c, i) => ({ id: c.id || 'c' + i, name: c.name, cmd: c.cmd, ix: c.ix || 'Code', color: c.color || '#8e8e93', confirm: !!c.confirm, admin: !!c.admin })),
     board: { enabled: $('#bdOn').checked, notifyMoves: $('#bdMoves').checked, notifyStuck: $('#bdStuck').checked, notifyNew: $('#bdNew').checked, brief: $('#bdBrief').checked, briefManha: $('#bdM').value.trim() || '09:00', briefTarde: $('#bdT').value.trim() || '18:00', wip: Math.max(1, Number($('#bdWip').value) || 2), semDonoHoras: Math.max(1, Number($('#bdSem').value) || 24), paradoDias: Math.max(1, Number($('#bdPar').value) || 2), takeOnFocus: $('#bdTake').checked },
     focus: { minutes: Math.min(180, Math.max(5, Number($('#fxMin').value) || 25)), breakMinutes: Math.min(60, Math.max(1, Number($('#fxBrk').value) || 5)), pill: $('#fxPill').checked, streak: $('#fxStreak').checked, autoStatus: $('#fxAuto').checked, chime: $('#fxChime').checked },
+    coffee: { enabled: modState.coffee !== false, people: $('#cfPeople').value.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 8), minutes: Math.min(120, Math.max(1, Number($('#cfMin').value) || 15)), alert: $('#cfAlert').checked },
     clipboard: { enabled: $('#clipOn').checked, max: Math.min(300, Math.max(10, Number($('#clipMax').value) || 60)) },
     hub: { dock: dockSel.slice(), custom: customSc.slice(), enabled: $('#hbEnabled').checked, notify: $('#hbNotify').checked, chatNotify: $('#hbChat').checked, soundPreset: $('#hbSndP').value, soundChat: $('#hbSndC').value, volume: Number($('#hbVol').value), soundFile: $('#hbSndF').value.trim(), toast: $('#hbToast').checked, sound: $('#hbSound').checked, markReadOnOpen: $('#hbRead').checked, pollSeconds: Math.max(30, Number($('#hbPoll').value) || 90), dockCount: Math.min(6, Math.max(3, Number($('#hbDock').value) || 5)), url: $('#hbUrl').value.trim(), site: $('#hbSite').value.trim() },
     update: { auto: $('#upAuto').checked },
@@ -565,7 +573,8 @@ async function load() {
   $('#ntHub').checked = !nt.show || nt.show.hub !== false;
   const fxs = settings.focus || {}; $('#fxMin').value = fxs.minutes || 25; $('#fxBrk').value = fxs.breakMinutes || 5;
   $('#fxPill').checked = fxs.pill !== false; $('#fxStreak').checked = fxs.streak !== false; $('#fxAuto').checked = fxs.autoStatus !== false; $('#fxChime').checked = fxs.chime !== false;
-  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K'; $('#scFiles').value = sc.files ?? 'CommandOrControl+Shift+B';
+  $('#scFocus').value = sc.focus ?? 'CommandOrControl+Shift+F'; $('#scTasks').value = sc.tasks || ''; $('#scBoard').value = sc.board ?? 'CommandOrControl+Shift+K'; $('#scFiles').value = sc.files ?? 'CommandOrControl+Shift+B'; $('#scCoffee').value = sc.coffee || '';
+  const cf = settings.coffee || {}; $('#cfPeople').value = (cf.people || ['Marina', 'Julia']).join(', '); $('#cfMin').value = cf.minutes || 15; $('#cfAlert').checked = cf.alert !== false;
   const bd = settings.board || {}; $('#bdOn').checked = bd.enabled !== false; $('#bdMoves').checked = bd.notifyMoves !== false; $('#bdStuck').checked = bd.notifyStuck !== false;
   $('#bdNew').checked = bd.notifyNew !== false; $('#bdBrief').checked = bd.brief !== false; $('#bdM').value = bd.briefManha || '09:00'; $('#bdT').value = bd.briefTarde || '18:00';
   $('#bdWip').value = bd.wip || 2; $('#bdSem').value = bd.semDonoHoras || 24; $('#bdPar').value = bd.paradoDias || 2; $('#bdTake').checked = bd.takeOnFocus !== false;
