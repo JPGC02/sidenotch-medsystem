@@ -178,6 +178,8 @@
         <div class="r"><div class="l"><b>Ativar</b></div><label class="sw"><input id="ntEnabled" type="checkbox"><span></span></label></div>
         <div class="r"><div class="l"><b>Monitor</b></div><select id="ntDisplay"></select></div>
         <div class="r"><div class="l"><b>Deslocamento horizontal</b><small>px, positivo para a direita</small></div><input id="ntOffset" type="number" step="10"></div>
+        <div class="r"><div class="l"><b>Largura máxima da pastilha fechada</b><small>px; o que não couber é escondido, começando pelo menos importante</small></div><input id="ntMiniW" type="number" min="320" max="1300" step="20"></div>
+        <div class="r"><div class="l"><b>Máximo de itens na pastilha</b><small>relógio, foco, café e alertas têm preferência; música, clima e CPU saem primeiro</small></div><input id="ntMiniN" type="number" min="3" max="14"></div>
         <h2>Geral</h2>
         <div class="r"><div class="l"><b>Largura mínima fechada</b><small>px</small></div><input id="collapsedWidth" type="number" min="2" max="24"></div>
         <div class="r"><div class="l"><b>Atualizar uso a cada</b><small>segundos — o endpoint do Claude limita chamadas frequentes</small></div><input id="refreshSeconds" type="number" min="30" step="30"></div>
@@ -551,7 +553,9 @@ function collect() {
     refreshSeconds: Number($('#refreshSeconds').value) || 180, autoLaunch: $('#autoLaunch').checked, dnd: $('#dnd').checked,
     order: settings.order, providers: {},
     sidebar: { enabled: $('#sbEnabled').checked, aiTools: $('#sbAi').checked },
-    notch: { enabled: $('#ntEnabled').checked, displayId: $('#ntDisplay').value || null, offsetX: Number($('#ntOffset').value) || 0, tab: $('#ntTab').value, show: { music: $('#ntMusic').checked, system: $('#ntSys').checked, calendar: $('#ntCal').checked, hub: $('#ntHub').checked } },
+    notch: { enabled: $('#ntEnabled').checked, displayId: $('#ntDisplay').value || null, offsetX: Number($('#ntOffset').value) || 0, tab: $('#ntTab').value,
+      miniWidth: Math.min(1300, Math.max(320, Number($('#ntMiniW').value) || 900)), miniMax: Math.min(14, Math.max(3, Number($('#ntMiniN').value) || 8)),
+      show: { ...((settings.notch || {}).show || {}), music: $('#ntMusic').checked, system: $('#ntSys').checked, calendar: $('#ntCal').checked, hub: $('#ntHub').checked } },
     approvals: { enabled: $('#apEnabled').checked, port: Number($('#apPort').value) || 47322, timeoutSec: Math.min(590, Math.max(10, Number($('#apTimeout').value) || 110)), sound: $('#apSound').checked },
     notifications: { done: $('#nDone').checked, waiting: $('#nWaiting').checked, denied: $('#nDenied').checked, toast: $('#nToast').checked, autoDismissSec: Math.max(0, Number($('#nDismiss').value) || 0) },
     alerts: { enabled: $('#alEnabled').checked, thresholds: $('#alTh').value.split(',').map((x) => Number(x.trim())).filter((x) => x > 0 && x <= 100), onReset: $('#alReset').checked },
@@ -588,7 +592,7 @@ async function load() {
   $('#collapsedWidth').value = settings.collapsedWidth;
   $('#refreshSeconds').value = settings.refreshSeconds; $('#autoLaunch').checked = !!settings.autoLaunch; $('#dnd').checked = !!settings.dnd;
   $('#sbEnabled').checked = !settings.sidebar || settings.sidebar.enabled !== false;
-  const nt = settings.notch || {}; $('#ntEnabled').checked = nt.enabled !== false; $('#ntDisplay').value = nt.displayId || ''; $('#ntOffset').value = nt.offsetX || 0; $('#ntTab').value = nt.tab || 'music';
+  const nt = settings.notch || {}; $('#ntEnabled').checked = nt.enabled !== false; $('#ntDisplay').value = nt.displayId || ''; $('#ntOffset').value = nt.offsetX || 0; $('#ntTab').value = nt.tab || 'music'; $('#ntMiniW').value = nt.miniWidth || 900; $('#ntMiniN').value = nt.miniMax || 8;
   // módulos: usa o mapa salvo; se não existir, deduz do ajuste que cada módulo controla
   const mods = settings.modules || {};
   modState = {}; for (const m of MODULES) { const v = mods[m.id]; modState[m.id] = v === undefined ? dig(settings, m.path) !== false : v !== false; }

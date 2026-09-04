@@ -64,7 +64,7 @@ const DEFAULTS = {
     pollSeconds: 4, notifyAttention: true
   },
   notch: {                    // notch no topo do monitor (convive com a barra lateral)
-    enabled: true, displayId: null, offsetX: 0,
+    enabled: true, displayId: null, offsetX: 0, miniWidth: 900, miniMax: 8,   // pastilha fechada: largura máxima e quantos itens no máximo
     show: { music: true, system: true, calendar: true, clock: true, weather: true, hub: true, apps: true, board: true, files: true, cmds: true },
     tab: 'hub'
   },

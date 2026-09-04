@@ -38,7 +38,7 @@ Nada sai da sua máquina além das chamadas às APIs oficiais de cada provedor, 
 
 ## Instalar (usuário final)
 
-**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.17.0.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
+**Opção A — portátil (pronto):** descompacte `SideNotch-Medsystem-Setup-1.17.1.exe` em qualquer pasta e rode `SideNotch.exe`. Aparece um ícone na bandeja e a notch na borda direita da tela.
 
 **Opção B — instalador .exe (gerar no Windows):**
 ```bat
@@ -46,7 +46,7 @@ cd sidenotch-medsystem
 npm install
 npm run dist
 ```
-O instalador sai em `dist\SideNotch-Medsystem-Setup-1.17.0.exe` (requer Node.js 18+; no Windows não precisa de wine).
+O instalador sai em `dist\SideNotch-Medsystem-Setup-1.17.1.exe` (requer Node.js 18+; no Windows não precisa de wine).
 
 ## Rodar em desenvolvimento
 ```bat
@@ -151,6 +151,12 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 - A pastilha fechada mostra `☕ Marina 12:31` enquanto alguém está fora. Ajustes em Configurações → Medsystem Hub → Pausa do café (quem entra, limite em minutos — 20 por padrão —, aviso e atalho).
 - Registro de pausa é dado sensível de RH: vale avisar a Marina e a Julia que o controle existe.
 
+## Pastilha fechada sem entulho (1.17.1)
+- A janela do notch passou de 960 para **1440 px** (limitada à largura do monitor): a pastilha fechada crescia até bater na borda da janela e o conteúdo era cortado — era isso que picotava o relógio.
+- O resumo agora é **por prioridade**: relógio, foco, pausa do café e alertas ficam; quadro, Hub, Ideia Central e agenda vêm depois; **CPU, música e clima são os primeiros a sair**. O app monta tudo, mede e vai tirando o de menor prioridade até caber — nunca estoura.
+- Dois ajustes em Configurações → Notch: **largura máxima da pastilha fechada** (900 px por padrão) e **máximo de itens** (8). Um evento perto (≤ 15 min), um atraso de tarefa ou uma falha sobem de prioridade sozinhos.
+- `test/smoke-mini.js` cobre o corte (precisa de jsdom, fora do `npm test`).
+
 ## Ideia Central (1.17)
 - O SideNotch agora fala com **dois projetos Supabase**: o Medsystem Hub (trabalho) e o **Ideia Central** (projeto pessoal, `khumibmkasycrfifomev`) — contas, chaves e sessões separadas, cada um com o seu módulo.
 - Aba **Ideia Central** no notch:
@@ -170,7 +176,7 @@ A aba **Sistemas** virou o painel do setor, em cima das ideias/bugs do Hub (`sis
 Integra com o [Maestri Wire](https://www.themaestri.app/pt-br/docs/wire): Configurações → Maestri → código de pareamento (ou senha da aba Manual). A chave pública do host é fixada na primeira conexão (TOFU) e conferida em toda conexão antes de enviar o token. A barra então mostra os terminais do Maestri em **Sessões** (com "Ir ao terminal", "Visto", envio de prompt, **☾ Dormir / ☀ Acordar** por terminal ou workspace e ✕ encerrar), avisa quando um agente **precisa de atenção**, e responde **prompts S/n** com Aprovar/Rejeitar. Consulta o feed a cada 4 s (configurável). Pareie como *Somente leitura* se só quiser os avisos.
 
 ## Auto-update
-O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.17.0 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
+O instalador (NSIS) verifica o GitHub Releases de `JPGC02/sidenotch-medsystem` a cada 6 h e baixa a nova versão; a bandeja/configurações mostram "Instalar e reiniciar". Para publicar: `git tag v1.17.1 && git push --tags` — o workflow `.github/workflows/release.yml` compila no Windows e publica. O ZIP portátil não se atualiza sozinho.
 
 ## Configurações (ícone de engrenagem na barra ou bandeja)
 - Lado (esquerda/direita), posição vertical (topo/centro/base), deslocamento em px, monitor

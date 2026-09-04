@@ -153,6 +153,7 @@
   #mini { position: absolute; inset: 0; height: 30px; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 14px; font-size: 11.5px; white-space: nowrap; transition: opacity .15s; }
   body.open #mini { opacity: 0; pointer-events: none; }
   #mini .seg { display: flex; align-items: center; gap: 6px; color: #d8d8dd; }
+  #mini .segwrap { display: flex; align-items: center; flex: 0 0 auto; }
   #mini .seg svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
   #mini .track { max-width: 130px; overflow: hidden; }
   #mini .track span { display: inline-block; padding-left: 0; }
@@ -393,35 +394,63 @@ function mediaPos(m) { if (!m) return 0; const p = m.position + (m.playing ? (Da
 function renderMini() {
   if (document.body.classList.contains('banner')) return;
   const box = $('#mini'); const sh = (settings.notch && settings.notch.show) || {};
-  let h = '';
-  const m = sys && sys.media;
-  if (sh.music !== false && m) h += `<div class="seg">${m.art ? `<img class="cover" src="${m.art}">` : ''}<span class="dot ${m.playing ? 'playing' : ''}" style="background:${m.playing ? 'var(--ok)' : 'var(--muted)'}"></span><div class="track ${(m.title + m.artist).length > 24 ? 'scroll' : ''}"><span>${esc(m.title)}${m.artist ? ' — ' + esc(m.artist) : ''}</span></div></div>`;
-  if (sh.system !== false && sys) h += `<div class="seg">${I.cpu}<span style="color:${col(sys.cpu)}">${sys.cpu}%</span><div class="bar"><i style="width:${sys.mem.percent}%;background:${col(sys.mem.percent)}"></i></div></div>`;
-  if (sh.calendar !== false && cal && cal.next) { const min = Math.round((cal.next.start - Date.now()) / 60000); h += `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 18))}</span></div>`; }
-  if (ic && ic.linked && ic.counts && (ic.counts.rodando || ic.counts.falhas)) {
-    const t = ic.counts.rodando ? `${ic.counts.rodando} render${ic.counts.rodando > 1 ? 's' : ''}` : `${ic.counts.falhas} falhou`;
-    h += `<div class="seg ic-mini" title="Ideia Central">${I.ideia || '💡'} ${t}</div>`;
+  const nt = settings.notch || {};
+  // cada pedaço com a sua prioridade: se não couber na pastilha, o de menor prioridade sai primeiro
+  const segs = [];
+  const seg = (id, prio, html) => { if (html) segs.push({ id, prio, html }); };
+
+  if (fx.active && (settings.focus || {}).pill !== false) {
+    seg('fx', 98, `<div class="seg fx">${I.timer}<b>${mmss(fx.remaining)}</b>${fx.running ? '' : '<span class="st">pausado</span>'}</div>`);
+    seg('fxnome', 52, `<div class="seg fx"><span class="nm">${esc(fx.title || '')}</span></div>`);
+    if (fx.streak) seg('streak', 30, `<div class="seg fx" title="Sequência de dias com foco" style="color:#ff9f0a">${I.flame}${fx.streak}d</div>`);
   }
+  if (sh.clock !== false) seg('clock', 100, `<div class="seg clock"><b>${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>`);
+
   const cofOn = (cof.people || []).filter((p) => p.running);
-  if (cofOn.length) h += cofOn.map((p) => `<div class="seg cof-mini ${p.over ? 'over' : ''}" title="Pausa de ${esc(p.nome)}">☕ ${esc(p.nome.split(' ')[0])} ${p.over ? '+' + cmm(p.over) : cmm(p.remaining)}</div>`).join('');
+  for (const p of cofOn) seg('cof:' + p.nome, 92, `<div class="seg cof-mini ${p.over ? 'over' : ''}" title="Pausa de ${esc(p.nome)}">☕ ${esc(p.nome.split(' ')[0])} ${p.over ? '+' + cmm(p.over) : cmm(p.remaining)}</div>`);
+
+  const n = (approvals.pending || []).length + ((approvals.maestri && approvals.maestri.prompts) || []).length;
+  if (n) seg('warn', 95, `<div class="seg" style="color:var(--warn)">⚠ ${n}</div>`);
+
+  if (sh.hub !== false && hub && hub.linked) {
+    if (hub.unread) seg('bell', 74, `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`);
+    if (hub.overdue) seg('atraso', 76, `<div class="seg" style="color:var(--bad)">${I.check}${hub.overdue}</div>`);
+    else if (hub.tasks && hub.tasks.length) seg('tarefas', 60, `<div class="seg">${I.check}${hub.tasks.length}</div>`);
+    if (hub.chatUnread) seg('chat', 72, `<div class="seg" style="color:#4ade80">${I.chat}${hub.chatUnread}</div>`);
+  }
   if (sh.board !== false && hub && hub.linked && hub.hasBoard && hub.board && hub.board.stats) {
     const bs = hub.board.stats; const bad = (bs.paradas || 0) + (bs.bloqueadas || 0);
-    if (bs.emDev || bad) h += `<div class="seg" style="color:${bad ? '#ff9f0a' : '#d8d8dd'}" title="Quadro de Sistemas: em dev / travados">${I.board}${bs.emDev || 0}${bad ? ' · ⚠' + bad : ''}</div>`;
+    if (bs.emDev || bad) seg('board', bad ? 70 : 44, `<div class="seg" style="color:${bad ? '#ff9f0a' : '#d8d8dd'}" title="Quadro de Sistemas: em dev / travados">${I.board}${bs.emDev || 0}${bad ? ' · ⚠' + bad : ''}</div>`);
   }
-  const n = (approvals.pending || []).length + ((approvals.maestri && approvals.maestri.prompts) || []).length;
-  if (n) h += `<div class="seg" style="color:var(--warn)">⚠ ${n}</div>`;
-  if (sh.hub !== false && hub && hub.linked) { if (hub.unread) h += `<div class="seg" style="color:#6fb3ff">${I.bell}${hub.unread}</div>`; if (hub.tasks && hub.tasks.length) h += `<div class="seg" style="color:${hub.overdue ? 'var(--bad)' : '#d8d8dd'}">${I.check}${hub.tasks.length}</div>`; if (hub.chatUnread) h += `<div class="seg" style="color:#4ade80">${I.chat}${hub.chatUnread}</div>`; }
-  if (sh.clock !== false) h = `<div class="seg clock"><b>${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b></div>` + h;
-  // foco em andamento vem primeiro: ⏱ mm:ss · tarefa (+ streak)
-  if (fx.active && (settings.focus || {}).pill !== false) {
-    h = `<div class="seg fx">${I.timer}<b>${mmss(fx.remaining)}</b>${fx.running ? '' : '<span class="st">pausado</span>'}</div>` + h
-      + `<div class="seg fx"><span class="nm">${esc(fx.title || '')}</span></div>`
-      + (fx.streak ? `<div class="seg fx" title="Sequência de dias com foco" style="color:#ff9f0a">${I.flame}${fx.streak}d</div>` : '');
+  if (ic && ic.linked && ic.counts && (ic.counts.rodando || ic.counts.falhas)) {
+    const t = ic.counts.rodando ? `${ic.counts.rodando} render${ic.counts.rodando > 1 ? 's' : ''}` : `${ic.counts.falhas} falhou`;
+    seg('ideia', ic.counts.falhas ? 68 : 46, `<div class="seg ic-mini" title="Ideia Central">${I.ideia || '💡'} ${t}</div>`);
   }
-  if (sh.weather !== false && wx && wx.ok) h += `<div class="seg" title="${esc(wx.desc || '')}${wx.label ? ' · ' + esc(wx.label) : ''}"><span class="wi">${wx.icon}</span>${wx.temp}°</div>`;
-  if (!h) h = `<div class="seg muted">SideNotch</div>`;
-  box.innerHTML = h;
-  const w = Math.min(600, Math.max(220, box.scrollWidth + 20));
+  if (sh.calendar !== false && cal && cal.next) {
+    const min = Math.round((cal.next.start - Date.now()) / 60000);
+    seg('cal', min <= 15 ? 80 : 42, `<div class="seg">${I.cal}<span>${min < 60 ? min + ' min' : hhmm(cal.next.start)} · ${esc(cal.next.title.slice(0, 16))}</span></div>`);
+  }
+  if (sh.system !== false && sys) seg('sys', 26, `<div class="seg">${I.cpu}<span style="color:${col(sys.cpu)}">${sys.cpu}%</span><div class="bar"><i style="width:${sys.mem.percent}%;background:${col(sys.mem.percent)}"></i></div></div>`);
+  const m = sys && sys.media;
+  if (sh.music !== false && m) seg('music', 22, `<div class="seg">${m.art ? `<img class="cover" src="${m.art}">` : ''}<span class="dot ${m.playing ? 'playing' : ''}" style="background:${m.playing ? 'var(--ok)' : 'var(--muted)'}"></span><div class="track ${(m.title + m.artist).length > 24 ? 'scroll' : ''}"><span>${esc(m.title)}${m.artist ? ' — ' + esc(m.artist) : ''}</span></div></div>`);
+  if (sh.weather !== false && wx && wx.ok) seg('wx', 20, `<div class="seg" title="${esc(wx.desc || '')}${wx.label ? ' · ' + esc(wx.label) : ''}"><span class="wi">${wx.icon}</span>${wx.temp}°</div>`);
+
+  // teto de itens (configurável) antes de medir: a pastilha fechada é um resumo, não um painel
+  const limite = Math.max(3, Math.min(14, Number(nt.miniMax) || 8));
+  let lista = segs.slice().sort((a, b) => b.prio - a.prio).slice(0, limite);
+  lista = segs.filter((x) => lista.includes(x));                       // volta para a ordem visual
+  box.innerHTML = lista.length ? lista.map((x, i) => `<span class="segwrap" data-i="${i}">${x.html}</span>`).join('') : '<div class="seg muted">SideNotch</div>';
+
+  // e agora o que realmente couber: a janela tem largura fixa, então a pastilha nunca passa disso
+  const teto = Math.max(320, Math.min(window.innerWidth - 120, Number(nt.miniWidth) || 900));
+  let guarda = 0;
+  while (box.scrollWidth + 26 > teto && lista.length > 1 && guarda++ < 20) {
+    let pior = 0;
+    for (let i = 1; i < lista.length; i++) if (lista[i].prio < lista[pior].prio) pior = i;
+    lista.splice(pior, 1);
+    box.innerHTML = lista.map((x, i) => `<span class="segwrap" data-i="${i}">${x.html}</span>`).join('');
+  }
+  const w = Math.min(teto, Math.max(220, box.scrollWidth + 24));
   if (!document.body.classList.contains('open')) $('#pill').style.width = w + 'px';
   document.body.classList.toggle('alert', n > 0);
   paintFocus();
@@ -1197,7 +1226,7 @@ function fitPill() {
   // o traçado do foco acompanha a nova largura/altura (a transição de tamanho leva 250 ms)
   clearTimeout(fitPill._fx); fitPill._fx = setTimeout(paintFocus, 280); paintFocus();
 }
-// a janela do notch tem 960×560, mas só a pastilha é clicável: manda o retângulo real ao main,
+// a janela do notch é bem maior que a pastilha, mas só a pastilha é clicável: manda o retângulo real ao main,
 // que devolve o click-through assim que o cursor sai dele (evita o mouse preso na área transparente)
 let hotLast = '';
 function sendHot() {

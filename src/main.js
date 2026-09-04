@@ -87,7 +87,9 @@ app.on('window-all-closed', (e) => e.preventDefault());
 app.on('will-quit', () => { ideia && ideia.dispose(); coffee && coffee.dispose(); globalShortcut.unregisterAll(); sysmon && sysmon.stop(); docs && docs.flush(); hub && hub.stop(); clipHist && clipHist.stop(); focus && focus.dispose(); });
 
 // ---------- Notch (topo) ----------
-const NOTCH_W = 960, NOTCH_H = 560;
+// A janela é bem mais larga que a pastilha: a pastilha fechada cresce conforme o conteúdo e não pode
+// bater na borda da janela (era o que cortava o relógio). Só a pastilha recebe o mouse (src/hotrect.js).
+const NOTCH_W = 1440, NOTCH_H = 560;
 function createNotch() {
   notch = new BrowserWindow({
     width: NOTCH_W, height: NOTCH_H,
@@ -115,8 +117,9 @@ function positionNotch() {
   const all = screen.getAllDisplays();
   const d = all.find((x) => String(x.id) === String(s.notch.displayId)) || targetDisplay();
   const wa = d.workArea;
-  const x = wa.x + Math.round((wa.width - NOTCH_W) / 2) + Number(s.notch.offsetX || 0);
-  notch.setBounds({ x, y: wa.y, width: NOTCH_W, height: NOTCH_H });
+  const largura = Math.min(NOTCH_W, wa.width);                    // monitor menor: a janela acompanha
+  const x = wa.x + Math.round((wa.width - largura) / 2) + Number(s.notch.offsetX || 0);
+  notch.setBounds({ x, y: wa.y, width: largura, height: NOTCH_H });
 }
 
 function applyWindowVisibility() {
